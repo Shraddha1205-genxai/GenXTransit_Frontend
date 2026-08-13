@@ -1,4 +1,24 @@
 import React, { useState, useMemo, useReducer, createContext, useContext } from "react";
+import Dashboard from "./features/dashboard";
+import RegionPage from "./features/organization/region";
+import DivisionPage from "./features/organization/division";
+import WorkshopPage from "./features/organization/workshop";
+import RoutesPage from "./features/masterData/routes";
+import StopsPage from "./features/masterData/stops";
+import StagesPage from "./features/masterData/stages";
+import FleetManagementPage from "./features/fleet/vehicle";
+import TicketTypesPage from "./features/masterData/ticket-types";
+import PaymentModesPage from "./features/masterData/payment-modes";
+import NotificationTemplatesPage from "./features/masterData/notification-template";
+import VehicleCategoriesPage from "./features/masterData/vehicle-categories";
+import ZonesPage from "./features/masterData/zones";
+import FarePoliciesPage from "./features/masterData/fare-policies";
+import HolidayCalendarPage from "./features/masterData/holiday-calender";
+import SeatLayoutsPage from "./features/masterData/seat-layouts";
+import ComplaintCategoriesPage from "./features/masterData/complaint-categories";
+import TaxConfigurationsPage from "./features/masterData/tax-configurations";
+import ParkingYardPage from "./features/organization/parking-yard";
+import BusStationPage from "./features/organization/bus-station";
 import {
   LayoutDashboard, Building2, Bus, Milestone, Radar, Ticket, Armchair,
   Smartphone, Wallet, MessageSquareWarning, BarChart3, ShieldCheck,
@@ -830,108 +850,47 @@ function Organization() {
       <SubTabs tabs={["Regions", "Divisions", "Depots", "Bus Stations", "Workshops", "Parking Yards"]} active={tab} onChange={setTab} />
 
       {tab === "Regions" && (
-        <CrudTable
-          title="Regions" addLabel="Add region" data={regionsData} idKey="code"
-          columns={[
-            { key: "code", label: "Region", chip: true, mono: true },
-            { key: "name", label: "Name" },
-            { key: "divisions", label: "Divisions" },
-            { key: "depots", label: "Depots" },
-            { key: "fleet", label: "Fleet strength", align: "right", mono: true },
-          ]}
-          fields={[
-            { key: "code", label: "Region code", type: "text" },
-            { key: "name", label: "Name", type: "text" },
-            { key: "divisions", label: "Divisions", type: "number" },
-            { key: "depots", label: "Depots", type: "number" },
-            { key: "fleet", label: "Fleet strength", type: "number" },
-          ]}
-          onAdd={regionsCrud.add} onUpdate={regionsCrud.update} onDelete={regionsCrud.remove}
+        <RegionPage
+          data={regionsData}
+          onAdd={regionsCrud.add}
+          onUpdate={regionsCrud.update}
+          onDelete={regionsCrud.remove}
         />
       )}
       {tab === "Divisions" && (
-        <CrudTable
-          title="Divisions" addLabel="Add division" data={divisionsData} idKey="code"
-          columns={[
-            { key: "code", label: "Division", chip: true, mono: true },
-            { key: "name", label: "Name" },
-            { key: "region", label: "Region", mono: true },
-            { key: "depots", label: "Depots" },
-          ]}
-          fields={[
-            { key: "code", label: "Division code", type: "text" },
-            { key: "name", label: "Name", type: "text" },
-            { key: "region", label: "Region", type: "select", options: regionsData.map((r) => r.code) },
-            { key: "depots", label: "Depots", type: "number" },
-          ]}
-          onAdd={divisionsCrud.add} onUpdate={divisionsCrud.update} onDelete={divisionsCrud.remove}
+        <DivisionPage
+          data={divisionsData}
+          regionOptions={regionsData.map((r) => r.code)}
+          onAdd={divisionsCrud.add}
+          onUpdate={divisionsCrud.update}
+          onDelete={divisionsCrud.remove}
         />
       )}
       {tab === "Bus Stations" && (
-        <CrudTable
-          title="Bus stations" addLabel="Add station" data={busStationsData} idKey="code"
-          columns={[
-            { key: "code", label: "Station", chip: true, mono: true },
-            { key: "name", label: "Name" },
-            { key: "depot", label: "Linked depot", mono: true },
-            { key: "platforms", label: "Platforms" },
-            { key: "footfall", label: "Daily footfall", align: "right" },
-          ]}
-          fields={[
-            { key: "code", label: "Station code", type: "text" },
-            { key: "name", label: "Name", type: "text" },
-            { key: "depot", label: "Linked depot", type: "select", options: depotsData.map((d) => d.code) },
-            { key: "platforms", label: "Platforms", type: "number" },
-            { key: "footfall", label: "Daily footfall", type: "text" },
-          ]}
-          onAdd={busStationsCrud.add} onUpdate={busStationsCrud.update} onDelete={busStationsCrud.remove}
+        <BusStationPage
+          data={busStationsData}
+          depotOptions={depotsData.map((d) => d.code)}
+          onAdd={busStationsCrud.add}
+          onUpdate={busStationsCrud.update}
+          onDelete={busStationsCrud.remove}
         />
       )}
       {tab === "Workshops" && (
-        <CrudTable
-          title="Workshops" addLabel="Add workshop" data={workshopsData} idKey="code"
-          columns={[
-            { key: "code", label: "Workshop", chip: true, mono: true },
-            { key: "name", label: "Name" },
-            { key: "depot", label: "Linked depot", mono: true },
-            { key: "bays", label: "Bays" },
-            { key: "activeJobs", label: "Active jobs", align: "right" },
-          ]}
-          fields={[
-            { key: "code", label: "Workshop code", type: "text" },
-            { key: "name", label: "Name", type: "text" },
-            { key: "depot", label: "Linked depot", type: "select", options: depotsData.map((d) => d.code) },
-            { key: "bays", label: "Bays", type: "number" },
-            { key: "activeJobs", label: "Active jobs", type: "number" },
-          ]}
-          onAdd={workshopsCrud.add} onUpdate={workshopsCrud.update} onDelete={workshopsCrud.remove}
+        <WorkshopPage
+          data={workshopsData}
+          depotOptions={depotsData.map((d) => d.code)}
+          onAdd={workshopsCrud.add}
+          onUpdate={workshopsCrud.update}
+          onDelete={workshopsCrud.remove}
         />
       )}
       {tab === "Parking Yards" && (
-        <CrudTable
-          title="Parking yards" addLabel="Add yard" data={parkingYardsData} idKey="code"
-          columns={[
-            { key: "code", label: "Yard", chip: true, mono: true },
-            { key: "name", label: "Name" },
-            { key: "depot", label: "Linked depot", mono: true },
-            { key: "capacity", label: "Capacity" },
-            {
-              key: "occupied", label: "Occupied", align: "right",
-              render: (p) => (
-                <span style={{ color: p.occupied / p.capacity > 0.85 ? T.amberDeep : T.text, fontWeight: 600 }}>
-                  {p.occupied} ({Math.round((p.occupied / p.capacity) * 100)}%)
-                </span>
-              ),
-            },
-          ]}
-          fields={[
-            { key: "code", label: "Yard code", type: "text" },
-            { key: "name", label: "Name", type: "text" },
-            { key: "depot", label: "Linked depot", type: "select", options: depotsData.map((d) => d.code) },
-            { key: "capacity", label: "Capacity", type: "number" },
-            { key: "occupied", label: "Occupied", type: "number" },
-          ]}
-          onAdd={parkingYardsCrud.add} onUpdate={parkingYardsCrud.update} onDelete={parkingYardsCrud.remove}
+        <ParkingYardPage
+          data={parkingYardsData}
+          depotOptions={depotsData.map((d) => d.code)}
+          onAdd={parkingYardsCrud.add}
+          onUpdate={parkingYardsCrud.update}
+          onDelete={parkingYardsCrud.remove}
         />
       )}
       {tab === "Depots" && <DepotsTab />}
@@ -1065,27 +1024,12 @@ function Fleet() {
         <KpiCard label="Breakdowns open" value={breakdowns} icon={AlertTriangle} tone="red" />
         <KpiCard label="Docs expiring ≤30d" value="17" icon={Clock} tone="amber" />
       </div>
-      <CrudTable
-        title="Vehicle register" addLabel="Add vehicle" data={vehiclesData} idKey="reg"
-        columns={[
-          { key: "reg", label: "Registration", chip: true, mono: true },
-          { key: "category", label: "Category" },
-          { key: "depot", label: "Home depot", mono: true },
-          { key: "status", label: "Status", badge: true },
-          {
-            key: "nextService", label: "Next service / doc",
-            render: (v) => (v.nextService === "In progress" || v.nextService === "Awaiting spare" ? v.nextService : v.docExpiry),
-          },
-        ]}
-        fields={[
-          { key: "reg", label: "Registration", type: "text" },
-          { key: "category", label: "Category", type: "text" },
-          { key: "depot", label: "Home depot", type: "select", options: depotsData.map((d) => d.code) },
-          { key: "status", label: "Status", type: "select", options: ["Active", "Under maintenance", "Breakdown", "Retired"] },
-          { key: "nextService", label: "Next service", type: "text" },
-          { key: "docExpiry", label: "Document expiry", type: "text" },
-        ]}
-        onAdd={vehiclesCrud.add} onUpdate={vehiclesCrud.update} onDelete={vehiclesCrud.remove}
+      <FleetManagementPage
+        data={vehiclesData}
+        depotOptions={depotsData.map((d) => d.code)}
+        onAdd={vehiclesCrud.add}
+        onUpdate={vehiclesCrud.update}
+        onDelete={vehiclesCrud.remove}
       />
     </div>
   );
@@ -1115,148 +1059,111 @@ function MasterData() {
       <SubTabs tabs={TABS} active={tab} onChange={setTab} />
 
       {tab === "Routes" && (
-        <CrudTable
-          title="Route master" addLabel="Add route" data={routesData} idKey="code"
-          columns={[
-            { key: "code", label: "Route", chip: true, mono: true, render: (r) => (<><RouteChip>{r.code}</RouteChip><div style={{ fontSize: 12, color: T.textSoft, marginTop: 3 }}>{r.name}</div></>) },
-            { key: "service", label: "Service" }, { key: "type", label: "Type" }, { key: "distance", label: "Distance" }, { key: "fareModel", label: "Fare model" },
-          ]}
-          fields={[
-            { key: "code", label: "Route code", type: "text" }, { key: "name", label: "Name", type: "text" },
-            { key: "service", label: "Service", type: "select", options: ["ST", "Local"] },
-            { key: "type", label: "Type", type: "select", options: ["Luxury", "Express", "Ordinary", "City"] },
-            { key: "distance", label: "Distance", type: "text" },
-            { key: "fareModel", label: "Fare model", type: "select", options: ["Fixed", "Distance", "Zone"] },
-            { key: "duration", label: "Duration", type: "text" },
-          ]}
-          onAdd={routesCrud.add} onUpdate={routesCrud.update} onDelete={routesCrud.remove}
+        <RoutesPage
+          data={routesData}
+          onAdd={routesCrud.add}
+          onUpdate={routesCrud.update}
+          onDelete={routesCrud.remove}
         />
       )}
       {tab === "Stops" && (
-        <CrudTable
-          title="Stop master" addLabel="Add stop" data={stopsData} idKey="code"
-          columns={[{ key: "code", label: "Stop code", mono: true }, { key: "name", label: "Name" }, { key: "route", label: "Route", mono: true }, { key: "seq", label: "Sequence", align: "right" }]}
-          fields={[
-            { key: "code", label: "Stop code", type: "text" }, { key: "name", label: "Name", type: "text" },
-            { key: "route", label: "Route", type: "select", options: routesData.map((r) => r.code) },
-            { key: "seq", label: "Sequence", type: "number" },
-          ]}
-          onAdd={stopsCrud.add} onUpdate={stopsCrud.update} onDelete={stopsCrud.remove}
+        <StopsPage
+          data={stopsData}
+          routeOptions={routesData.map((r) => r.code)}
+          onAdd={stopsCrud.add}
+          onUpdate={stopsCrud.update}
+          onDelete={stopsCrud.remove}
         />
       )}
       {tab === "Stages" && (
-        <CrudTable
-          title="Stage master" addLabel="Add stage" data={stagesData} idKey="code"
-          columns={[{ key: "code", label: "Stage code", mono: true }, { key: "route", label: "Route", mono: true }, { key: "name", label: "Section" }, { key: "km", label: "Distance (km)", align: "right" }]}
-          fields={[
-            { key: "code", label: "Stage code", type: "text" },
-            { key: "route", label: "Route", type: "select", options: routesData.map((r) => r.code) },
-            { key: "name", label: "Section", type: "text" }, { key: "km", label: "Distance (km)", type: "number" },
-          ]}
-          onAdd={stagesCrud.add} onUpdate={stagesCrud.update} onDelete={stagesCrud.remove}
+        <StagesPage
+          data={stagesData}
+          routeOptions={routesData.map((r) => r.code)}
+          onAdd={stagesCrud.add}
+          onUpdate={stagesCrud.update}
+          onDelete={stagesCrud.remove}
         />
       )}
       {tab === "Zones" && (
-        <CrudTable
-          title="Fare zones" addLabel="Add zone" data={zonesData} idKey="code"
-          columns={[{ key: "code", label: "Zone", chip: true, mono: true }, { key: "name", label: "Name" }, { key: "districts", label: "Districts covered" }]}
-          fields={[{ key: "code", label: "Zone code", type: "text" }, { key: "name", label: "Name", type: "text" }, { key: "districts", label: "Districts covered", type: "text" }]}
-          onAdd={zonesCrud.add} onUpdate={zonesCrud.update} onDelete={zonesCrud.remove}
+        <ZonesPage
+          data={zonesData}
+          onAdd={zonesCrud.add}
+          onUpdate={zonesCrud.update}
+          onDelete={zonesCrud.remove}
         />
       )}
       {tab === "Fare Policies" && (
-        <CrudTable
-          title="Fare policies" addLabel="Add policy" data={farePoliciesData} idKey="code"
-          columns={[
-            { key: "code", label: "Policy", chip: true, mono: true }, { key: "model", label: "Model" },
-            { key: "baseRate", label: "Base / rate", render: (f) => `₹${f.base} base · ${f.rate}` },
-            { key: "route", label: "Route", mono: true }, { key: "status", label: "Status", badge: true },
-          ]}
-          fields={[
-            { key: "code", label: "Policy code", type: "text" },
-            { key: "model", label: "Model", type: "select", options: ["Fixed", "Distance", "Zone"] },
-            { key: "base", label: "Base fare (₹)", type: "number" }, { key: "rate", label: "Rate description", type: "text" },
-            { key: "route", label: "Route", type: "select", options: routesData.map((r) => r.code) },
-            { key: "status", label: "Status", type: "select", options: ["Published", "Simulated", "Draft"] },
-          ]}
-          onAdd={farePoliciesCrud.add} onUpdate={farePoliciesCrud.update} onDelete={farePoliciesCrud.remove}
+        <FarePoliciesPage
+          data={farePoliciesData}
+          routeOptions={routesData.map((r) => r.code)}
+          onAdd={farePoliciesCrud.add}
+          onUpdate={farePoliciesCrud.update}
+          onDelete={farePoliciesCrud.remove}
         />
       )}
       {tab === "Ticket Types" && (
-        <CrudTable
-          title="Ticket types" addLabel="Add type" data={ticketTypesData} idKey="code"
-          columns={[{ key: "code", label: "Code", mono: true }, { key: "name", label: "Name" }, { key: "desc", label: "Description" }]}
-          fields={[{ key: "code", label: "Code", type: "text" }, { key: "name", label: "Name", type: "text" }, { key: "desc", label: "Description", type: "text" }]}
-          onAdd={ticketTypesCrud.add} onUpdate={ticketTypesCrud.update} onDelete={ticketTypesCrud.remove}
+        <TicketTypesPage
+          data={ticketTypesData}
+          onAdd={ticketTypesCrud.add}
+          onUpdate={ticketTypesCrud.update}
+          onDelete={ticketTypesCrud.remove}
         />
       )}
       {tab === "Payment Modes" && (
-        <CrudTable
-          title="Payment modes" addLabel="Add mode" data={paymentModesData} idKey="code"
-          columns={[{ key: "code", label: "Code", mono: true }, { key: "name", label: "Name" }, { key: "status", label: "Status", badge: true }]}
-          fields={[
-            { key: "code", label: "Code", type: "text" }, { key: "name", label: "Name", type: "text" },
-            { key: "status", label: "Status", type: "select", options: ["Active", "Disabled"] },
-          ]}
-          onAdd={paymentModesCrud.add} onUpdate={paymentModesCrud.update} onDelete={paymentModesCrud.remove}
+        <PaymentModesPage
+          data={paymentModesData}
+          onAdd={paymentModesCrud.add}
+          onUpdate={paymentModesCrud.update}
+          onDelete={paymentModesCrud.remove}
         />
       )}
       {tab === "Vehicle Categories" && (
-        <CrudTable
-          title="Vehicle categories" addLabel="Add category" data={vehicleCategoriesData} idKey="code"
-          columns={[{ key: "code", label: "Code", mono: true }, { key: "name", label: "Name" }, { key: "capacity", label: "Capacity", align: "right" }, { key: "class", label: "Class" }]}
-          fields={[
-            { key: "code", label: "Code", type: "text" }, { key: "name", label: "Name", type: "text" },
-            { key: "capacity", label: "Capacity", type: "number" },
-            { key: "class", label: "Class", type: "select", options: ["Luxury", "Standard", "City"] },
-          ]}
-          onAdd={vehicleCategoriesCrud.add} onUpdate={vehicleCategoriesCrud.update} onDelete={vehicleCategoriesCrud.remove}
+        <VehicleCategoriesPage
+          data={vehicleCategoriesData}
+          onAdd={vehicleCategoriesCrud.add}
+          onUpdate={vehicleCategoriesCrud.update}
+          onDelete={vehicleCategoriesCrud.remove}
         />
       )}
       {tab === "Seat Layouts" && (
-        <CrudTable
-          title="Seat layouts" addLabel="Add layout" data={seatLayoutsData} idKey="code"
-          columns={[{ key: "code", label: "Code", mono: true }, { key: "name", label: "Layout" }, { key: "category", label: "Vehicle category", mono: true }]}
-          fields={[
-            { key: "code", label: "Code", type: "text" }, { key: "name", label: "Layout description", type: "text" },
-            { key: "category", label: "Vehicle category", type: "select", options: vehicleCategoriesData.map((v) => v.code) },
-          ]}
-          onAdd={seatLayoutsCrud.add} onUpdate={seatLayoutsCrud.update} onDelete={seatLayoutsCrud.remove}
+        <SeatLayoutsPage
+          data={seatLayoutsData}
+          categoryOptions={vehicleCategoriesData.map((v) => v.code)}
+          onAdd={seatLayoutsCrud.add}
+          onUpdate={seatLayoutsCrud.update}
+          onDelete={seatLayoutsCrud.remove}
         />
       )}
       {tab === "Holiday Calendar" && (
-        <CrudTable
-          title="Holiday calendar" addLabel="Add holiday" data={holidaysData} idKey="id"
-          columns={[{ key: "date", label: "Date", mono: true }, { key: "name", label: "Occasion" }, { key: "type", label: "Type" }]}
-          fields={[
-            { key: "date", label: "Date", type: "text" }, { key: "name", label: "Occasion", type: "text" },
-            { key: "type", label: "Type", type: "select", options: ["National", "Regional"] },
-          ]}
-          onAdd={(v) => holidaysCrud.add({ id: nextId("HOL"), ...v })} onUpdate={holidaysCrud.update} onDelete={holidaysCrud.remove}
+        <HolidayCalendarPage
+          data={holidaysData}
+          onAdd={(v) => holidaysCrud.add({ id: nextId("HOL"), ...v })}
+          onUpdate={holidaysCrud.update}
+          onDelete={holidaysCrud.remove}
         />
       )}
       {tab === "Notification Templates" && (
-        <CrudTable
-          title="Notification templates" addLabel="Add template" data={notificationTemplatesData} idKey="code"
-          columns={[{ key: "code", label: "Code", mono: true }, { key: "name", label: "Name" }, { key: "channel", label: "Channel" }]}
-          fields={[{ key: "code", label: "Code", type: "text" }, { key: "name", label: "Name", type: "text" }, { key: "channel", label: "Channel", type: "text" }]}
-          onAdd={notificationTemplatesCrud.add} onUpdate={notificationTemplatesCrud.update} onDelete={notificationTemplatesCrud.remove}
+        <NotificationTemplatesPage
+          data={notificationTemplatesData}
+          onAdd={notificationTemplatesCrud.add}
+          onUpdate={notificationTemplatesCrud.update}
+          onDelete={notificationTemplatesCrud.remove}
         />
       )}
       {tab === "Complaint Categories" && (
-        <CrudTable
-          title="Complaint categories" addLabel="Add category" data={complaintCategoriesData} idKey="code"
-          columns={[{ key: "code", label: "Code", mono: true }, { key: "name", label: "Category" }, { key: "sla", label: "SLA" }]}
-          fields={[{ key: "code", label: "Code", type: "text" }, { key: "name", label: "Category", type: "text" }, { key: "sla", label: "SLA", type: "text" }]}
-          onAdd={complaintCategoriesCrud.add} onUpdate={complaintCategoriesCrud.update} onDelete={complaintCategoriesCrud.remove}
+        <ComplaintCategoriesPage
+          data={complaintCategoriesData}
+          onAdd={complaintCategoriesCrud.add}
+          onUpdate={complaintCategoriesCrud.update}
+          onDelete={complaintCategoriesCrud.remove}
         />
       )}
       {tab === "Tax Configuration" && (
-        <CrudTable
-          title="Tax configuration" addLabel="Add tax" data={taxConfigData} idKey="code"
-          columns={[{ key: "code", label: "Code", mono: true }, { key: "name", label: "Name" }, { key: "rate", label: "Rate", align: "right" }]}
-          fields={[{ key: "code", label: "Code", type: "text" }, { key: "name", label: "Name", type: "text" }, { key: "rate", label: "Rate", type: "text" }]}
-          onAdd={taxConfigCrud.add} onUpdate={taxConfigCrud.update} onDelete={taxConfigCrud.remove}
+        <TaxConfigurationsPage
+          data={taxConfigData}
+          onAdd={taxConfigCrud.add}
+          onUpdate={taxConfigCrud.update}
+          onDelete={taxConfigCrud.remove}
         />
       )}
     </div>
@@ -2051,7 +1958,7 @@ const NAV = [
 ];
 
 const SECTION_MAP = {
-  overview: { comp: Overview, title: "Dashboard" },
+  overview: { comp: Dashboard, title: "Dashboard" },
   organization: { comp: Organization, title: "Organization" },
   masters: { comp: MasterData, title: "Master Data" },
   fleet: { comp: Fleet, title: "Fleet" },
