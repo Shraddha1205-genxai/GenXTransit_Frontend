@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState, useMemo, useReducer, createContext, useContext } from "react";
 import {
   LayoutDashboard, Building2, Bus, Milestone, Radar, Ticket, Armchair,
@@ -441,7 +442,7 @@ function StatusBadge({ status }) {
   );
 }
 
-function Card({ title, action, children, style }) {
+function Card({ title, action, children, style }: { title?: any; action?: any; children: React.ReactNode; style?: any }) {
   return (
     <div style={{ background: T.panel, border: `1px solid ${T.border}`, borderRadius: 6, overflow: "hidden", ...style }}>
       {title && (
@@ -457,14 +458,14 @@ function Card({ title, action, children, style }) {
   );
 }
 
-function Th({ children, align }) {
+function Th({ children, align }: { children: React.ReactNode; align?: any }) {
   return (
     <th style={{ textAlign: align || "left", fontSize: 11, fontWeight: 600, color: T.textFaint, textTransform: "uppercase", letterSpacing: "0.04em", padding: "8px 10px", borderBottom: `1px solid ${T.border}` }}>
       {children}
     </th>
   );
 }
-function Td({ children, align, mono, colSpan }) {
+function Td({ children, align, mono, colSpan }: { children: React.ReactNode; align?: any; mono?: any; colSpan?: any }) {
   return (
     <td colSpan={colSpan} className={mono ? "stc-mono" : ""} style={{ textAlign: align || "left", fontSize: 13, color: T.text, padding: "10px", borderBottom: `1px solid ${T.border}` }}>
       {children}
@@ -472,7 +473,7 @@ function Td({ children, align, mono, colSpan }) {
   );
 }
 
-function KpiCard({ label, value, sub, icon: Icon, tone }) {
+function KpiCard({ label, value, sub, icon: Icon, tone }: { label: any; value: any; sub?: any; icon?: any; tone?: any }) {
   const toneColor = tone === "amber" ? T.amberDeep : tone === "red" ? T.red : tone === "green" ? T.green : T.text;
   return (
     <div style={{ background: T.panel, border: `1px solid ${T.border}`, borderRadius: 6, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 6 }}>
@@ -708,7 +709,7 @@ function CrudTable({ title, addLabel, data, idKey, columns, fields, onAdd, onUpd
   );
 }
 
-function SectionHeader({ eyebrow, title, children }) {
+function SectionHeader({ eyebrow, title, children }: { eyebrow: any; title: any; children?: any }) {
   return (
     <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 18, flexWrap: "wrap", gap: 12 }}>
       <div>
@@ -1894,7 +1895,7 @@ const NAV = [
   },
 ];
 
-const SECTION_MAP = {
+const SECTION_MAP: Record<string, any> = {
   overview: { comp: Overview, title: "Dashboard" },
   organization: { comp: Organization, title: "Organization" },
   masters: { comp: MasterData, title: "Master Data" },

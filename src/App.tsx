@@ -1,84 +1,64 @@
-import React, { useState, useMemo, useReducer, createContext, useContext } from "react";
-import Dashboard from "./features/dashboard";
-import RegionPage from "./features/organization/region";
-import DivisionPage from "./features/organization/division";
-import WorkshopPage from "./features/organization/workshop";
-import RoutesPage from "./features/masterData/routes";
-import StopsPage from "./features/masterData/stops";
-import StagesPage from "./features/masterData/stages";
-import FleetManagementPage from "./features/fleet/vehicle";
-import TicketTypesPage from "./features/masterData/ticket-types";
-import PaymentModesPage from "./features/masterData/payment-modes";
-import NotificationTemplatesPage from "./features/masterData/notification-template";
-import VehicleCategoriesPage from "./features/masterData/vehicle-categories";
-import ZonesPage from "./features/masterData/zones";
-import FarePoliciesPage from "./features/masterData/fare-policies";
-import HolidayCalendarPage from "./features/masterData/holiday-calender";
-import SeatLayoutsPage from "./features/masterData/seat-layouts";
-import ComplaintCategoriesPage from "./features/masterData/complaint-categories";
-import TaxConfigurationsPage from "./features/masterData/tax-configurations";
-import ParkingYardPage from "./features/organization/parking-yard";
-import BusStationPage from "./features/organization/bus-station";
+import React, { useState, useMemo, useReducer, createContext, useContext, lazy, Suspense } from "react";
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate, useLocation } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "react-hot-toast";
 import {
   LayoutDashboard, Building2, Bus, Milestone, Radar, Ticket, Armchair,
   Smartphone, Wallet, MessageSquareWarning, BarChart3, ShieldCheck,
-  Search, Bell, ChevronDown, MapPin, Clock, AlertTriangle, CheckCircle2,
-  XCircle, Fuel, Wrench, IndianRupee, Battery, Wifi, WifiOff, Printer,
-  TrendingUp, Users2, ChevronRight, Circle, Database, UserCog, CalendarCheck,
-  HelpCircle, Landmark, MapPinned, Warehouse, ParkingSquare, CalendarDays,
-  Percent, FileText, Send, ClipboardList, UserCheck, LifeBuoy,
-  LineChart as LineChartIcon, Plus, ChevronsUpDown, Pencil, Trash2, X,
-  Mail, KeyRound, LogOut, ArrowRight, Eye, EyeOff,
+  Clock, AlertTriangle, Wrench, IndianRupee, Users2, UserCog, CalendarCheck, HelpCircle, UserCheck, Database,
+  LineChart as LineChartIcon
 } from "lucide-react";
-import {
-  ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, BarChart, Bar, PieChart, Pie, Cell,
-} from "recharts";
 
-/* ---------------------------------------------------------------------
-   DESIGN TOKENS
---------------------------------------------------------------------- */
-const T = {
-  ink: "#101B26",
-  ink2: "#182634",
-  inkBorder: "#26384A",
-  canvas: "#EFEEE6",
-  panel: "#FFFFFF",
-  border: "#DEDBCF",
-  text: "#16212B",
-  textSoft: "#5B6672",
-  textFaint: "#8B9098",
-  amber: "#E5A339",
-  amberDeep: "#8A5A14",
-  amberFill: "#FBEBD1",
-  green: "#2F8F5B",
-  greenFill: "#E1F3E9",
-  red: "#C6453B",
-  redFill: "#FBE7E5",
-  blue: "#3E7CB1",
-  blueFill: "#E5EFF6",
-  gray: "#8B9098",
-  grayFill: "#EEEDE7",
-};
+import { T, fontStack } from "./constants/theme";
+import { Sidebar, Header, SubTabs, SectionHeader, KpiCard } from "./components/common";
 
-const fontStack = `
-  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap');
-  .stc-display { font-family: 'Oswald', sans-serif; letter-spacing: 0.01em; }
-  .stc-body { font-family: 'IBM Plex Sans', sans-serif; }
-  .stc-mono { font-family: 'IBM Plex Mono', monospace; }
-  .stc-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
-  .stc-scroll::-webkit-scrollbar-thumb { background: #C9C6B9; border-radius: 4px; }
-  .stc-row:hover { background: #FAFAF6; }
-  .stc-navitem { position: relative; }
-  .stc-navitem.active::before {
-    content: ''; position: absolute; left: 0; top: 6px; bottom: 6px; width: 3px;
-    background: ${T.amber}; border-radius: 0;
-  }
-`;
+// Lazy-loaded Feature Pages
+const DashboardTab = lazy(() => import("./features/dashboard"));
+const Regions = lazy(() => import("./features/organization/organizationManagement/Regions"));
+const Divisions = lazy(() => import("./features/organization/organizationManagement/Divisions"));
+const Depots = lazy(() => import("./features/organization/organizationManagement/Depots"));
+const BusStation = lazy(() => import("./features/organization/organizationManagement/BusStation"));
+const Workshops = lazy(() => import("./features/organization/organizationManagement/Workshops"));
+const ParkingYards = lazy(() => import("./features/organization/organizationManagement/ParkingYards"));
+
+const RouteMaster = lazy(() => import("./features/organization/masters/Route"));
+const Stop = lazy(() => import("./features/organization/masters/Stop"));
+const Stages = lazy(() => import("./features/organization/masters/Stages"));
+const Zones = lazy(() => import("./features/organization/masters/zones"));
+const FarePolicies = lazy(() => import("./features/organization/masters/FarePolicies"));
+const TicketTypes = lazy(() => import("./features/organization/masters/TicketTypes"));
+const PaymentModes = lazy(() => import("./features/organization/masters/PaymentModes"));
+const VehicleCategories = lazy(() => import("./features/organization/masters/VehicleCategories"));
+const SeatLayouts = lazy(() => import("./features/organization/masters/SeatLayouts"));
+const HolidayCalendar = lazy(() => import("./features/organization/masters/HolidayCalendar"));
+const NotificationTemplates = lazy(() => import("./features/organization/masters/NotificationTemplates"));
+const ComplaintCategories = lazy(() => import("./features/organization/masters/ComplaintCategories"));
+const TaxConfiguration = lazy(() => import("./features/organization/masters/TaxConfiguration"));
+
+const VehicleRegister = lazy(() => import("./features/Operations/fleet/VehicleRegister"));
+const Roster = lazy(() => import("./features/Operations/employees/Roster"));
+const Attendance = lazy(() => import("./features/Operations/employees/Attendance"));
+const RoutesAndSchedule = lazy(() => import("./features/Operations/routesAndSchedule/RoutesAndSchedule"));
+const LiveTracking = lazy(() => import("./features/Operations/liveTracking/LiveTracking"));
+
+const FareManagement = lazy(() => import("./features/Commercial/fareManagement/FareManagement"));
+const Ticketing = lazy(() => import("./features/Commercial/ticketing/Ticketing"));
+const Reservations = lazy(() => import("./features/Commercial/reservations/Reservations"));
+const Passes = lazy(() => import("./features/Commercial/passes/Passes"));
+
+const EtmDevices = lazy(() => import("./features/Systems/etmDevices/EtmDevices"));
+const FinanceWallet = lazy(() => import("./features/Systems/financeWallet/FinanceWallet"));
+
+const ComplaintsAlerts = lazy(() => import("./features/Support/complaintsAlerts/ComplaintsAlerts"));
+const Reports = lazy(() => import("./features/Support/reports/Reports"));
+const Analytics = lazy(() => import("./features/Support/analytics/Analytics"));
+const UsersRoles = lazy(() => import("./features/Support/usersRoles/UsersRoles"));
+const Help = lazy(() => import("./features/Support/help/Help"));
+
+const AdminAuthScreen = lazy(() => import("./features/auth/AdminAuthScreen"));
 
 /* ---------------------------------------------------------------------
    MOCK DATA — Maharashtra: MSRTC (State Transport / ST) + BEST & PMPML
-   (City Local services for Mumbai and Pune). Shaped to mirror the DB schema.
 --------------------------------------------------------------------- */
 const depots = [
   { code: "MSRTC-PUN-01", name: "Pune (Swargate) ST Depot", corp: "MSRTC", service: "ST", zone: "Pune Division", fleet: 96, onRoad: 74, tripsToday: 268, revenueToday: 612400 },
@@ -219,10 +199,6 @@ const users = [
   { name: "Route Planner – PMPML Pune", role: "Route/Traffic Manager", depot: "PMPML-PUN-02", status: "Suspended" },
 ];
 
-/* ---------------------------------------------------------------------
-   MOCK DATA — Organization hierarchy, Master data, Employees,
-   Reservations, Analytics, Help (BRD modules)
---------------------------------------------------------------------- */
 const regions = [
   { code: "REG-PUN", name: "Pune Region", divisions: 3, depots: 18, fleet: 612 },
   { code: "REG-MUM", name: "Mumbai Region", divisions: 2, depots: 11, fleet: 348 },
@@ -263,6 +239,7 @@ const stops = [
 
 const stages = [
   { code: "STG-01", route: "MSRTC-7714", name: "Pune – Chakan", km: 22 },
+  { date: "15 Aug 2026", name: "Independence Day", type: "National" },
   { code: "STG-02", route: "MSRTC-7714", name: "Chakan – Sangamner", km: 88 },
   { code: "STG-03", route: "BEST-A-1", name: "Colaba – Worli", km: 8 },
 ];
@@ -372,12 +349,7 @@ const faqs = [
 
 /* ---------------------------------------------------------------------
    SHARED DATA STORE — enables Add / Update / Delete across screens.
-   Every collection referenced below lives in one place so an edit made
-   in, say, Fleet is reflected wherever vehicles are shown elsewhere.
 --------------------------------------------------------------------- */
-let __seq = 1000;
-const nextId = (prefix) => `${prefix}-${__seq++}`;
-
 const initialData = {
   regions, divisions, depots, busStations, workshops, parkingYards,
   routes, stops, stages, zones, farePolicies, ticketTypes, paymentModes,
@@ -388,32 +360,33 @@ const initialData = {
   passes, concessions: concessions.map((c, i) => ({ id: `CON-${i + 1}`, ...c })),
   etmDevices, collections: collections.map((c, i) => ({ id: `COL-${i + 1}`, ...c })), walletTxns,
   complaints, users: users.map((u, i) => ({ id: `USR-${i + 1}`, ...u })),
+  attendanceSummary,
 };
 
-function dataReducer(state, action) {
+function dataReducer(state: any, action: any) {
   switch (action.type) {
     case "add":
       return { ...state, [action.col]: [...state[action.col], action.item] };
     case "update":
       return {
         ...state,
-        [action.col]: state[action.col].map((r) => (r[action.idKey] === action.matchId ? action.item : r)),
+        [action.col]: state[action.col].map((r: any) => (r[action.idKey] === action.matchId ? action.item : r)),
       };
     case "remove":
-      return { ...state, [action.col]: state[action.col].filter((r) => r[action.idKey] !== action.id) };
+      return { ...state, [action.col]: state[action.col].filter((r: any) => r[action.idKey] !== action.id) };
     default:
       return state;
   }
 }
 
-const DataContext = createContext(null);
+const DataContext = createContext<any>(null);
 
-function DataProvider({ children }) {
+function DataProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(dataReducer, initialData);
   return <DataContext.Provider value={{ state, dispatch }}>{children}</DataContext.Provider>;
 }
 
-function useCrud(col, idKey) {
+function useCrud(col: string, idKey: string): [any[], { add: (item: any) => void, update: (matchId: any, item: any) => void, remove: (id: any) => void }] {
   const { state, dispatch } = useContext(DataContext);
   const data = state[col];
   return [
@@ -427,590 +400,204 @@ function useCrud(col, idKey) {
 }
 
 /* ---------------------------------------------------------------------
-   SMALL UI PRIMITIVES
+   TAB LAYOUT WRAPPERS (linked to nested Router URLs)
 --------------------------------------------------------------------- */
-function RouteChip({ children }) {
+
+function DashboardTabWrapper() {
+  const [tripsData] = useCrud("trips", "id");
   return (
-    <span
-      className="stc-mono"
-      style={{
-        display: "inline-flex", alignItems: "center", padding: "3px 8px",
-        background: T.amberFill, color: T.amberDeep, fontSize: 12, fontWeight: 600,
-        borderRadius: 3, whiteSpace: "nowrap",
-      }}
-    >
-      {children}
-    </span>
+    <DashboardTab
+      revenueTrend={revenueTrend}
+      fleetStatus={fleetStatus}
+      trips={tripsData}
+      depotRevenue={depotRevenue}
+    />
   );
 }
 
-function StatusBadge({ status }) {
-  const map = {
-    "On time": [T.greenFill, T.green], "Active": [T.greenFill, T.green], "Confirmed": [T.greenFill, T.green],
-    "Published": [T.greenFill, T.green], "Resolved": [T.greenFill, T.green],
-    "Delayed": [T.amberFill, T.amberDeep], "Ongoing": [T.blueFill, T.blue], "Simulated": [T.blueFill, T.blue],
-    "Pending verification": [T.amberFill, T.amberDeep], "In progress": [T.amberFill, T.amberDeep], "Open": [T.amberFill, T.amberDeep],
-    "Cancelled": [T.redFill, T.red], "Breakdown": [T.redFill, T.red], "Voided": [T.redFill, T.red],
-    "Expired": [T.redFill, T.red], "Escalated": [T.redFill, T.red], "Suspended": [T.redFill, T.red],
-    "Under maintenance": [T.amberFill, T.amberDeep],
+function OrganizationLayout() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const tabMap: Record<string, string> = {
+    "/Organization/organizationManagement/Regions": "Regions",
+    "/Organization/organizationManagement/Divisions": "Divisions",
+    "/Organization/organizationManagement/Depots": "Depots",
+    "/Organization/organizationManagement/BusStation": "Bus Stations",
+    "/Organization/organizationManagement/Workshops": "Workshops",
+    "/Organization/organizationManagement/ParkingYards": "Parking Yards",
   };
-  const [bg, fg] = map[status] || [T.grayFill, T.gray];
-  return (
-    <span style={{ background: bg, color: fg, fontSize: 12, fontWeight: 600, padding: "3px 9px", borderRadius: 3, whiteSpace: "nowrap" }}>
-      {status}
-    </span>
-  );
-}
 
-function Card({ title, action, children, style }) {
-  return (
-    <div style={{ background: T.panel, border: `1px solid ${T.border}`, borderRadius: 6, overflow: "hidden", ...style }}>
-      {title && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: `1px solid ${T.border}` }}>
-          <h3 className="stc-display" style={{ fontSize: 15, fontWeight: 600, color: T.text, margin: 0, textTransform: "uppercase", letterSpacing: "0.03em" }}>
-            {title}
-          </h3>
-          {action}
-        </div>
-      )}
-      <div style={{ padding: 16 }}>{children}</div>
-    </div>
-  );
-}
+  const activeTab = tabMap[location.pathname] || "Depots";
 
-function Th({ children, align }) {
-  return (
-    <th style={{ textAlign: align || "left", fontSize: 11, fontWeight: 600, color: T.textFaint, textTransform: "uppercase", letterSpacing: "0.04em", padding: "8px 10px", borderBottom: `1px solid ${T.border}` }}>
-      {children}
-    </th>
-  );
-}
-function Td({ children, align, mono, colSpan }) {
-  return (
-    <td colSpan={colSpan} className={mono ? "stc-mono" : ""} style={{ textAlign: align || "left", fontSize: 13, color: T.text, padding: "10px", borderBottom: `1px solid ${T.border}` }}>
-      {children}
-    </td>
-  );
-}
-
-function KpiCard({ label, value, sub, icon: Icon, tone }) {
-  const toneColor = tone === "amber" ? T.amberDeep : tone === "red" ? T.red : tone === "green" ? T.green : T.text;
-  return (
-    <div style={{ background: T.panel, border: `1px solid ${T.border}`, borderRadius: 6, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 6 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: 12, color: T.textSoft, fontWeight: 500 }}>{label}</span>
-        <Icon size={16} color={T.textFaint} />
-      </div>
-      <span className="stc-display" style={{ fontSize: 28, fontWeight: 600, color: toneColor }}>{value}</span>
-      {sub && <span style={{ fontSize: 12, color: T.textSoft }}>{sub}</span>}
-    </div>
-  );
-}
-
-function SubTabs({ tabs, active, onChange }) {
-  return (
-    <div style={{ display: "flex", gap: 2, marginBottom: 16, borderBottom: `1px solid ${T.border}`, flexWrap: "wrap" }}>
-      {tabs.map((t) => (
-        <button
-          key={t}
-          onClick={() => onChange(t)}
-          style={{
-            padding: "9px 14px", border: "none", background: "none", cursor: "pointer",
-            fontSize: 13, fontWeight: 600, whiteSpace: "nowrap",
-            color: active === t ? T.amberDeep : T.textSoft,
-            borderBottom: active === t ? `2px solid ${T.amber}` : "2px solid transparent",
-            marginBottom: -1,
-          }}
-        >
-          {t}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function EmptyState({ icon: Icon, text }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, padding: "36px 0", color: T.textFaint }}>
-      <Icon size={22} />
-      <span style={{ fontSize: 12 }}>{text}</span>
-    </div>
-  );
-}
-
-function Modal({ title, onClose, children, width }) {
-  return (
-    <div
-      style={{ position: "fixed", inset: 0, background: "rgba(16,27,38,0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}
-      onClick={onClose}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{ background: T.panel, borderRadius: 8, width: width || 460, maxWidth: "100%", maxHeight: "85vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(16,27,38,0.35)" }}
-      >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: `1px solid ${T.border}`, position: "sticky", top: 0, background: T.panel }}>
-          <h3 className="stc-display" style={{ margin: 0, fontSize: 15, fontWeight: 600, color: T.text, textTransform: "uppercase", letterSpacing: "0.03em" }}>{title}</h3>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}><X size={17} color={T.textSoft} /></button>
-        </div>
-        <div style={{ padding: 18 }}>{children}</div>
-      </div>
-    </div>
-  );
-}
-
-function FormField({ field, value, onChange, disabled }) {
-  const common = {
-    disabled,
-    style: {
-      width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13,
-      fontFamily: "inherit", color: disabled ? T.textFaint : T.text, background: disabled ? T.canvas : T.panel, boxSizing: "border-box",
-    },
+  const handleTabChange = (tabName: string) => {
+    const routeMap: Record<string, string> = {
+      "Regions": "/Organization/organizationManagement/Regions",
+      "Divisions": "/Organization/organizationManagement/Divisions",
+      "Depots": "/Organization/organizationManagement/Depots",
+      "Bus Stations": "/Organization/organizationManagement/BusStation",
+      "Workshops": "/Organization/organizationManagement/Workshops",
+      "Parking Yards": "/Organization/organizationManagement/ParkingYards",
+    };
+    navigate(routeMap[tabName]);
   };
-  return (
-    <div style={{ marginBottom: 12 }}>
-      <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", letterSpacing: "0.03em", marginBottom: 5 }}>
-        {field.label}
-      </label>
-      {field.type === "select" ? (
-        <select {...common} value={value ?? ""} onChange={(e) => onChange(e.target.value)}>
-          {field.options.map((o) => <option key={o} value={o}>{o}</option>)}
-        </select>
-      ) : (
-        <input
-          {...common}
-          type={field.type === "number" ? "number" : "text"}
-          value={value ?? ""}
-          onChange={(e) => onChange(field.type === "number" ? Number(e.target.value) : e.target.value)}
-        />
-      )}
-    </div>
-  );
-}
-
-function RecordModal({ title, fields, initial, idKey, mode, onSave, onClose }) {
-  const [values, setValues] = useState(() => {
-    const v = { ...initial };
-    fields.forEach((f) => {
-      if (v[f.key] === undefined) v[f.key] = f.type === "number" ? 0 : (f.options ? f.options[0] : "");
-    });
-    return v;
-  });
-  return (
-    <Modal title={title} onClose={onClose}>
-      {fields.map((f) => (
-        <FormField
-          key={f.key}
-          field={f}
-          value={values[f.key]}
-          disabled={mode === "edit" && f.key === idKey}
-          onChange={(v) => setValues((s) => ({ ...s, [f.key]: v }))}
-        />
-      ))}
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 6 }}>
-        <button onClick={onClose} style={{ padding: "8px 14px", borderRadius: 4, border: `1px solid ${T.border}`, background: T.panel, color: T.textSoft, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-          Cancel
-        </button>
-        <button onClick={() => onSave(values)} style={{ padding: "8px 14px", borderRadius: 4, border: "none", background: T.ink, color: "#F4F0E4", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-          Save
-        </button>
-      </div>
-    </Modal>
-  );
-}
-
-function ConfirmModal({ title, message, onConfirm, onClose }) {
-  return (
-    <Modal title={title} onClose={onClose} width={380}>
-      <p style={{ fontSize: 13, color: T.textSoft, lineHeight: 1.5, margin: "0 0 18px" }}>{message}</p>
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-        <button onClick={onClose} style={{ padding: "8px 14px", borderRadius: 4, border: `1px solid ${T.border}`, background: T.panel, color: T.textSoft, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-          Cancel
-        </button>
-        <button onClick={onConfirm} style={{ padding: "8px 14px", borderRadius: 4, border: "none", background: T.red, color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-          Delete
-        </button>
-      </div>
-    </Modal>
-  );
-}
-
-/**
- * Generic Add / Edit / Delete table.
- * columns: [{ key, label, align, mono, chip, badge, currency, render(record) }]
- * fields:  form schema used for both Add and Edit — [{ key, label, type: 'text'|'number'|'select', options }]
- */
-function CrudTable({ title, addLabel, data, idKey, columns, fields, onAdd, onUpdate, onDelete, empty, footer }) {
-  const [modal, setModal] = useState(null);
-  const [toDelete, setToDelete] = useState(null);
-  return (
-    <Card
-      title={title}
-      action={
-        <button
-          onClick={() => setModal({ mode: "add" })}
-          style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: T.amberDeep, background: "none", border: "none", cursor: "pointer" }}
-        >
-          <Plus size={13} /> {addLabel || "Add"}
-        </button>
-      }
-    >
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr>
-            {columns.map((c) => <Th key={c.key} align={c.align}>{c.label}</Th>)}
-            <Th align="right">Actions</Th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((r) => (
-            <tr key={r[idKey]} className="stc-row">
-              {columns.map((c) => (
-                <Td key={c.key} align={c.align} mono={c.mono}>
-                  {c.render
-                    ? c.render(r)
-                    : c.badge
-                    ? <StatusBadge status={r[c.key]} />
-                    : c.chip
-                    ? <RouteChip>{r[c.key]}</RouteChip>
-                    : c.currency
-                    ? `₹${Number(r[c.key]).toLocaleString("en-IN")}`
-                    : r[c.key]}
-                </Td>
-              ))}
-              <Td align="right">
-                <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                  <button onClick={() => setModal({ mode: "edit", record: r })} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                    <Pencil size={14} color={T.textSoft} />
-                  </button>
-                  <button onClick={() => setToDelete(r)} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                    <Trash2 size={14} color={T.red} />
-                  </button>
-                </div>
-              </Td>
-            </tr>
-          ))}
-          {data.length === 0 && (
-            <tr><Td colSpan={columns.length + 1}>{empty || "No records yet — use Add to create one."}</Td></tr>
-          )}
-        </tbody>
-      </table>
-      {footer}
-      {modal?.mode === "add" && (
-        <RecordModal
-          title={`Add — ${title}`}
-          fields={fields}
-          initial={{}}
-          idKey={idKey}
-          mode="add"
-          onClose={() => setModal(null)}
-          onSave={(v) => { onAdd(v); setModal(null); }}
-        />
-      )}
-      {modal?.mode === "edit" && (
-        <RecordModal
-          title={`Edit — ${title}`}
-          fields={fields}
-          initial={modal.record}
-          idKey={idKey}
-          mode="edit"
-          onClose={() => setModal(null)}
-          onSave={(v) => { onUpdate(modal.record[idKey], v); setModal(null); }}
-        />
-      )}
-      {toDelete && (
-        <ConfirmModal
-          title={`Delete — ${title}`}
-          message={`This will permanently remove ${toDelete[idKey]} from the list. This can't be undone.`}
-          onClose={() => setToDelete(null)}
-          onConfirm={() => { onDelete(toDelete[idKey]); setToDelete(null); }}
-        />
-      )}
-    </Card>
-  );
-}
-
-function SectionHeader({ eyebrow, title, children }) {
-  return (
-    <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 18, flexWrap: "wrap", gap: 12 }}>
-      <div>
-        <div style={{ fontSize: 11, fontWeight: 600, color: T.amberDeep, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{eyebrow}</div>
-        <h2 className="stc-display" style={{ fontSize: 24, fontWeight: 600, color: T.text, margin: 0 }}>{title}</h2>
-      </div>
-      {children}
-    </div>
-  );
-}
-
-/* ---------------------------------------------------------------------
-   SECTIONS
---------------------------------------------------------------------- */
-function Overview() {
-  return (
-    <div>
-      <SectionHeader eyebrow="Network-wide" title="Operations overview" />
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: 12, marginBottom: 12 }}>
-        <KpiCard label="Total buses" value="258" sub="220 on road today" icon={Bus} />
-        <KpiCard label="Active trips" value="718" sub="612 completed" icon={Milestone} />
-        <KpiCard label="Tickets issued today" value="9,842" icon={Ticket} />
-        <KpiCard label="Revenue today" value="₹15.2L" sub="+8% vs last Mon" icon={IndianRupee} tone="green" />
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: 12, marginBottom: 20 }}>
-        <KpiCard label="Online bookings" value="3,051" sub="31% of tickets today" icon={Smartphone} />
-        <KpiCard label="ETM devices online" value="3 / 4" sub="1 offline" icon={Wifi} tone="amber" />
-        <KpiCard label="Driver attendance" value="601 / 640" sub="94% present" icon={UserCheck} tone="green" />
-        <KpiCard label="Occupancy" value="80%" sub="Avg. across live trips" icon={Percent} />
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: 12, marginBottom: 20 }}>
-        <KpiCard label="Pending maintenance" value="24" icon={Wrench} tone="amber" />
-        <KpiCard label="Complaints raised" value="4" sub="1 overdue SLA" icon={MessageSquareWarning} tone="red" />
-        <KpiCard label="Refund requests" value="9" sub="₹6,240 pending" icon={XCircle} tone="amber" />
-        <KpiCard label="Active alerts" value="6" sub="2 breakdowns, 4 delays" icon={AlertTriangle} tone="amber" />
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 12, marginBottom: 12 }}>
-        <Card title="Revenue trend · last 7 days">
-          <div style={{ height: 220 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={revenueTrend} margin={{ top: 6, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid stroke={T.border} vertical={false} />
-                <XAxis dataKey="day" tick={{ fontSize: 12, fill: T.textSoft }} axisLine={{ stroke: T.border }} tickLine={false} />
-                <YAxis tick={{ fontSize: 12, fill: T.textSoft }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v}K`} />
-                <Tooltip formatter={(v) => [`₹${v}K`, "Revenue"]} contentStyle={{ fontSize: 12, borderRadius: 6, border: `1px solid ${T.border}` }} />
-                <Line type="monotone" dataKey="revenue" stroke={T.amber} strokeWidth={2.5} dot={{ r: 3, fill: T.amber }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-        <Card title="Fleet status">
-          <div style={{ height: 180, display: "flex", alignItems: "center" }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={fleetStatus} dataKey="value" innerRadius={44} outerRadius={68} paddingAngle={2}>
-                  {fleetStatus.map((f, i) => <Cell key={i} fill={f.color} />)}
-                </Pie>
-                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 6, border: `1px solid ${T.border}` }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 4 }}>
-            {fleetStatus.map((f) => (
-              <div key={f.name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12 }}>
-                <span style={{ display: "flex", alignItems: "center", gap: 6, color: T.textSoft }}>
-                  <Circle size={8} fill={f.color} color={f.color} /> {f.name}
-                </span>
-                <span style={{ fontWeight: 600, color: T.text }}>{f.value}</span>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <Card title="Live delay alerts">
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <tbody>
-              {trips.filter((t) => t.status !== "On time").map((t) => (
-                <tr key={t.id} className="stc-row">
-                  <Td mono><RouteChip>{t.id}</RouteChip></Td>
-                  <Td mono>{t.route}</Td>
-                  <Td><StatusBadge status={t.status} /></Td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
-        <Card title="Depot-wise revenue today (₹ '000)">
-          <div style={{ height: 160 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={depotRevenue} margin={{ top: 6, right: 6, left: -20, bottom: 0 }}>
-                <CartesianGrid stroke={T.border} vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: T.textSoft }} axisLine={{ stroke: T.border }} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: T.textSoft }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 6, border: `1px solid ${T.border}` }} />
-                <Bar dataKey="revenue" fill={T.blue} radius={[3, 3, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
-function Organization() {
-  const [tab, setTab] = useState("Depots");
-  const [regionsData, regionsCrud] = useCrud("regions", "code");
-  const [divisionsData, divisionsCrud] = useCrud("divisions", "code");
-  const [depotsData] = useCrud("depots", "code");
-  const [busStationsData, busStationsCrud] = useCrud("busStations", "code");
-  const [workshopsData, workshopsCrud] = useCrud("workshops", "code");
-  const [parkingYardsData, parkingYardsCrud] = useCrud("parkingYards", "code");
 
   return (
     <div>
       <SectionHeader eyebrow="TBL_MAST_ORG_UNIT · TBL_MAST_DEPOT" title="Organization management" />
-      <SubTabs tabs={["Regions", "Divisions", "Depots", "Bus Stations", "Workshops", "Parking Yards"]} active={tab} onChange={setTab} />
-
-      {tab === "Regions" && (
-        <RegionPage
-          data={regionsData}
-          onAdd={regionsCrud.add}
-          onUpdate={regionsCrud.update}
-          onDelete={regionsCrud.remove}
-        />
-      )}
-      {tab === "Divisions" && (
-        <DivisionPage
-          data={divisionsData}
-          regionOptions={regionsData.map((r) => r.code)}
-          onAdd={divisionsCrud.add}
-          onUpdate={divisionsCrud.update}
-          onDelete={divisionsCrud.remove}
-        />
-      )}
-      {tab === "Bus Stations" && (
-        <BusStationPage
-          data={busStationsData}
-          depotOptions={depotsData.map((d) => d.code)}
-          onAdd={busStationsCrud.add}
-          onUpdate={busStationsCrud.update}
-          onDelete={busStationsCrud.remove}
-        />
-      )}
-      {tab === "Workshops" && (
-        <WorkshopPage
-          data={workshopsData}
-          depotOptions={depotsData.map((d) => d.code)}
-          onAdd={workshopsCrud.add}
-          onUpdate={workshopsCrud.update}
-          onDelete={workshopsCrud.remove}
-        />
-      )}
-      {tab === "Parking Yards" && (
-        <ParkingYardPage
-          data={parkingYardsData}
-          depotOptions={depotsData.map((d) => d.code)}
-          onAdd={parkingYardsCrud.add}
-          onUpdate={parkingYardsCrud.update}
-          onDelete={parkingYardsCrud.remove}
-        />
-      )}
-      {tab === "Depots" && <DepotsTab />}
+      <SubTabs tabs={["Regions", "Divisions", "Depots", "Bus Stations", "Workshops", "Parking Yards"]} active={activeTab} onChange={handleTabChange} />
+      <Outlet />
     </div>
   );
 }
 
-function DepotsTab() {
-  const [depotsData, depotsCrud] = useCrud("depots", "code");
-  const [vehiclesData] = useCrud("vehicles", "reg");
-  const [sel, setSel] = useState(depotsData[0]);
-  const selected = depotsData.find((d) => d.code === sel?.code) || depotsData[0];
-  const [modal, setModal] = useState(null);
-  const [toDelete, setToDelete] = useState(null);
+function MasterDataLayout() {
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const depotFields = [
-    { key: "code", label: "Depot code", type: "text" },
-    { key: "name", label: "Name", type: "text" },
-    { key: "corp", label: "Corporation", type: "select", options: ["MSRTC", "BEST", "PMPML"] },
-    { key: "service", label: "Service", type: "select", options: ["ST", "Local"] },
-    { key: "zone", label: "Zone", type: "text" },
-    { key: "fleet", label: "Fleet strength", type: "number" },
-    { key: "onRoad", label: "On road", type: "number" },
-    { key: "tripsToday", label: "Trips today", type: "number" },
-    { key: "revenueToday", label: "Revenue today (₹)", type: "number" },
-  ];
+  const tabMap: Record<string, string> = {
+    "/Organization/masters/Route": "Routes",
+    "/Organization/masters/Stop": "Stops",
+    "/Organization/masters/Stages": "Stages",
+    "/Organization/masters/zones": "Zones",
+    "/Organization/masters/FarePolicies": "Fare Policies",
+    "/Organization/masters/TicketTypes": "Ticket Types",
+    "/Organization/masters/PaymentModes": "Payment Modes",
+    "/Organization/masters/VehicleCategories": "Vehicle Categories",
+    "/Organization/masters/SeatLayouts": "Seat Layouts",
+    "/Organization/masters/HolidayCalendar": "Holiday Calendar",
+    "/Organization/masters/NotificationTemplates": "Notification Templates",
+    "/Organization/masters/ComplaintCategories": "Complaint Categories",
+    "/Organization/masters/TaxConfiguration": "Tax Configuration",
+  };
+
+  const activeTab = tabMap[location.pathname] || "Routes";
+
+  const handleTabChange = (tabName: string) => {
+    const routeMap: Record<string, string> = {
+      "Routes": "/Organization/masters/Route",
+      "Stops": "/Organization/masters/Stop",
+      "Stages": "/Organization/masters/Stages",
+      "Zones": "/Organization/masters/zones",
+      "Fare Policies": "/Organization/masters/FarePolicies",
+      "Ticket Types": "/Organization/masters/TicketTypes",
+      "Payment Modes": "/Organization/masters/PaymentModes",
+      "Vehicle Categories": "/Organization/masters/VehicleCategories",
+      "Seat Layouts": "/Organization/masters/SeatLayouts",
+      "Holiday Calendar": "/Organization/masters/HolidayCalendar",
+      "Notification Templates": "/Organization/masters/NotificationTemplates",
+      "Complaint Categories": "/Organization/masters/ComplaintCategories",
+      "Tax Configuration": "/Organization/masters/TaxConfiguration",
+    };
+    navigate(routeMap[tabName]);
+  };
 
   return (
     <div>
-      <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 12 }}>
-        <Card
-          title="Depots"
-          action={
-            <button onClick={() => setModal({ mode: "add" })} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: T.amberDeep, background: "none", border: "none", cursor: "pointer" }}>
-              <Plus size={13} /> Add depot
-            </button>
-          }
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {depotsData.map((d) => (
-              <div
-                key={d.code}
-                onClick={() => setSel(d)}
-                style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6,
-                  padding: "10px 12px", borderRadius: 4, cursor: "pointer",
-                  background: selected?.code === d.code ? T.amberFill : "transparent",
-                }}
-              >
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{d.name}</span>
-                    <span style={{ fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 3, background: d.service === "ST" ? T.blueFill : T.greenFill, color: d.service === "ST" ? T.blue : T.green }}>
-                      {d.corp} · {d.service}
-                    </span>
-                  </div>
-                  <div className="stc-mono" style={{ fontSize: 11, color: T.textSoft, marginTop: 2 }}>{d.code} · {d.zone}</div>
-                </div>
-                <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                  <button onClick={(e) => { e.stopPropagation(); setModal({ mode: "edit", record: d }); }} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                    <Pencil size={13} color={T.textSoft} />
-                  </button>
-                  <button onClick={(e) => { e.stopPropagation(); setToDelete(d); }} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                    <Trash2 size={13} color={T.red} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {selected && (
-            <>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: 12 }}>
-                <KpiCard label="Fleet strength" value={selected.fleet} icon={Bus} />
-                <KpiCard label="On road" value={selected.onRoad} sub={`${Math.round((selected.onRoad / selected.fleet) * 100)}% utilisation`} icon={TrendingUp} tone="green" />
-                <KpiCard label="Trips today" value={selected.tripsToday} icon={Milestone} />
-                <KpiCard label="Revenue today" value={`₹${(selected.revenueToday / 1000).toFixed(1)}K`} icon={IndianRupee} tone="green" />
-              </div>
-              <Card title={`Fleet at ${selected.code} · managed from Fleet`}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <thead><tr><Th>Registration</Th><Th>Category</Th><Th>Status</Th><Th>Next service / doc</Th></tr></thead>
-                  <tbody>
-                    {vehiclesData.filter((v) => v.depot === selected.code).map((v) => (
-                      <tr key={v.reg} className="stc-row">
-                        <Td mono><RouteChip>{v.reg}</RouteChip></Td>
-                        <Td>{v.category}</Td>
-                        <Td><StatusBadge status={v.status} /></Td>
-                        <Td>{v.nextService === "In progress" || v.nextService === "Awaiting spare" ? v.nextService : v.docExpiry}</Td>
-                      </tr>
-                    ))}
-                    {vehiclesData.filter((v) => v.depot === selected.code).length === 0 && (
-                      <tr><Td>No vehicles homed at this depot.</Td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </Card>
-            </>
-          )}
-        </div>
-      </div>
-      {modal?.mode === "add" && (
-        <RecordModal title="Add — Depot" fields={depotFields} initial={{}} idKey="code" mode="add" onClose={() => setModal(null)} onSave={(v) => { depotsCrud.add(v); setModal(null); setSel(v); }} />
-      )}
-      {modal?.mode === "edit" && (
-        <RecordModal title="Edit — Depot" fields={depotFields} initial={modal.record} idKey="code" mode="edit" onClose={() => setModal(null)} onSave={(v) => { depotsCrud.update(modal.record.code, v); setModal(null); setSel(v); }} />
-      )}
-      {toDelete && (
-        <ConfirmModal
-          title="Delete — Depot"
-          message={`This will permanently remove ${toDelete.code} from the list. This can't be undone.`}
-          onClose={() => setToDelete(null)}
-          onConfirm={() => { depotsCrud.remove(toDelete.code); if (selected?.code === toDelete.code) setSel(depotsData.find((d) => d.code !== toDelete.code)); setToDelete(null); }}
-        />
-      )}
+      <SectionHeader eyebrow="Reference data used across scheduling, ticketing & fares" title="Master data" />
+      <SubTabs
+        tabs={[
+          "Routes", "Stops", "Stages", "Zones", "Fare Policies", "Ticket Types", "Payment Modes",
+          "Vehicle Categories", "Seat Layouts", "Holiday Calendar", "Notification Templates",
+          "Complaint Categories", "Tax Configuration"
+        ]}
+        active={activeTab}
+        onChange={handleTabChange}
+      />
+      <Outlet />
     </div>
   );
 }
 
-function Fleet() {
+function RegionsTab() {
+  const [regionsData, regionsCrud] = useCrud("regions", "code");
+  return <Regions data={regionsData} onAdd={regionsCrud.add} onUpdate={regionsCrud.update} onDelete={regionsCrud.remove} />;
+}
+function DivisionsTab() {
+  const [regionsData] = useCrud("regions", "code");
+  const [divisionsData, divisionsCrud] = useCrud("divisions", "code");
+  return <Divisions data={divisionsData} regionOptions={regionsData.map((r) => r.code)} onAdd={divisionsCrud.add} onUpdate={divisionsCrud.update} onDelete={divisionsCrud.remove} />;
+}
+function DepotsTab() {
+  const [depotsData, depotsCrud] = useCrud("depots", "code");
+  const [vehiclesData] = useCrud("vehicles", "reg");
+  return <Depots depotsData={depotsData} vehiclesData={vehiclesData} onAddDepot={depotsCrud.add} onUpdateDepot={depotsCrud.update} onDeleteDepot={depotsCrud.remove} />;
+}
+function BusStationTab() {
+  const [depotsData] = useCrud("depots", "code");
+  const [busStationsData, busStationsCrud] = useCrud("busStations", "code");
+  return <BusStation data={busStationsData} depotOptions={depotsData.map((d) => d.code)} onAdd={busStationsCrud.add} onUpdate={busStationsCrud.update} onDelete={busStationsCrud.remove} />;
+}
+function WorkshopsTab() {
+  const [depotsData] = useCrud("depots", "code");
+  const [workshopsData, workshopsCrud] = useCrud("workshops", "code");
+  return <Workshops data={workshopsData} depotOptions={depotsData.map((d) => d.code)} onAdd={workshopsCrud.add} onUpdate={workshopsCrud.update} onDelete={workshopsCrud.remove} />;
+}
+function ParkingYardsTab() {
+  const [depotsData] = useCrud("depots", "code");
+  const [parkingYardsData, parkingYardsCrud] = useCrud("parkingYards", "code");
+  return <ParkingYards data={parkingYardsData} depotOptions={depotsData.map((d) => d.code)} onAdd={parkingYardsCrud.add} onUpdate={parkingYardsCrud.update} onDelete={parkingYardsCrud.remove} />;
+}
+
+function RouteTab() {
+  const [routesData, routesCrud] = useCrud("routes", "code");
+  return <RouteMaster data={routesData} onAdd={routesCrud.add} onUpdate={routesCrud.update} onDelete={routesCrud.remove} />;
+}
+function StopTab() {
+  const [routesData] = useCrud("routes", "code");
+  const [stopsData, stopsCrud] = useCrud("stops", "code");
+  return <Stop data={stopsData} routeOptions={routesData.map((r) => r.code)} onAdd={stopsCrud.add} onUpdate={stopsCrud.update} onDelete={stopsCrud.remove} />;
+}
+function StagesTab() {
+  const [routesData] = useCrud("routes", "code");
+  const [stagesData, stagesCrud] = useCrud("stages", "code");
+  return <Stages data={stagesData} routeOptions={routesData.map((r) => r.code)} onAdd={stagesCrud.add} onUpdate={stagesCrud.update} onDelete={stagesCrud.remove} />;
+}
+function ZonesTab() {
+  const [zonesData, zonesCrud] = useCrud("zones", "code");
+  return <Zones data={zonesData} onAdd={zonesCrud.add} onUpdate={zonesCrud.update} onDelete={zonesCrud.remove} />;
+}
+function FarePoliciesTab() {
+  const [routesData] = useCrud("routes", "code");
+  const [farePoliciesData, farePoliciesCrud] = useCrud("farePolicies", "code");
+  return <FarePolicies data={farePoliciesData} routeOptions={routesData.map((r) => r.code)} onAdd={farePoliciesCrud.add} onUpdate={farePoliciesCrud.update} onDelete={farePoliciesCrud.remove} />;
+}
+function TicketTypesTab() {
+  const [ticketTypesData, ticketTypesCrud] = useCrud("ticketTypes", "code");
+  return <TicketTypes data={ticketTypesData} onAdd={ticketTypesCrud.add} onUpdate={ticketTypesCrud.update} onDelete={ticketTypesCrud.remove} />;
+}
+function PaymentModesTab() {
+  const [paymentModesData, paymentModesCrud] = useCrud("paymentModes", "code");
+  return <PaymentModes data={paymentModesData} onAdd={paymentModesCrud.add} onUpdate={paymentModesCrud.update} onDelete={paymentModesCrud.remove} />;
+}
+function VehicleCategoriesTab() {
+  const [vehicleCategoriesData, vehicleCategoriesCrud] = useCrud("vehicleCategories", "code");
+  return <VehicleCategories data={vehicleCategoriesData} onAdd={vehicleCategoriesCrud.add} onUpdate={vehicleCategoriesCrud.update} onDelete={vehicleCategoriesCrud.remove} />;
+}
+function SeatLayoutsTab() {
+  const [vehicleCategoriesData] = useCrud("vehicleCategories", "code");
+  const [seatLayoutsData, seatLayoutsCrud] = useCrud("seatLayouts", "code");
+  return <SeatLayouts data={seatLayoutsData} categoryOptions={vehicleCategoriesData.map((c) => c.code)} onAdd={seatLayoutsCrud.add} onUpdate={seatLayoutsCrud.update} onDelete={seatLayoutsCrud.remove} />;
+}
+function HolidayCalendarTab() {
+  const [holidaysData, holidaysCrud] = useCrud("holidays", "id");
+  const [, dispatch] = useContext(DataContext);
+  return <HolidayCalendar data={holidaysData} onAdd={(v) => holidaysCrud.add({ id: `HOL-${Math.floor(Math.random() * 9000) + 1000}`, ...v })} onUpdate={holidaysCrud.update} onDelete={holidaysCrud.remove} />;
+}
+function NotificationTemplatesTab() {
+  const [notificationTemplatesData, notificationTemplatesCrud] = useCrud("notificationTemplates", "code");
+  return <NotificationTemplates data={notificationTemplatesData} onAdd={notificationTemplatesCrud.add} onUpdate={notificationTemplatesCrud.update} onDelete={notificationTemplatesCrud.remove} />;
+}
+function ComplaintCategoriesTab() {
+  const [complaintCategoriesData, complaintCategoriesCrud] = useCrud("complaintCategories", "code");
+  return <ComplaintCategories data={complaintCategoriesData} onAdd={complaintCategoriesCrud.add} onUpdate={complaintCategoriesCrud.update} onDelete={complaintCategoriesCrud.remove} />;
+}
+function TaxConfigurationTab() {
+  const [taxConfigData, taxConfigCrud] = useCrud("taxConfig", "code");
+  return <TaxConfiguration data={taxConfigData} onAdd={taxConfigCrud.add} onUpdate={taxConfigCrud.update} onDelete={taxConfigCrud.remove} />;
+}
+
+function FleetTab() {
   const [vehiclesData, vehiclesCrud] = useCrud("vehicles", "reg");
   const [depotsData] = useCrud("depots", "code");
   const underMaint = vehiclesData.filter((v) => v.status === "Under maintenance").length;
@@ -1024,7 +611,7 @@ function Fleet() {
         <KpiCard label="Breakdowns open" value={breakdowns} icon={AlertTriangle} tone="red" />
         <KpiCard label="Docs expiring ≤30d" value="17" icon={Clock} tone="amber" />
       </div>
-      <FleetManagementPage
+      <VehicleRegister
         data={vehiclesData}
         depotOptions={depotsData.map((d) => d.code)}
         onAdd={vehiclesCrud.add}
@@ -1035,143 +622,25 @@ function Fleet() {
   );
 }
 
-function MasterData() {
-  const [tab, setTab] = useState("Routes");
-  const TABS = ["Routes", "Stops", "Stages", "Zones", "Fare Policies", "Ticket Types", "Payment Modes", "Vehicle Categories", "Seat Layouts", "Holiday Calendar", "Notification Templates", "Complaint Categories", "Tax Configuration"];
+function EmployeesLayout() {
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const [routesData, routesCrud] = useCrud("routes", "code");
-  const [stopsData, stopsCrud] = useCrud("stops", "code");
-  const [stagesData, stagesCrud] = useCrud("stages", "code");
-  const [zonesData, zonesCrud] = useCrud("zones", "code");
-  const [farePoliciesData, farePoliciesCrud] = useCrud("farePolicies", "code");
-  const [ticketTypesData, ticketTypesCrud] = useCrud("ticketTypes", "code");
-  const [paymentModesData, paymentModesCrud] = useCrud("paymentModes", "code");
-  const [vehicleCategoriesData, vehicleCategoriesCrud] = useCrud("vehicleCategories", "code");
-  const [seatLayoutsData, seatLayoutsCrud] = useCrud("seatLayouts", "code");
-  const [holidaysData, holidaysCrud] = useCrud("holidays", "id");
-  const [notificationTemplatesData, notificationTemplatesCrud] = useCrud("notificationTemplates", "code");
-  const [complaintCategoriesData, complaintCategoriesCrud] = useCrud("complaintCategories", "code");
-  const [taxConfigData, taxConfigCrud] = useCrud("taxConfig", "code");
+  const tabMap: Record<string, string> = {
+    "/Operations/employees/Roster": "Roster",
+    "/Operations/employees/Attendance": "Attendance",
+  };
 
-  return (
-    <div>
-      <SectionHeader eyebrow="Reference data used across scheduling, ticketing & fares" title="Master data" />
-      <SubTabs tabs={TABS} active={tab} onChange={setTab} />
+  const activeTab = tabMap[location.pathname] || "Roster";
 
-      {tab === "Routes" && (
-        <RoutesPage
-          data={routesData}
-          onAdd={routesCrud.add}
-          onUpdate={routesCrud.update}
-          onDelete={routesCrud.remove}
-        />
-      )}
-      {tab === "Stops" && (
-        <StopsPage
-          data={stopsData}
-          routeOptions={routesData.map((r) => r.code)}
-          onAdd={stopsCrud.add}
-          onUpdate={stopsCrud.update}
-          onDelete={stopsCrud.remove}
-        />
-      )}
-      {tab === "Stages" && (
-        <StagesPage
-          data={stagesData}
-          routeOptions={routesData.map((r) => r.code)}
-          onAdd={stagesCrud.add}
-          onUpdate={stagesCrud.update}
-          onDelete={stagesCrud.remove}
-        />
-      )}
-      {tab === "Zones" && (
-        <ZonesPage
-          data={zonesData}
-          onAdd={zonesCrud.add}
-          onUpdate={zonesCrud.update}
-          onDelete={zonesCrud.remove}
-        />
-      )}
-      {tab === "Fare Policies" && (
-        <FarePoliciesPage
-          data={farePoliciesData}
-          routeOptions={routesData.map((r) => r.code)}
-          onAdd={farePoliciesCrud.add}
-          onUpdate={farePoliciesCrud.update}
-          onDelete={farePoliciesCrud.remove}
-        />
-      )}
-      {tab === "Ticket Types" && (
-        <TicketTypesPage
-          data={ticketTypesData}
-          onAdd={ticketTypesCrud.add}
-          onUpdate={ticketTypesCrud.update}
-          onDelete={ticketTypesCrud.remove}
-        />
-      )}
-      {tab === "Payment Modes" && (
-        <PaymentModesPage
-          data={paymentModesData}
-          onAdd={paymentModesCrud.add}
-          onUpdate={paymentModesCrud.update}
-          onDelete={paymentModesCrud.remove}
-        />
-      )}
-      {tab === "Vehicle Categories" && (
-        <VehicleCategoriesPage
-          data={vehicleCategoriesData}
-          onAdd={vehicleCategoriesCrud.add}
-          onUpdate={vehicleCategoriesCrud.update}
-          onDelete={vehicleCategoriesCrud.remove}
-        />
-      )}
-      {tab === "Seat Layouts" && (
-        <SeatLayoutsPage
-          data={seatLayoutsData}
-          categoryOptions={vehicleCategoriesData.map((v) => v.code)}
-          onAdd={seatLayoutsCrud.add}
-          onUpdate={seatLayoutsCrud.update}
-          onDelete={seatLayoutsCrud.remove}
-        />
-      )}
-      {tab === "Holiday Calendar" && (
-        <HolidayCalendarPage
-          data={holidaysData}
-          onAdd={(v) => holidaysCrud.add({ id: nextId("HOL"), ...v })}
-          onUpdate={holidaysCrud.update}
-          onDelete={holidaysCrud.remove}
-        />
-      )}
-      {tab === "Notification Templates" && (
-        <NotificationTemplatesPage
-          data={notificationTemplatesData}
-          onAdd={notificationTemplatesCrud.add}
-          onUpdate={notificationTemplatesCrud.update}
-          onDelete={notificationTemplatesCrud.remove}
-        />
-      )}
-      {tab === "Complaint Categories" && (
-        <ComplaintCategoriesPage
-          data={complaintCategoriesData}
-          onAdd={complaintCategoriesCrud.add}
-          onUpdate={complaintCategoriesCrud.update}
-          onDelete={complaintCategoriesCrud.remove}
-        />
-      )}
-      {tab === "Tax Configuration" && (
-        <TaxConfigurationsPage
-          data={taxConfigData}
-          onAdd={taxConfigCrud.add}
-          onUpdate={taxConfigCrud.update}
-          onDelete={taxConfigCrud.remove}
-        />
-      )}
-    </div>
-  );
-}
+  const handleTabChange = (tabName: string) => {
+    const routeMap: Record<string, string> = {
+      "Roster": "/Operations/employees/Roster",
+      "Attendance": "/Operations/employees/Attendance",
+    };
+    navigate(routeMap[tabName]);
+  };
 
-function Employees() {
-  const [tab, setTab] = useState("Roster");
   return (
     <div>
       <SectionHeader eyebrow="TBL_MAST_EMPLOYEE · TBL_TRANS_ATTENDANCE · TBL_TRANS_DUTY_ROSTER" title="Employee management" />
@@ -1181,1032 +650,251 @@ function Employees() {
         <KpiCard label="On leave" value="34" icon={Clock} tone="amber" />
         <KpiCard label="Absent today" value="12" icon={AlertTriangle} tone="red" />
       </div>
-      <SubTabs tabs={["Roster", "Attendance"]} active={tab} onChange={setTab} />
-      {tab === "Roster" && (
-        <Card title="Employee roster">
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead><tr><Th>ID</Th><Th>Name</Th><Th>Role</Th><Th>Depot</Th><Th>Shift</Th><Th>Status</Th></tr></thead>
-            <tbody>
-              {employees.map((e) => (
-                <tr key={e.id} className="stc-row">
-                  <Td mono>{e.id}</Td><Td>{e.name}</Td><Td>{e.role}</Td><Td mono>{e.depot}</Td><Td>{e.shift}</Td>
-                  <Td><StatusBadge status={e.status === "On duty" ? "Active" : e.status === "On leave" ? "Pending verification" : "Cancelled"} /></Td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
-      )}
-      {tab === "Attendance" && (
-        <Card title="Attendance — last 7 days (network-wide)">
-          <div style={{ height: 220 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={attendanceSummary} margin={{ top: 6, right: 6, left: -20, bottom: 0 }}>
-                <CartesianGrid stroke={T.border} vertical={false} />
-                <XAxis dataKey="day" tick={{ fontSize: 12, fill: T.textSoft }} axisLine={{ stroke: T.border }} tickLine={false} />
-                <YAxis tick={{ fontSize: 12, fill: T.textSoft }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 6, border: `1px solid ${T.border}` }} />
-                <Bar dataKey="present" fill={T.blue} radius={[3, 3, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-      )}
+      <SubTabs tabs={["Roster", "Attendance"]} active={activeTab} onChange={handleTabChange} />
+      <Outlet />
     </div>
   );
 }
 
-function RoutesSchedule() {
-  return (
-    <div>
-      <SectionHeader eyebrow="TBL_MAST_ROUTE · TBL_MAST_TIMETABLE · TBL_TRANS_TRIP" title="Routes & schedule" />
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1.3fr", gap: 12 }}>
-        <Card title="Route master">
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead><tr><Th>Route</Th><Th>Service</Th><Th>Type</Th><Th>Distance</Th><Th>Fare model</Th></tr></thead>
-            <tbody>
-              {routes.map((r) => (
-                <tr key={r.code} className="stc-row">
-                  <Td mono><RouteChip>{r.code}</RouteChip><div style={{ fontSize: 12, color: T.textSoft, marginTop: 3 }}>{r.name}</div></Td>
-                  <Td>
-                    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 7px", borderRadius: 3, background: r.service === "ST" ? T.blueFill : T.greenFill, color: r.service === "ST" ? T.blue : T.green }}>
-                      {r.service}
-                    </span>
-                  </Td>
-                  <Td>{r.type}</Td>
-                  <Td>{r.distance}</Td>
-                  <Td>{r.fareModel}</Td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
-        <Card title="Today's trips">
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead><tr><Th>Trip</Th><Th>Route</Th><Th>Crew</Th><Th>Sched.</Th><Th>Status</Th></tr></thead>
-            <tbody>
-              {trips.map((t) => (
-                <tr key={t.id} className="stc-row">
-                  <Td mono><RouteChip>{t.id}</RouteChip></Td>
-                  <Td mono>{t.route}</Td>
-                  <Td>{t.driver}<div style={{ fontSize: 11, color: T.textSoft }}>{t.conductor}</div></Td>
-                  <Td>{t.sched}<div style={{ fontSize: 11, color: T.textSoft }}>Actual {t.actual}</div></Td>
-                  <Td><StatusBadge status={t.status} /></Td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
-      </div>
-    </div>
-  );
+function RosterTab() {
+  const [employeesData] = useCrud("employees", "id");
+  return <Roster data={employeesData} />;
+}
+function AttendanceTab() {
+  return <Attendance data={attendanceSummary} />;
 }
 
-function LiveTracking() {
-  return (
-    <div>
-      <SectionHeader eyebrow="TBL_TRANS_GPS_LOCATION_PING" title="Live tracking" />
-      <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: 12 }}>
-        <Card title="Network map (simplified)">
-          <div style={{ position: "relative", height: 340, background: T.grayFill, borderRadius: 4, overflow: "hidden" }}>
-            <svg width="100%" height="100%" viewBox="0 0 400 340">
-              <path d="M20,300 C100,260 140,120 220,90 S360,40 380,20" fill="none" stroke={T.border} strokeWidth="4" />
-              <path d="M40,40 C90,90 120,180 200,200 S320,260 370,300" fill="none" stroke={T.border} strokeWidth="4" />
-              {liveBuses.map((b, i) => {
-                const pts = [[90, 250], [230, 90], [130, 150], [300, 250]];
-                const [x, y] = pts[i % pts.length];
-                return (
-                  <g key={b.vehicle}>
-                    <circle cx={x} cy={y} r="7" fill={b.delay.startsWith("+") ? T.red : T.green} opacity="0.85" />
-                    <circle cx={x} cy={y} r="12" fill="none" stroke={b.delay.startsWith("+") ? T.red : T.green} strokeWidth="1.5" opacity="0.4" />
-                  </g>
-                );
-              })}
-            </svg>
-          </div>
-        </Card>
-        <Card title="Buses in motion">
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {liveBuses.map((b) => (
-              <div key={b.vehicle} style={{ padding: 10, border: `1px solid ${T.border}`, borderRadius: 4 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <RouteChip>{b.vehicle}</RouteChip>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: b.delay.startsWith("+") ? T.red : b.delay.startsWith("-") ? T.blue : T.green }}>{b.delay}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 12, color: T.textSoft }}>
-                  <span><MapPin size={12} style={{ verticalAlign: -2, marginRight: 4 }} />{b.nextStop}</span>
-                  <span>ETA {b.eta}</span>
-                  <span>{b.speed} km/h</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </div>
-    </div>
-  );
+function RoutesScheduleTab() {
+  const [routesData] = useCrud("routes", "code");
+  const [tripsData] = useCrud("trips", "id");
+  return <RoutesAndSchedule routes={routesData} trips={tripsData} />;
+}
+function LiveTrackingTab() {
+  return <LiveTracking liveBuses={liveBuses} />;
 }
 
-function Fares() {
-  const [dist, setDist] = useState(21);
-  const fare = Math.round(10 + dist * 2.5);
-  return (
-    <div>
-      <SectionHeader eyebrow="TBL_MAST_FARE_POLICY · TBL_MAST_CONCESSION_CATEGORY" title="Fare management" />
-      <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: 12, marginBottom: 12 }}>
-        <Card title="Fare policies">
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead><tr><Th>Policy</Th><Th>Model</Th><Th>Base / rate</Th><Th>Route</Th><Th>Status</Th></tr></thead>
-            <tbody>
-              {farePolicies.map((f) => (
-                <tr key={f.code} className="stc-row">
-                  <Td mono><RouteChip>{f.code}</RouteChip></Td>
-                  <Td>{f.model}</Td>
-                  <Td>₹{f.base} base · {f.rate}</Td>
-                  <Td mono>{f.route}</Td>
-                  <Td><StatusBadge status={f.status} /></Td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
-        <Card title="Public fare calculator">
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div>
-              <label style={{ fontSize: 12, color: T.textSoft }}>Distance travelled: <b style={{ color: T.text }}>{dist} km</b></label>
-              <input type="range" min="1" max="120" step="1" value={dist} onChange={(e) => setDist(Number(e.target.value))} style={{ width: "100%" }} />
-            </div>
-            <div style={{ background: T.amberFill, borderRadius: 4, padding: 14, display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-              <span style={{ fontSize: 12, color: T.amberDeep, fontWeight: 500 }}>Estimated fare (PMPML-56, Local)</span>
-              <span className="stc-display" style={{ fontSize: 26, fontWeight: 600, color: T.amberDeep }}>₹{fare}</span>
-            </div>
-          </div>
-        </Card>
-      </div>
-      <Card title="Concession categories">
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead><tr><Th>Category</Th><Th>Discount</Th><Th>Eligibility proof</Th></tr></thead>
-          <tbody>
-            {concessions.map((c) => (
-              <tr key={c.name} className="stc-row"><Td>{c.name}</Td><Td>{c.discount}</Td><Td>{c.proof}</Td></tr>
-            ))}
-          </tbody>
-        </table>
-      </Card>
-    </div>
-  );
+function FaresTab() {
+  const [farePoliciesData] = useCrud("farePolicies", "code");
+  return <FareManagement farePolicies={farePoliciesData} concessions={concessions} />;
+}
+function TicketingTab() {
+  const [ticketsData] = useCrud("tickets", "ref");
+  return <Ticketing tickets={ticketsData} />;
+}
+function ReservationsTab() {
+  const [reservationsData] = useCrud("reservations", "pnr");
+  return <Reservations reservations={reservationsData} seatMap={seatMap} boardingPoints={boardingPoints} />;
+}
+function PassesTab() {
+  const [passesData] = useCrud("passes", "number");
+  return <Passes passes={passesData} />;
 }
 
-function Ticketing() {
-  return (
-    <div>
-      <SectionHeader eyebrow="TBL_TRANS_TICKET · TBL_TRANS_TICKET_PAYMENT" title="Ticketing" />
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: 12, marginBottom: 12 }}>
-        <KpiCard label="Tickets today" value="9,842" icon={Ticket} />
-        <KpiCard label="Confirmed" value="9,201" icon={CheckCircle2} tone="green" />
-        <KpiCard label="Cancelled / refunded" value="512" icon={XCircle} tone="red" />
-        <KpiCard label="Voided (audit)" value="14" icon={AlertTriangle} tone="amber" />
-      </div>
-      <Card title="Recent tickets">
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead><tr><Th>Booking ref</Th><Th>Trip</Th><Th>Channel</Th><Th>Passenger</Th><Th align="right">Fare</Th><Th>Status</Th></tr></thead>
-          <tbody>
-            {tickets.map((t) => (
-              <tr key={t.ref} className="stc-row">
-                <Td mono><RouteChip>{t.ref}</RouteChip></Td>
-                <Td mono>{t.trip}</Td>
-                <Td>{t.channel}</Td>
-                <Td>{t.passenger}</Td>
-                <Td align="right" mono>₹{t.fare}</Td>
-                <Td><StatusBadge status={t.status} /></Td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Card>
-    </div>
-  );
+function EtmDevicesTab() {
+  const [etmDevicesData] = useCrud("etmDevices", "id");
+  return <EtmDevices etmDevices={etmDevicesData} />;
+}
+function FinanceWalletTab() {
+  const [collectionsData] = useCrud("collections", "depot");
+  return <FinanceWallet collections={collectionsData} walletTxns={walletTxns} />;
 }
 
-function Passes() {
-  return (
-    <div>
-      <SectionHeader eyebrow="TBL_TRANS_PASSENGER_PASS" title="Pass management" />
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: 12, marginBottom: 12 }}>
-        <KpiCard label="Active passes" value="24,610" icon={Armchair} tone="green" />
-        <KpiCard label="Pending verification" value="188" icon={Clock} tone="amber" />
-        <KpiCard label="Expiring ≤7 days" value="742" icon={AlertTriangle} tone="amber" />
-        <KpiCard label="Expired (unrenewed)" value="1,205" icon={XCircle} tone="red" />
-      </div>
-      <Card title="Passenger passes">
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead><tr><Th>Pass no.</Th><Th>Type</Th><Th>Holder</Th><Th>Valid to</Th><Th>Status</Th></tr></thead>
-          <tbody>
-            {passes.map((p) => (
-              <tr key={p.number} className="stc-row">
-                <Td mono><RouteChip>{p.number}</RouteChip></Td>
-                <Td>{p.type}</Td>
-                <Td>{p.holder}</Td>
-                <Td>{p.validTo}</Td>
-                <Td><StatusBadge status={p.status} /></Td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Card>
-    </div>
-  );
+function SupportTab() {
+  const [complaintsData] = useCrud("complaints", "id");
+  return <ComplaintsAlerts complaints={complaintsData} />;
 }
-
-function Reservations() {
-  return (
-    <div>
-      <SectionHeader eyebrow="TBL_TRANS_TRIP_SEAT_INVENTORY · TBL_TRANS_RESERVATION" title="Reservation management" />
-      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 12 }}>
-        <Card title="Reservations">
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead><tr><Th>PNR</Th><Th>Trip</Th><Th>Passenger</Th><Th>Seat</Th><Th>Boarding point</Th><Th>Status</Th></tr></thead>
-            <tbody>
-              {reservations.map((r) => (
-                <tr key={r.pnr} className="stc-row">
-                  <Td mono><RouteChip>{r.pnr}</RouteChip></Td>
-                  <Td mono>{r.trip}</Td>
-                  <Td>{r.passenger}</Td>
-                  <Td mono>{r.seat}</Td>
-                  <Td>{r.boarding}</Td>
-                  <Td><StatusBadge status={r.status === "Waitlisted" ? "Pending verification" : "Confirmed"} /></Td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <Card title="Seat map · TRP-90215">
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, marginBottom: 12 }}>
-              {seatMap.map((s) => {
-                const c = s.status === "booked" ? [T.redFill, T.red] : s.status === "held" ? [T.amberFill, T.amberDeep] : [T.greenFill, T.green];
-                return (
-                  <div key={s.seat} className="stc-mono" style={{ background: c[0], color: c[1], fontSize: 11, fontWeight: 600, textAlign: "center", padding: "6px 0", borderRadius: 3 }}>
-                    {s.seat}
-                  </div>
-                );
-              })}
-            </div>
-            <div style={{ display: "flex", gap: 14, fontSize: 12, color: T.textSoft }}>
-              <span><Circle size={8} fill={T.green} color={T.green} /> Available</span>
-              <span><Circle size={8} fill={T.amberDeep} color={T.amberDeep} /> Held</span>
-              <span><Circle size={8} fill={T.red} color={T.red} /> Booked</span>
-            </div>
-          </Card>
-          <Card title="Boarding points · MSRTC-9502">
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead><tr><Th>Point</Th><Th align="right">Departure</Th></tr></thead>
-              <tbody>
-                {boardingPoints.map((b) => (
-                  <tr key={b.name} className="stc-row"><Td>{b.name}</Td><Td align="right" mono>{b.time}</Td></tr>
-                ))}
-              </tbody>
-            </table>
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
+function ReportsTab() {
+  return <Reports onTimeByDepot={onTimeByDepot} channelSplit={channelSplit} />;
 }
-
-function EtmDevices() {
-  return (
-    <div>
-      <SectionHeader eyebrow="TBL_MAST_ETM_DEVICE · TBL_TRANS_ETM_SHIFT_CLOSURE" title="ETM device fleet" />
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0,1fr))", gap: 12 }}>
-        {etmDevices.map((d) => (
-          <Card key={d.id}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-              <div>
-                <RouteChip>{d.id}</RouteChip>
-                <div style={{ fontSize: 13, fontWeight: 600, color: T.text, marginTop: 6 }}>{d.conductor}</div>
-                <div style={{ fontSize: 12, color: T.textSoft }}>{d.depot}</div>
-              </div>
-              {d.connectivity === "online" ? <Wifi size={18} color={T.green} /> : <WifiOff size={18} color={T.red} />}
-            </div>
-            <div style={{ display: "flex", gap: 16, fontSize: 12, color: T.textSoft, borderTop: `1px solid ${T.border}`, paddingTop: 10 }}>
-              <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <Battery size={14} color={d.battery < 40 ? T.red : T.green} /> {d.battery}%
-              </span>
-              <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <Printer size={14} color={d.printer === "ok" ? T.green : T.amberDeep} /> {d.printer === "ok" ? "Ready" : "Low paper"}
-              </span>
-              <span>Synced {d.lastSync}</span>
-            </div>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
+function AnalyticsTab() {
+  return <Analytics occupancyTrend={occupancyTrend} passengerTrends={passengerTrends} onTimeByDepot={onTimeByDepot} channelSplit={channelSplit} />;
 }
-
-function FinanceWallet() {
-  return (
-    <div>
-      <SectionHeader eyebrow="TBL_TRANS_DAILY_SHIFT_COLLECTION · TBL_TRANS_WALLET_TRANSACTION" title="Finance & wallet" />
-      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 12 }}>
-        <Card title="Cash reconciliation by depot">
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead><tr><Th>Depot</Th><Th align="right">Declared</Th><Th align="right">Deposited</Th><Th align="right">Discrepancy</Th></tr></thead>
-            <tbody>
-              {collections.map((c) => (
-                <tr key={c.depot} className="stc-row">
-                  <Td mono>{c.depot}</Td>
-                  <Td align="right" mono>₹{c.declared.toLocaleString("en-IN")}</Td>
-                  <Td align="right" mono>₹{c.deposited.toLocaleString("en-IN")}</Td>
-                  <Td align="right" mono>
-                    <span style={{ color: c.discrepancy < 0 ? T.red : T.green, fontWeight: 600 }}>
-                      {c.discrepancy === 0 ? "Matched" : `₹${c.discrepancy.toLocaleString("en-IN")}`}
-                    </span>
-                  </Td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
-        <Card title="Wallet transactions">
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead><tr><Th>Ref</Th><Th>Passenger</Th><Th>Type</Th><Th align="right">Amount</Th></tr></thead>
-            <tbody>
-              {walletTxns.map((w) => (
-                <tr key={w.ref} className="stc-row">
-                  <Td mono style={{ fontSize: 11 }}>{w.ref}</Td>
-                  <Td>{w.passenger}</Td>
-                  <Td>{w.type}</Td>
-                  <Td align="right" mono>
-                    <span style={{ color: w.amount < 0 ? T.red : T.green, fontWeight: 600 }}>
-                      {w.amount < 0 ? "-" : "+"}₹{Math.abs(w.amount)}
-                    </span>
-                  </Td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
-function Support() {
-  return (
-    <div>
-      <SectionHeader eyebrow="TBL_TRANS_COMPLAINT · TBL_TRANS_SOS_ALERT" title="Complaints & support" />
-      <Card title="Open complaints">
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead><tr><Th>ID</Th><Th>Category</Th><Th>Trip</Th><Th>SLA</Th><Th>Status</Th></tr></thead>
-          <tbody>
-            {complaints.map((c) => (
-              <tr key={c.id} className="stc-row">
-                <Td mono><RouteChip>{c.id}</RouteChip></Td>
-                <Td>{c.category}</Td>
-                <Td mono>{c.trip}</Td>
-                <Td style={{ color: c.sla === "Overdue" ? T.red : T.textSoft }}>{c.sla}</Td>
-                <Td><StatusBadge status={c.status} /></Td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Card>
-    </div>
-  );
-}
-
-function Reports() {
-  return (
-    <div>
-      <SectionHeader eyebrow="Analytics" title="Reports & analytics" />
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <Card title="On-time performance by depot (%)">
-          <div style={{ height: 220 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={onTimeByDepot} margin={{ top: 6, right: 6, left: -20, bottom: 0 }}>
-                <CartesianGrid stroke={T.border} vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: T.textSoft }} axisLine={{ stroke: T.border }} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: T.textSoft }} axisLine={false} tickLine={false} domain={[0, 100]} />
-                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 6, border: `1px solid ${T.border}` }} />
-                <Bar dataKey="pct" fill={T.green} radius={[3, 3, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-        <Card title="Ticket sales by channel">
-          <div style={{ height: 220, display: "flex", alignItems: "center" }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={channelSplit} dataKey="value" innerRadius={48} outerRadius={74} paddingAngle={2}>
-                  {channelSplit.map((c, i) => <Cell key={i} fill={c.color} />)}
-                </Pie>
-                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 6, border: `1px solid ${T.border}` }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
-function Analytics() {
-  return (
-    <div>
-      <SectionHeader eyebrow="Business intelligence" title="Analytics" />
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: 12, marginBottom: 12 }}>
-        <KpiCard label="Avg. occupancy (7d)" value="80%" icon={Percent} tone="green" />
-        <KpiCard label="Fleet utilisation" value="85%" icon={TrendingUp} tone="green" />
-        <KpiCard label="Passengers (Jul)" value="4.72L" sub="+3.7% MoM" icon={Users2} />
-        <KpiCard label="Revenue / km" value="₹38.60" icon={IndianRupee} />
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <Card title="Occupancy trend · last 7 days">
-          <div style={{ height: 220 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={occupancyTrend} margin={{ top: 6, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid stroke={T.border} vertical={false} />
-                <XAxis dataKey="day" tick={{ fontSize: 12, fill: T.textSoft }} axisLine={{ stroke: T.border }} tickLine={false} />
-                <YAxis tick={{ fontSize: 12, fill: T.textSoft }} axisLine={false} tickLine={false} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
-                <Tooltip formatter={(v) => [`${v}%`, "Occupancy"]} contentStyle={{ fontSize: 12, borderRadius: 6, border: `1px solid ${T.border}` }} />
-                <Line type="monotone" dataKey="pct" stroke={T.blue} strokeWidth={2.5} dot={{ r: 3, fill: T.blue }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-        <Card title="Passenger trend · monthly">
-          <div style={{ height: 220 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={passengerTrends} margin={{ top: 6, right: 6, left: -20, bottom: 0 }}>
-                <CartesianGrid stroke={T.border} vertical={false} />
-                <XAxis dataKey="month" tick={{ fontSize: 12, fill: T.textSoft }} axisLine={{ stroke: T.border }} tickLine={false} />
-                <YAxis tick={{ fontSize: 12, fill: T.textSoft }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}K`} />
-                <Tooltip formatter={(v) => [`${v}K`, "Passengers"]} contentStyle={{ fontSize: 12, borderRadius: 6, border: `1px solid ${T.border}` }} />
-                <Bar dataKey="passengers" fill={T.amber} radius={[3, 3, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
-        <Card title="Fleet utilisation by depot (%)">
-          <div style={{ height: 200 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={onTimeByDepot} margin={{ top: 6, right: 6, left: -20, bottom: 0 }}>
-                <CartesianGrid stroke={T.border} vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: T.textSoft }} axisLine={{ stroke: T.border }} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: T.textSoft }} axisLine={false} tickLine={false} domain={[0, 100]} />
-                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 6, border: `1px solid ${T.border}` }} />
-                <Bar dataKey="pct" fill={T.green} radius={[3, 3, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-        <Card title="Revenue by channel">
-          <div style={{ height: 200, display: "flex", alignItems: "center" }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={channelSplit} dataKey="value" innerRadius={44} outerRadius={68} paddingAngle={2}>
-                  {channelSplit.map((c, i) => <Cell key={i} fill={c.color} />)}
-                </Pie>
-                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 6, border: `1px solid ${T.border}` }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
-function Admin() {
+function AdminTab() {
   const [usersData, usersCrud] = useCrud("users", "id");
-  return (
-    <div>
-      <SectionHeader eyebrow="TBL_MAST_APP_USER · TBL_MAST_ROLE" title="User & role administration" />
-      <Card title="System users">
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead><tr><Th>User</Th><Th>Role</Th><Th>Depot scope</Th><Th>Status</Th><Th align="right">Actions</Th></tr></thead>
-          <tbody>
-            {usersData.map((u) => (
-              <tr key={u.id} className="stc-row">
-                <Td>{u.name}</Td>
-                <Td>{u.role}</Td>
-                <Td mono>{u.depot}</Td>
-                <Td><StatusBadge status={u.status} /></Td>
-                <Td align="right">
-                  {u.status === "Pending verification" ? (
-                    <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                      <button onClick={() => usersCrud.update(u.id, { ...u, status: "Active" })} style={{ fontSize: 11.5, fontWeight: 600, color: T.green, background: "none", border: `1px solid ${T.green}`, borderRadius: 4, padding: "4px 9px", cursor: "pointer" }}>Approve</button>
-                      <button onClick={() => usersCrud.remove(u.id)} style={{ fontSize: 11.5, fontWeight: 600, color: T.red, background: "none", border: `1px solid ${T.red}`, borderRadius: 4, padding: "4px 9px", cursor: "pointer" }}>Reject</button>
-                    </div>
-                  ) : (
-                    <button onClick={() => usersCrud.remove(u.id)} title="Revoke access" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "inline-flex" }}>
-                      <Trash2 size={14} color={T.red} />
-                    </button>
-                  )}
-                </Td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Card>
-    </div>
-  );
+  return <UsersRoles data={usersData} onUpdate={usersCrud.update} onDelete={usersCrud.remove} />;
 }
-
-function Help() {
-  const [open, setOpen] = useState(0);
-  return (
-    <div>
-      <SectionHeader eyebrow="User guidance" title="Help & support" />
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-        <Card>
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-            <div style={{ width: 34, height: 34, borderRadius: 6, background: T.amberFill, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <FileText size={17} color={T.amberDeep} />
-            </div>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>User manual</div>
-              <div style={{ fontSize: 12, color: T.textSoft, marginTop: 2 }}>Module-by-module guide covering every screen in this console.</div>
-            </div>
-          </div>
-        </Card>
-        <Card>
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-            <div style={{ width: 34, height: 34, borderRadius: 6, background: T.blueFill, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <LifeBuoy size={17} color={T.blue} />
-            </div>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>Raise a support ticket</div>
-              <div style={{ fontSize: 12, color: T.textSoft, marginTop: 2 }}>Reach the helpdesk for account, access, or data issues.</div>
-            </div>
-          </div>
-        </Card>
-      </div>
-      <Card title="Frequently asked questions">
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          {faqs.map((f, i) => (
-            <div key={i} style={{ borderBottom: i < faqs.length - 1 ? `1px solid ${T.border}` : "none" }}>
-              <button
-                onClick={() => setOpen(open === i ? -1 : i)}
-                style={{ width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: "12px 2px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}
-              >
-                <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{f.q}</span>
-                <ChevronsUpDown size={14} color={T.textFaint} style={{ flexShrink: 0 }} />
-              </button>
-              {open === i && <div style={{ fontSize: 13, color: T.textSoft, padding: "0 2px 14px", lineHeight: 1.55 }}>{f.a}</div>}
-            </div>
-          ))}
-        </div>
-      </Card>
-    </div>
-  );
-}
-
-/* ---------------------------------------------------------------------
-   AUTHENTICATION — Staff login & request access (internal ops console)
---------------------------------------------------------------------- */
-const ADMIN_ROLES = ["Depot Manager", "Control Room Operator", "Finance Officer", "Support Agent", "System Administrator"];
-
-function AuthInput({ icon: Icon, right, ...props }) {
-  return (
-    <div style={{ position: "relative", marginBottom: 12 }}>
-      {Icon && <Icon size={15} color={T.textFaint} style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)" }} />}
-      <input
-        {...props}
-        style={{
-          width: "100%", padding: `11px ${right ? 36 : 12}px 11px ${Icon ? 34 : 12}px`, border: `1px solid ${T.border}`,
-          borderRadius: 5, fontSize: 13.5, fontFamily: "inherit", color: T.text, background: T.panel, boxSizing: "border-box",
-        }}
-      />
-      {right}
-    </div>
-  );
-}
-
-function AdminAuthScreen({ onLogin }) {
-  const [mode, setMode] = useState("login"); // login | request | submitted
-  const [showPw, setShowPw] = useState(false);
-  const [form, setForm] = useState({ id: "", email: "", password: "", name: "", depot: "", role: ADMIN_ROLES[0] });
-  const [error, setError] = useState("");
-  const [, usersCrud] = useCrud("users", "id");
-
-  const doLogin = () => {
-    if (!form.id.trim() || !form.password.trim()) { setError("Enter your employee ID / email and password."); return; }
-    setError("");
-    onLogin({ name: form.id.includes("@") ? form.id.split("@")[0] : form.id, role: "Control Room Operator", depot: "All depots" });
-  };
-
-  const submitRequest = () => {
-    if (!form.name.trim() || !form.email.trim() || !form.depot.trim()) { setError("Fill in name, email and depot scope to request access."); return; }
-    setError("");
-    usersCrud.add({ id: nextId("USR"), name: form.name, role: form.role, depot: form.depot, status: "Pending verification" });
-    setMode("submitted");
-  };
-
-  return (
-    <div className="stc-body" style={{ minHeight: "100vh", display: "flex", background: T.canvas }}>
-      <style>{fontStack}</style>
-
-      <div style={{ flex: "0 0 42%", background: T.ink, display: "flex", flexDirection: "column", justifyContent: "space-between", padding: 40, color: "#F4F0E4" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ width: 26, height: 26, background: T.amber, borderRadius: 3, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Bus size={15} color={T.ink} />
-          </div>
-          <span className="stc-display" style={{ fontSize: 15, fontWeight: 600 }}>TransitX</span>
-        </div>
-        <div>
-          <div className="stc-display" style={{ fontSize: 28, fontWeight: 600, lineHeight: 1.28, marginBottom: 14 }}>
-            One console for depots, fleet, fares & the field.
-          </div>
-          <div style={{ fontSize: 13.5, color: "#B8C0C8", lineHeight: 1.6, maxWidth: 380 }}>
-            Operations, ticketing, tracking and finance across MSRTC, BEST and PMPML — role-scoped access for depot, control-room and back-office staff.
-          </div>
-        </div>
-        <div style={{ fontSize: 11, color: "#7E8A94" }}>© State Road Transport Corporation — internal use only</div>
-      </div>
-
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-        <div style={{ width: 380, maxWidth: "100%" }}>
-          <Card style={{ padding: 24 }}>
-            {mode === "login" && (
-              <>
-                <h2 className="stc-display" style={{ margin: "0 0 4px", fontSize: 20, fontWeight: 600, color: T.text }}>Staff sign in</h2>
-                <div style={{ fontSize: 12.5, color: T.textSoft, marginBottom: 20 }}>Use your employee ID or work email.</div>
-
-                <AuthInput icon={UserCog} placeholder="Employee ID or email" value={form.id} onChange={(e) => setForm({ ...form, id: e.target.value })} />
-                <AuthInput
-                  icon={KeyRound} type={showPw ? "text" : "password"} placeholder="Password" value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  right={
-                    <button onClick={() => setShowPw((s) => !s)} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", display: "flex" }}>
-                      {showPw ? <EyeOff size={15} color={T.textFaint} /> : <Eye size={15} color={T.textFaint} />}
-                    </button>
-                  }
-                />
-                {error && <div style={{ fontSize: 12, color: T.red, marginBottom: 10 }}>{error}</div>}
-
-                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
-                  <a style={{ fontSize: 12, color: T.textSoft, cursor: "pointer" }}>Forgot password?</a>
-                </div>
-
-                <PrimaryButtonInline icon={ArrowRight} onClick={doLogin}>Sign in</PrimaryButtonInline>
-
-                <div style={{ textAlign: "center", marginTop: 18, fontSize: 12.5, color: T.textSoft }}>
-                  New staff member? <a onClick={() => { setMode("request"); setError(""); }} style={{ color: T.amberDeep, fontWeight: 600, cursor: "pointer" }}>Request access</a>
-                </div>
-              </>
-            )}
-
-            {mode === "request" && (
-              <>
-                <h2 className="stc-display" style={{ margin: "0 0 4px", fontSize: 20, fontWeight: 600, color: T.text }}>Request access</h2>
-                <div style={{ fontSize: 12.5, color: T.textSoft, marginBottom: 20 }}>Submitted requests need approval from a System Administrator before sign-in works.</div>
-
-                <AuthInput icon={UserCog} placeholder="Full name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-                <AuthInput icon={Mail} placeholder="Work email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-                <FormField field={{ label: "Role requested", type: "select", options: ADMIN_ROLES }} value={form.role} onChange={(v) => setForm({ ...form, role: v })} />
-                <AuthInput icon={Building2} placeholder="Depot / scope (e.g. MSRTC-PUN-01, or All depots)" value={form.depot} onChange={(e) => setForm({ ...form, depot: e.target.value })} />
-                {error && <div style={{ fontSize: 12, color: T.red, marginBottom: 10 }}>{error}</div>}
-
-                <PrimaryButtonInline icon={ArrowRight} onClick={submitRequest}>Submit request</PrimaryButtonInline>
-
-                <div style={{ textAlign: "center", marginTop: 18, fontSize: 12.5, color: T.textSoft }}>
-                  Already have access? <a onClick={() => { setMode("login"); setError(""); }} style={{ color: T.amberDeep, fontWeight: 600, cursor: "pointer" }}>Sign in</a>
-                </div>
-              </>
-            )}
-
-            {mode === "submitted" && (
-              <div style={{ textAlign: "center", padding: "20px 4px" }}>
-                <CheckCircle2 size={36} color={T.green} style={{ marginBottom: 10 }} />
-                <div style={{ fontSize: 16, fontWeight: 700, color: T.text, marginBottom: 6 }}>Request submitted</div>
-                <div style={{ fontSize: 12.5, color: T.textSoft, marginBottom: 20, lineHeight: 1.6 }}>
-                  {form.name}'s access request for <strong>{form.role}</strong> at <strong>{form.depot}</strong> is now pending approval in Users &amp; Roles.
-                </div>
-                <button onClick={() => { setMode("login"); setForm({ id: "", email: "", password: "", name: "", depot: "", role: ADMIN_ROLES[0] }); }}
-                  style={{ padding: "9px 16px", borderRadius: 5, border: `1px solid ${T.border}`, background: T.panel, color: T.textSoft, fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}>
-                  Back to sign in
-                </button>
-              </div>
-            )}
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function PrimaryButtonInline({ children, onClick, icon: Icon }) {
-  return (
-    <button onClick={onClick} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "11px 18px", borderRadius: 5, border: "none", cursor: "pointer", background: T.ink, color: "#F4F0E4", fontSize: 13, fontWeight: 600 }}>
-      {Icon && <Icon size={15} />} {children}
-    </button>
-  );
+function HelpTab() {
+  return <Help faqs={faqs} />;
 }
 
 /* ---------------------------------------------------------------------
    NAVIGATION + SHELL
 --------------------------------------------------------------------- */
 const NAV = [
-  { group: null, items: [{ id: "overview", label: "Dashboard", icon: LayoutDashboard }] },
+  { group: null, items: [{ id: "overview", label: "Dashboard", icon: LayoutDashboard, path: "/" }] },
   {
     group: "Organization",
     items: [
-      { id: "organization", label: "Organization", icon: Building2 },
-      { id: "masters", label: "Master Data", icon: Database },
+      { id: "organization", label: "Organization", icon: Building2, path: "/Organization/organizationManagement/Depots" },
+      { id: "masters", label: "Master Data", icon: Database, path: "/Organization/masters/Route" },
     ],
   },
   {
     group: "Operations",
     items: [
-      { id: "fleet", label: "Fleet", icon: Bus },
-      { id: "employees", label: "Employees", icon: UserCog },
-      { id: "routes", label: "Routes & Schedule", icon: Milestone },
-      { id: "tracking", label: "Live Tracking", icon: Radar },
+      { id: "fleet", label: "Fleet", icon: Bus, path: "/Operations/fleet/VehicleRegister" },
+      { id: "employees", label: "Employees", icon: UserCog, path: "/Operations/employees/Roster" },
+      { id: "routes", label: "Routes & Schedule", icon: Milestone, path: "/Operations/routesAndSchedule/RoutesAndSchedule" },
+      { id: "tracking", label: "Live Tracking", icon: Radar, path: "/Operations/liveTracking/LiveTracking" },
     ],
   },
   {
     group: "Commercial",
     items: [
-      { id: "fares", label: "Fare Management", icon: IndianRupee },
-      { id: "ticketing", label: "Ticketing", icon: Ticket },
-      { id: "reservations", label: "Reservations", icon: CalendarCheck },
-      { id: "passes", label: "Passes", icon: Armchair },
+      { id: "fares", label: "Fare Management", icon: IndianRupee, path: "/Commercial/fareManagement/FareManagement" },
+      { id: "ticketing", label: "Ticketing", icon: Ticket, path: "/Commercial/ticketing/Ticketing" },
+      { id: "reservations", label: "Reservations", icon: CalendarCheck, path: "/Commercial/reservations/Reservations" },
+      { id: "passes", label: "Passes", icon: Armchair, path: "/Commercial/passes/Passes" },
     ],
   },
   {
     group: "Systems",
     items: [
-      { id: "etm", label: "ETM Devices", icon: Smartphone },
-      { id: "finance", label: "Finance & Wallet", icon: Wallet },
+      { id: "etm", label: "ETM Devices", icon: Smartphone, path: "/Systems/etmDevices/EtmDevices" },
+      { id: "finance", label: "Finance & Wallet", icon: Wallet, path: "/Systems/financeWallet/FinanceWallet" },
     ],
   },
   {
     group: "Support",
     items: [
-      { id: "support", label: "Complaints & Alerts", icon: MessageSquareWarning },
-      { id: "reports", label: "Reports", icon: BarChart3 },
-      { id: "analytics", label: "Analytics", icon: LineChartIcon },
-      { id: "admin", label: "Users & Roles", icon: ShieldCheck },
-      { id: "help", label: "Help", icon: HelpCircle },
+      { id: "support", label: "Complaints & Alerts", icon: MessageSquareWarning, path: "/Support/complaintsAlerts/ComplaintsAlerts" },
+      { id: "reports", label: "Reports", icon: BarChart3, path: "/Support/reports/Reports" },
+      { id: "analytics", label: "Analytics", icon: LineChartIcon, path: "/Support/analytics/Analytics" },
+      { id: "admin", label: "Users & Roles", icon: ShieldCheck, path: "/Support/usersRoles/UsersRoles" },
+      { id: "help", label: "Help", icon: HelpCircle, path: "/Support/help/Help" },
     ],
   },
 ];
 
-const SECTION_MAP = {
-  overview: { comp: Dashboard, title: "Dashboard" },
-  organization: { comp: Organization, title: "Organization" },
-  masters: { comp: MasterData, title: "Master Data" },
-  fleet: { comp: Fleet, title: "Fleet" },
-  employees: { comp: Employees, title: "Employees" },
-  routes: { comp: RoutesSchedule, title: "Routes & Schedule" },
-  tracking: { comp: LiveTracking, title: "Live Tracking" },
-  fares: { comp: Fares, title: "Fare Management" },
-  ticketing: { comp: Ticketing, title: "Ticketing" },
-  reservations: { comp: Reservations, title: "Reservations" },
-  passes: { comp: Passes, title: "Passes" },
-  etm: { comp: EtmDevices, title: "ETM Devices" },
-  finance: { comp: FinanceWallet, title: "Finance & Wallet" },
-  support: { comp: Support, title: "Complaints & Alerts" },
-  reports: { comp: Reports, title: "Reports" },
-  analytics: { comp: Analytics, title: "Analytics" },
-  admin: { comp: Admin, title: "Users & Roles" },
-  help: { comp: Help, title: "Help" },
-};
-
-export default function TransitOpsConsole() {
+function ConsoleShell({ session, onLogout }: { session: any, onLogout: () => void }) {
   return (
-    <DataProvider>
-      <AuthGate />
-    </DataProvider>
-  );
-}
-
-function AuthGate() {
-  const [session, setSession] = useState(null);
-  if (!session) return <AdminAuthScreen onLogin={setSession} />;
-  return <ConsoleShell session={session} onLogout={() => setSession(null)} />;
-}
-
-function ConsoleShell({ session, onLogout }) {
-  const [active, setActive] = useState("overview");
-  const Active = SECTION_MAP[active].comp;
-
-  return (
-    <div className="stc-body" style={{ display: "flex", width: "100%", minHeight: 640, background: T.canvas, color: T.text }}>
+    <div className="stc-body" style={{ display: "flex", width: "100%", height: "100vh", overflow: "hidden", background: T.canvas, color: T.text }}>
       <style>{fontStack}</style>
 
-      {/* SIDEBAR */}
-      <aside style={{ width: 240, flexShrink: 0, background: T.ink, borderRight: `1px solid ${T.inkBorder}`, display: "flex", flexDirection: "column" }}>
-        <div style={{ padding: "18px 18px 14px", borderBottom: `1px solid ${T.inkBorder}` }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ width: 26, height: 26, background: T.amber, borderRadius: 3, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Bus size={15} color={T.ink} />
-            </div>
-            <span className="stc-display" style={{ color: "#F4F0E4", fontSize: 15, fontWeight: 600 }}>TransitX</span>
-          </div>
-          <div style={{ fontSize: 11, color: "#7C8A99", marginTop: 4, letterSpacing: "0.03em" }}>MSRTC · BEST · PMPML — MAHARASHTRA</div>
-        </div>
+      <Sidebar nav={NAV} session={session} onLogout={onLogout} />
 
-        <nav className="stc-scroll" style={{ flex: 1, overflowY: "auto", padding: "10px 10px" }}>
-          {NAV.map((g, gi) => (
-            <div key={gi} style={{ marginBottom: 14 }}>
-              {g.group && (
-                <div style={{ fontSize: 10, fontWeight: 600, color: "#5E6C7B", textTransform: "uppercase", letterSpacing: "0.07em", padding: "4px 10px" }}>
-                  {g.group}
-                </div>
-              )}
-              {g.items.map((item) => {
-                const Icon = item.icon;
-                const isActive = active === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => setActive(item.id)}
-                    className={`stc-navitem${isActive ? " active" : ""}`}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "8px 10px 8px 13px",
-                      background: isActive ? T.ink2 : "transparent", border: "none", borderRadius: 4, cursor: "pointer",
-                      color: isActive ? "#F4F0E4" : "#9AA6B2", fontSize: 13, fontWeight: 500, marginBottom: 1, textAlign: "left",
-                    }}
-                  >
-                    <Icon size={16} color={isActive ? T.amber : "#6B7885"} />
-                    {item.label}
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-        </nav>
-
-        <div style={{ padding: 14, borderTop: `1px solid ${T.inkBorder}`, display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 30, height: 30, borderRadius: "50%", background: T.ink2, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 600, color: T.amber, flexShrink: 0 }}>
-            {session.name.slice(0, 2).toUpperCase()}
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "#F4F0E4", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{session.name}</div>
-            <div style={{ fontSize: 11, color: "#7C8A99", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{session.role} · {session.depot}</div>
-          </div>
-          <button onClick={onLogout} title="Log out" style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex", flexShrink: 0 }}>
-            <LogOut size={15} color="#9AA6B2" />
-          </button>
-        </div>
-      </aside>
-
-      {/* MAIN */}
-      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-        <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 24px", borderBottom: `1px solid ${T.border}`, background: T.panel }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: T.textSoft }}>
-            <span>Transit Ops</span>
-            <ChevronRight size={14} />
-            <span style={{ color: T.text, fontWeight: 600 }}>{SECTION_MAP[active].title}</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, background: T.canvas, border: `1px solid ${T.border}`, borderRadius: 4, padding: "6px 10px", fontSize: 12, color: T.textSoft }}>
-              <Search size={14} />
-              Search trips, tickets, vehicles…
-            </div>
-            <Bell size={17} color={T.textSoft} />
-            <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: T.textSoft, cursor: "pointer" }}>
-              All depots <ChevronDown size={13} />
-            </div>
-          </div>
-        </header>
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
+        <Header />
         <main className="stc-scroll" style={{ flex: 1, overflowY: "auto", padding: 24 }}>
-          <Active />
+          <Outlet />
         </main>
       </div>
     </div>
   );
 }
 
+const PageFallback = () => (
+  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 260, fontSize: 14, color: T.textSoft }}>
+    Loading section…
+  </div>
+);
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { retry: 1, staleTime: 30_000, refetchOnWindowFocus: false },
+  },
+});
 
+function AuthGate() {
+  const [session, setSession] = useState<any>({ name: "Guest Admin", role: "Super Admin", depot: "All depots" });
+  const [, usersCrud] = useCrud("users", "id");
 
+  return (
+    <Suspense fallback={<PageFallback />}>
+      <Routes>
+        <Route path="/login" element={<AdminAuthScreen onLogin={setSession} onAddUser={usersCrud.add} />} />
+        <Route
+          path="/"
+          element={
+            <ConsoleShell session={session || { name: "Guest Admin", role: "Super Admin", depot: "All depots" }} onLogout={() => setSession(null)} />
+          }
+        >
+          <Route index element={<DashboardTabWrapper />} />
+          
+          {/* Organization Sub-Routes */}
+          <Route path="Organization/organizationManagement" element={<OrganizationLayout />}>
+            <Route index element={<Navigate to="Depots" replace />} />
+            <Route path="Regions" element={<RegionsTab />} />
+            <Route path="Divisions" element={<DivisionsTab />} />
+            <Route path="Depots" element={<DepotsTab />} />
+            <Route path="BusStation" element={<BusStationTab />} />
+            <Route path="Workshops" element={<WorkshopsTab />} />
+            <Route path="ParkingYards" element={<ParkingYardsTab />} />
+          </Route>
+          
+          <Route path="Organization/masters" element={<MasterDataLayout />}>
+            <Route index element={<Navigate to="Route" replace />} />
+            <Route path="Route" element={<RouteTab />} />
+            <Route path="Stop" element={<StopTab />} />
+            <Route path="Stages" element={<StagesTab />} />
+            <Route path="zones" element={<ZonesTab />} />
+            <Route path="FarePolicies" element={<FarePoliciesTab />} />
+            <Route path="TicketTypes" element={<TicketTypesTab />} />
+            <Route path="PaymentModes" element={<PaymentModesTab />} />
+            <Route path="VehicleCategories" element={<VehicleCategoriesTab />} />
+            <Route path="SeatLayouts" element={<SeatLayoutsTab />} />
+            <Route path="HolidayCalendar" element={<HolidayCalendarTab />} />
+            <Route path="NotificationTemplates" element={<NotificationTemplatesTab />} />
+            <Route path="ComplaintCategories" element={<ComplaintCategoriesTab />} />
+            <Route path="TaxConfiguration" element={<TaxConfigurationTab />} />
+          </Route>
 
-// import { useState } from 'react'
-// import reactLogo from './assets/react.svg'
-// import viteLogo from './assets/vite.svg'
-// import heroImg from './assets/hero.png'
-// import './App.css'
+          {/* Operations Sub-Routes */}
+          <Route path="Operations/fleet/VehicleRegister" element={<FleetTab />} />
+          <Route path="Operations/employees" element={<EmployeesLayout />}>
+            <Route index element={<Navigate to="Roster" replace />} />
+            <Route path="Roster" element={<RosterTab />} />
+            <Route path="Attendance" element={<AttendanceTab />} />
+          </Route>
+          <Route path="Operations/routesAndSchedule/RoutesAndSchedule" element={<RoutesScheduleTab />} />
+          <Route path="Operations/liveTracking/LiveTracking" element={<LiveTrackingTab />} />
 
-// function App() {
-//   const [count, setCount] = useState(0)
+          {/* Commercial Routes */}
+          <Route path="Commercial/fareManagement/FareManagement" element={<FaresTab />} />
+          <Route path="Commercial/ticketing/Ticketing" element={<TicketingTab />} />
+          <Route path="Commercial/reservations/Reservations" element={<ReservationsTab />} />
+          <Route path="Commercial/passes/Passes" element={<PassesTab />} />
 
-//   return (
-//     <>
-//       <section id="center">
-//         <div className="hero">
-//           <img src={heroImg} className="base" width="170" height="179" alt="" />
-//           <img src={reactLogo} className="framework" alt="React logo" />
-//           <img src={viteLogo} className="vite" alt="Vite logo" />
-//         </div>
-//         <div>
-//           <h1>Get started</h1>
-//           <p>
-//             Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-//           </p>
-//         </div>
-//         <button
-//           type="button"
-//           className="counter"
-//           onClick={() => setCount((count) => count + 1)}
-//         >
-//           Count is {count}
-//         </button>
-//       </section>
+          {/* Systems Routes */}
+          <Route path="Systems/etmDevices/EtmDevices" element={<EtmDevicesTab />} />
+          <Route path="Systems/financeWallet/FinanceWallet" element={<FinanceWalletTab />} />
 
-//       <div className="ticks"></div>
+          {/* Support Routes */}
+          <Route path="Support/complaintsAlerts/ComplaintsAlerts" element={<SupportTab />} />
+          <Route path="Support/reports/Reports" element={<ReportsTab />} />
+          <Route path="Support/analytics/Analytics" element={<AnalyticsTab />} />
+          <Route path="Support/usersRoles/UsersRoles" element={<AdminTab />} />
+          <Route path="Support/help/Help" element={<HelpTab />} />
 
-//       <section id="next-steps">
-//         <div id="docs">
-//           <svg className="icon" role="presentation" aria-hidden="true">
-//             <use href="/icons.svg#documentation-icon"></use>
-//           </svg>
-//           <h2>Documentation</h2>
-//           <p>Your questions, answered</p>
-//           <ul>
-//             <li>
-//               <a href="https://vite.dev/" target="_blank">
-//                 <img className="logo" src={viteLogo} alt="" />
-//                 Explore Vite
-//               </a>
-//             </li>
-//             <li>
-//               <a href="https://react.dev/" target="_blank">
-//                 <img className="button-icon" src={reactLogo} alt="" />
-//                 Learn more
-//               </a>
-//             </li>
-//           </ul>
-//         </div>
-//         <div id="social">
-//           <svg className="icon" role="presentation" aria-hidden="true">
-//             <use href="/icons.svg#social-icon"></use>
-//           </svg>
-//           <h2>Connect with us</h2>
-//           <p>Join the Vite community</p>
-//           <ul>
-//             <li>
-//               <a href="https://github.com/vitejs/vite" target="_blank">
-//                 <svg
-//                   className="button-icon"
-//                   role="presentation"
-//                   aria-hidden="true"
-//                 >
-//                   <use href="/icons.svg#github-icon"></use>
-//                 </svg>
-//                 GitHub
-//               </a>
-//             </li>
-//             <li>
-//               <a href="https://chat.vite.dev/" target="_blank">
-//                 <svg
-//                   className="button-icon"
-//                   role="presentation"
-//                   aria-hidden="true"
-//                 >
-//                   <use href="/icons.svg#discord-icon"></use>
-//                 </svg>
-//                 Discord
-//               </a>
-//             </li>
-//             <li>
-//               <a href="https://x.com/vite_js" target="_blank">
-//                 <svg
-//                   className="button-icon"
-//                   role="presentation"
-//                   aria-hidden="true"
-//                 >
-//                   <use href="/icons.svg#x-icon"></use>
-//                 </svg>
-//                 X.com
-//               </a>
-//             </li>
-//             <li>
-//               <a href="https://bsky.app/profile/vite.dev" target="_blank">
-//                 <svg
-//                   className="button-icon"
-//                   role="presentation"
-//                   aria-hidden="true"
-//                 >
-//                   <use href="/icons.svg#bluesky-icon"></use>
-//                 </svg>
-//                 Bluesky
-//               </a>
-//             </li>
-//           </ul>
-//         </div>
-//       </section>
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+    </Suspense>
+  );
+}
 
-//       <div className="ticks"></div>
-//       <section id="spacer"></section>
-//     </>
-//   )
-// }
-
-// export default App
+export default function TransitOpsConsole() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <DataProvider>
+        <BrowserRouter>
+          <AuthGate />
+        </BrowserRouter>
+      </DataProvider>
+      <Toaster
+        position="bottom-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: "#112236",
+            color: "#ffffff",
+            border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: "8px",
+            fontSize: "13px",
+          },
+        }}
+      />
+    </QueryClientProvider>
+  );
+}

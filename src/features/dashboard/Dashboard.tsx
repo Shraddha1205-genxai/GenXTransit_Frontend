@@ -7,27 +7,8 @@ import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, BarChart, Bar, PieChart, Pie, Cell
 } from "recharts";
-
-/* Design Tokens */
-const T = {
-  ink: "#101B26",
-  panel: "#FFFFFF",
-  border: "#DEDBCF",
-  text: "#16212B",
-  textSoft: "#5B6672",
-  textFaint: "#8B9098",
-  amber: "#E5A339",
-  amberDeep: "#8A5A14",
-  amberFill: "#FBEBD1",
-  green: "#2F8F5B",
-  greenFill: "#E1F3E9",
-  red: "#C6453B",
-  redFill: "#FBE7E5",
-  blue: "#3E7CB1",
-  blueFill: "#E5EFF6",
-  gray: "#8B9098",
-  grayFill: "#EEEDE7",
-};
+import { T } from "../../constants/theme";
+import { Card, RouteChip, StatusBadge, Td, KpiCard, SectionHeader } from "../../components/common";
 
 export interface RevenueTrendItem {
   day: string;
@@ -86,96 +67,13 @@ const defaultDepotRevenue: DepotRevenueItem[] = [
   { name: "MSRTC-MUM", revenue: 350 },
 ];
 
-/* Helper Components */
-function SectionHeader({ eyebrow, title }: { eyebrow: string; title: string }) {
-  return (
-    <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 18, flexWrap: "wrap", gap: 12 }}>
-      <div>
-        <div style={{ fontSize: 11, fontWeight: 600, color: T.amberDeep, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
-          {eyebrow}
-        </div>
-        <h2 className="stc-display" style={{ fontSize: 24, fontWeight: 600, color: T.text, margin: 0 }}>
-          {title}
-        </h2>
-      </div>
-    </div>
-  );
-}
-
-function KpiCard({ label, value, sub, icon: Icon, tone }: { label: string; value: string; sub?: string; icon: React.ElementType; tone?: "amber" | "red" | "green" }) {
-  const toneColor = tone === "amber" ? T.amberDeep : tone === "red" ? T.red : tone === "green" ? T.green : T.text;
-  return (
-    <div style={{ background: T.panel, border: `1px solid ${T.border}`, borderRadius: 6, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 6 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: 12, color: T.textSoft, fontWeight: 500 }}>{label}</span>
-        <Icon size={16} color={T.textFaint} />
-      </div>
-      <span className="stc-display" style={{ fontSize: 28, fontWeight: 600, color: toneColor }}>{value}</span>
-      {sub && <span style={{ fontSize: 12, color: T.textSoft }}>{sub}</span>}
-    </div>
-  );
-}
-
-function Card({ title, children }: { title?: string; children: React.ReactNode }) {
-  return (
-    <div style={{ background: T.panel, border: `1px solid ${T.border}`, borderRadius: 6, overflow: "hidden" }}>
-      {title && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: `1px solid ${T.border}` }}>
-          <h3 className="stc-display" style={{ fontSize: 15, fontWeight: 600, color: T.text, margin: 0, textTransform: "uppercase", letterSpacing: "0.03em" }}>
-            {title}
-          </h3>
-        </div>
-      )}
-      <div style={{ padding: 16 }}>{children}</div>
-    </div>
-  );
-}
-
-function RouteChip({ children }: { children: React.ReactNode }) {
-  return (
-    <span
-      className="stc-mono"
-      style={{
-        display: "inline-flex", alignItems: "center", padding: "3px 8px",
-        background: T.amberFill, color: T.amberDeep, fontSize: 12, fontWeight: 600,
-        borderRadius: 3, whiteSpace: "nowrap",
-      }}
-    >
-      {children}
-    </span>
-  );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, [string, string]> = {
-    "On time": [T.greenFill, T.green],
-    "Delayed": [T.amberFill, T.amberDeep],
-    "Ongoing": [T.blueFill, T.blue],
-    "Cancelled": [T.redFill, T.red],
-  };
-  const [bg, fg] = map[status] || [T.grayFill, T.gray];
-  return (
-    <span style={{ background: bg, color: fg, fontSize: 12, fontWeight: 600, padding: "3px 9px", borderRadius: 3, whiteSpace: "nowrap" }}>
-      {status}
-    </span>
-  );
-}
-
-function Td({ children, mono }: { children: React.ReactNode; mono?: boolean }) {
-  return (
-    <td className={mono ? "stc-mono" : ""} style={{ textAlign: "left", fontSize: 13, color: T.text, padding: "10px", borderBottom: `1px solid ${T.border}` }}>
-      {children}
-    </td>
-  );
-}
-
 export function Dashboard({
   revenueTrend = defaultRevenueTrend,
   fleetStatus = defaultFleetStatus,
   trips = defaultTrips,
   depotRevenue = defaultDepotRevenue,
 }: DashboardProps) {
-  const delayedTrips = trips.filter((t) => t.status !== "On time");
+  const delayedTrips = trips.filter((t: TripAlertItem) => t.status !== "On time");
 
   return (
     <div>
@@ -222,14 +120,14 @@ export function Dashboard({
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={fleetStatus} dataKey="value" innerRadius={44} outerRadius={68} paddingAngle={2}>
-                  {fleetStatus.map((f, i) => <Cell key={i} fill={f.color} />)}
+                  {fleetStatus.map((f: FleetStatusItem, i: number) => <Cell key={i} fill={f.color} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 6, border: `1px solid ${T.border}` }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 4 }}>
-            {fleetStatus.map((f) => (
+            {fleetStatus.map((f: FleetStatusItem) => (
               <div key={f.name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12 }}>
                 <span style={{ display: "flex", alignItems: "center", gap: 6, color: T.textSoft }}>
                   <Circle size={8} fill={f.color} color={f.color} /> {f.name}
@@ -245,7 +143,7 @@ export function Dashboard({
         <Card title="Live delay alerts">
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <tbody>
-              {delayedTrips.map((t) => (
+              {delayedTrips.map((t: TripAlertItem) => (
                 <tr key={t.id} className="stc-row">
                   <Td mono><RouteChip>{t.id}</RouteChip></Td>
                   <Td mono>{t.route}</Td>
