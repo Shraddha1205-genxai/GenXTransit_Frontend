@@ -35,25 +35,25 @@ const NotificationTemplates = lazy(() => import("./features/organization/masters
 const ComplaintCategories = lazy(() => import("./features/organization/masters/ComplaintCategories"));
 const TaxConfiguration = lazy(() => import("./features/organization/masters/TaxConfiguration"));
 
-const VehicleRegister = lazy(() => import("./features/Operations/fleet/VehicleRegister"));
-const Roster = lazy(() => import("./features/Operations/employees/Roster"));
-const Attendance = lazy(() => import("./features/Operations/employees/Attendance"));
-const RoutesAndSchedule = lazy(() => import("./features/Operations/routesAndSchedule/RoutesAndSchedule"));
-const LiveTracking = lazy(() => import("./features/Operations/liveTracking/LiveTracking"));
+const VehicleRegister = lazy(() => import("./features/operations/fleet/VehicleRegister"));
+const Roster = lazy(() => import("./features/operations/employees/Roster"));
+const Attendance = lazy(() => import("./features/operations/employees/Attendance"));
+const RoutesAndSchedule = lazy(() => import("./features/operations/routesAndSchedule/RoutesAndSchedule"));
+const LiveTracking = lazy(() => import("./features/operations/liveTracking/LiveTracking"));
 
-const FareManagement = lazy(() => import("./features/Commercial/fareManagement/FareManagement"));
-const Ticketing = lazy(() => import("./features/Commercial/ticketing/Ticketing"));
-const Reservations = lazy(() => import("./features/Commercial/reservations/Reservations"));
-const Passes = lazy(() => import("./features/Commercial/passes/Passes"));
+const FareManagement = lazy(() => import("./features/commercial/fareManagement/FareManagement"));
+const Ticketing = lazy(() => import("./features/commercial/ticketing/Ticketing"));
+const Reservations = lazy(() => import("./features/commercial/reservations/Reservations"));
+const Passes = lazy(() => import("./features/commercial/passes/Passes"));
 
-const EtmDevices = lazy(() => import("./features/Systems/etmDevices/EtmDevices"));
-const FinanceWallet = lazy(() => import("./features/Systems/financeWallet/FinanceWallet"));
+const EtmDevices = lazy(() => import("./features/systems/etmDevices/EtmDevices"));
+const FinanceWallet = lazy(() => import("./features/systems/financeWallet/FinanceWallet"));
 
-const ComplaintsAlerts = lazy(() => import("./features/Support/complaintsAlerts/ComplaintsAlerts"));
-const Reports = lazy(() => import("./features/Support/reports/Reports"));
-const Analytics = lazy(() => import("./features/Support/analytics/Analytics"));
-const UsersRoles = lazy(() => import("./features/Support/usersRoles/UsersRoles"));
-const Help = lazy(() => import("./features/Support/help/Help"));
+const ComplaintsAlerts = lazy(() => import("./features/support/complaintsAlerts/ComplaintsAlerts"));
+const Reports = lazy(() => import("./features/support/reports/Reports"));
+const Analytics = lazy(() => import("./features/support/analytics/Analytics"));
+const UsersRoles = lazy(() => import("./features/support/usersRoles/UsersRoles"));
+const Help = lazy(() => import("./features/support/help/Help"));
 
 const AdminAuthScreen = lazy(() => import("./features/auth/AdminAuthScreen"));
 
