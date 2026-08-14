@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { T } from "../../../constants/theme";
-import { Card, RouteChip, Th, Td, Modal } from "../../../components/common";
+import { Card, RouteChip, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface BusStation {
   code: string;
@@ -83,7 +83,7 @@ export function BusStation({ data: propData, depotOptions = [], onAdd, onUpdate,
           </button>
         }
       >
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <Table>
           <thead>
             <tr>
               <Th>Station code</Th>
@@ -118,7 +118,7 @@ export function BusStation({ data: propData, depotOptions = [], onAdd, onUpdate,
               <tr><Td colSpan={6}>No records yet — use Add bus station to create one.</Td></tr>
             )}
           </tbody>
-        </table>
+        </Table>
 
         {modal && (
           <Modal title={`${modal.mode === "add" ? "Add" : "Edit"} — Bus Station`} onClose={() => setModal(null)}>

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { T } from "../../../constants/theme";
-import { Card, RouteChip, Th, Td, Modal } from "../../../components/common";
+import { Card, RouteChip, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface FleetVehicleRecord {
   reg: string;
@@ -96,7 +96,7 @@ export function VehicleRegister({ data: propData, depotOptions = [], onAdd, onUp
           </button>
         }
       >
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <Table>
           <thead>
             <tr>
               <Th>Registration</Th>
@@ -131,7 +131,7 @@ export function VehicleRegister({ data: propData, depotOptions = [], onAdd, onUp
               </tr>
             )}
           </tbody>
-        </table>
+        </Table>
 
         {modal && (
           <Modal title={`${modal.mode === "add" ? "Add" : "Edit"} — Vehicle`} onClose={() => setModal(null)}>

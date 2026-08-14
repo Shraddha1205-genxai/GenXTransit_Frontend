@@ -1,7 +1,7 @@
 import React from "react";
 import { Circle } from "lucide-react";
 import { T } from "../../../constants/theme";
-import { Card, RouteChip, StatusBadge, Th, Td, SectionHeader } from "../../../components/common";
+import { Card, RouteChip, StatusBadge, Th, Td, SectionHeader, Table } from "../../../components/common";
 
 export interface ReservationRecord {
   pnr: string;
@@ -34,7 +34,7 @@ export function Reservations({ reservations, seatMap, boardingPoints }: Reservat
       <SectionHeader eyebrow="TBL_TRANS_TRIP_SEAT_INVENTORY · TBL_TRANS_RESERVATION" title="Reservation management" />
       <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 12 }}>
         <Card title="Reservations">
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <Table>
             <thead>
               <tr>
                 <Th>PNR</Th>
@@ -57,7 +57,7 @@ export function Reservations({ reservations, seatMap, boardingPoints }: Reservat
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         </Card>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <Card title="Seat map · TRP-90215">
@@ -78,7 +78,7 @@ export function Reservations({ reservations, seatMap, boardingPoints }: Reservat
             </div>
           </Card>
           <Card title="Boarding points · MSRTC-9502">
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <Table>
               <thead>
                 <tr>
                   <Th>Point</Th>
@@ -93,7 +93,7 @@ export function Reservations({ reservations, seatMap, boardingPoints }: Reservat
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </Table>
           </Card>
         </div>
       </div>

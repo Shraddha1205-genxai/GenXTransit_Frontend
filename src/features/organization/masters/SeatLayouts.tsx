@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { T } from "../../../constants/theme";
-import { Card, Th, Td, Modal } from "../../../components/common";
+import { Card, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface SeatLayout {
   code: string;
@@ -90,7 +90,7 @@ export function SeatLayouts({ data: propData, categoryOptions = [], onAdd, onUpd
           </button>
         }
       >
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <Table>
           <thead>
             <tr>
               <Th>Code</Th>
@@ -123,7 +123,7 @@ export function SeatLayouts({ data: propData, categoryOptions = [], onAdd, onUpd
               </tr>
             )}
           </tbody>
-        </table>
+        </Table>
 
         {modal && (
           <Modal title={`${modal.mode === "add" ? "Add" : "Edit"} — Seat Layouts`} onClose={() => setModal(null)}>

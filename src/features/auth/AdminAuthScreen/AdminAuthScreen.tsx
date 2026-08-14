@@ -74,7 +74,7 @@ export function AdminAuthScreen({ onLogin, onAddUser }: AdminAuthScreenProps) {
           <div style={{ width: 26, height: 26, background: T.amber, borderRadius: 3, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Bus size={15} color={T.ink} />
           </div>
-          <span className="stc-display" style={{ fontSize: 15, fontWeight: 600 }}>TransitX</span>
+          <span className="stc-display" style={{ fontSize: 15, fontWeight: 600 }}>GenXTransit</span>
         </div>
         <div>
           <div className="stc-display" style={{ fontSize: 28, fontWeight: 600, lineHeight: 1.28, marginBottom: 14 }}>

@@ -1,6 +1,6 @@
 import React from "react";
 import { T } from "../../../constants/theme";
-import { Card, RouteChip, StatusBadge, Th, Td, SectionHeader } from "../../../components/common";
+import { Card, RouteChip, StatusBadge, Th, Td, SectionHeader, Table } from "../../../components/common";
 
 export interface RouteRecord {
   code: string;
@@ -32,7 +32,7 @@ export function RoutesAndSchedule({ routes, trips }: RoutesAndScheduleProps) {
       <SectionHeader eyebrow="TBL_MAST_ROUTE · TBL_MAST_TIMETABLE · TBL_TRANS_TRIP" title="Routes & schedule" />
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1.3fr", gap: 12 }}>
         <Card title="Route master">
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <Table>
             <thead>
               <tr>
                 <Th>Route</Th>
@@ -60,11 +60,11 @@ export function RoutesAndSchedule({ routes, trips }: RoutesAndScheduleProps) {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         </Card>
 
         <Card title="Today's trips">
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <Table>
             <thead>
               <tr>
                 <Th>Trip</Th>
@@ -85,7 +85,7 @@ export function RoutesAndSchedule({ routes, trips }: RoutesAndScheduleProps) {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         </Card>
       </div>
     </div>

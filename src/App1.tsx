@@ -14,6 +14,7 @@ import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, BarChart, Bar, PieChart, Pie, Cell,
 } from "recharts";
+import { Table } from "./components/common";
 
 /* ---------------------------------------------------------------------
    DESIGN TOKENS
@@ -634,7 +635,7 @@ function CrudTable({ title, addLabel, data, idKey, columns, fields, onAdd, onUpd
         </button>
       }
     >
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      <Table>
         <thead>
           <tr>
             {columns.map((c) => <Th key={c.key} align={c.align}>{c.label}</Th>)}
@@ -673,7 +674,7 @@ function CrudTable({ title, addLabel, data, idKey, columns, fields, onAdd, onUpd
             <tr><Td colSpan={columns.length + 1}>{empty || "No records yet — use Add to create one."}</Td></tr>
           )}
         </tbody>
-      </table>
+      </Table>
       {footer}
       {modal?.mode === "add" && (
         <RecordModal
@@ -785,7 +786,7 @@ function Overview() {
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <Card title="Live delay alerts">
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <Table>
             <tbody>
               {trips.filter((t) => t.status !== "On time").map((t) => (
                 <tr key={t.id} className="stc-row">
@@ -795,7 +796,7 @@ function Overview() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         </Card>
         <Card title="Depot-wise revenue today (₹ '000)">
           <div style={{ height: 160 }}>
@@ -1012,7 +1013,7 @@ function DepotsTab() {
                 <KpiCard label="Revenue today" value={`₹${(selected.revenueToday / 1000).toFixed(1)}K`} icon={IndianRupee} tone="green" />
               </div>
               <Card title={`Fleet at ${selected.code} · managed from Fleet`}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <Table>
                   <thead><tr><Th>Registration</Th><Th>Category</Th><Th>Status</Th><Th>Next service / doc</Th></tr></thead>
                   <tbody>
                     {vehiclesData.filter((v) => v.depot === selected.code).map((v) => (
@@ -1027,7 +1028,7 @@ function DepotsTab() {
                       <tr><Td>No vehicles homed at this depot.</Td></tr>
                     )}
                   </tbody>
-                </table>
+                </Table>
               </Card>
             </>
           )}
@@ -1277,7 +1278,7 @@ function Employees() {
       <SubTabs tabs={["Roster", "Attendance"]} active={tab} onChange={setTab} />
       {tab === "Roster" && (
         <Card title="Employee roster">
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <Table>
             <thead><tr><Th>ID</Th><Th>Name</Th><Th>Role</Th><Th>Depot</Th><Th>Shift</Th><Th>Status</Th></tr></thead>
             <tbody>
               {employees.map((e) => (
@@ -1287,7 +1288,7 @@ function Employees() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         </Card>
       )}
       {tab === "Attendance" && (
@@ -1315,7 +1316,7 @@ function RoutesSchedule() {
       <SectionHeader eyebrow="TBL_MAST_ROUTE · TBL_MAST_TIMETABLE · TBL_TRANS_TRIP" title="Routes & schedule" />
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1.3fr", gap: 12 }}>
         <Card title="Route master">
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <Table>
             <thead><tr><Th>Route</Th><Th>Service</Th><Th>Type</Th><Th>Distance</Th><Th>Fare model</Th></tr></thead>
             <tbody>
               {routes.map((r) => (
@@ -1332,10 +1333,10 @@ function RoutesSchedule() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         </Card>
         <Card title="Today's trips">
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <Table>
             <thead><tr><Th>Trip</Th><Th>Route</Th><Th>Crew</Th><Th>Sched.</Th><Th>Status</Th></tr></thead>
             <tbody>
               {trips.map((t) => (
@@ -1348,7 +1349,7 @@ function RoutesSchedule() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         </Card>
       </div>
     </div>
@@ -1408,7 +1409,7 @@ function Fares() {
       <SectionHeader eyebrow="TBL_MAST_FARE_POLICY · TBL_MAST_CONCESSION_CATEGORY" title="Fare management" />
       <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: 12, marginBottom: 12 }}>
         <Card title="Fare policies">
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <Table>
             <thead><tr><Th>Policy</Th><Th>Model</Th><Th>Base / rate</Th><Th>Route</Th><Th>Status</Th></tr></thead>
             <tbody>
               {farePolicies.map((f) => (
@@ -1421,7 +1422,7 @@ function Fares() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         </Card>
         <Card title="Public fare calculator">
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -1437,14 +1438,14 @@ function Fares() {
         </Card>
       </div>
       <Card title="Concession categories">
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <Table>
           <thead><tr><Th>Category</Th><Th>Discount</Th><Th>Eligibility proof</Th></tr></thead>
           <tbody>
             {concessions.map((c) => (
               <tr key={c.name} className="stc-row"><Td>{c.name}</Td><Td>{c.discount}</Td><Td>{c.proof}</Td></tr>
             ))}
           </tbody>
-        </table>
+        </Table>
       </Card>
     </div>
   );
@@ -1461,7 +1462,7 @@ function Ticketing() {
         <KpiCard label="Voided (audit)" value="14" icon={AlertTriangle} tone="amber" />
       </div>
       <Card title="Recent tickets">
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <Table>
           <thead><tr><Th>Booking ref</Th><Th>Trip</Th><Th>Channel</Th><Th>Passenger</Th><Th align="right">Fare</Th><Th>Status</Th></tr></thead>
           <tbody>
             {tickets.map((t) => (
@@ -1475,7 +1476,7 @@ function Ticketing() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </Table>
       </Card>
     </div>
   );
@@ -1492,7 +1493,7 @@ function Passes() {
         <KpiCard label="Expired (unrenewed)" value="1,205" icon={XCircle} tone="red" />
       </div>
       <Card title="Passenger passes">
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <Table>
           <thead><tr><Th>Pass no.</Th><Th>Type</Th><Th>Holder</Th><Th>Valid to</Th><Th>Status</Th></tr></thead>
           <tbody>
             {passes.map((p) => (
@@ -1505,7 +1506,7 @@ function Passes() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </Table>
       </Card>
     </div>
   );
@@ -1517,7 +1518,7 @@ function Reservations() {
       <SectionHeader eyebrow="TBL_TRANS_TRIP_SEAT_INVENTORY · TBL_TRANS_RESERVATION" title="Reservation management" />
       <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 12 }}>
         <Card title="Reservations">
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <Table>
             <thead><tr><Th>PNR</Th><Th>Trip</Th><Th>Passenger</Th><Th>Seat</Th><Th>Boarding point</Th><Th>Status</Th></tr></thead>
             <tbody>
               {reservations.map((r) => (
@@ -1531,7 +1532,7 @@ function Reservations() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         </Card>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <Card title="Seat map · TRP-90215">
@@ -1552,14 +1553,14 @@ function Reservations() {
             </div>
           </Card>
           <Card title="Boarding points · MSRTC-9502">
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <Table>
               <thead><tr><Th>Point</Th><Th align="right">Departure</Th></tr></thead>
               <tbody>
                 {boardingPoints.map((b) => (
                   <tr key={b.name} className="stc-row"><Td>{b.name}</Td><Td align="right" mono>{b.time}</Td></tr>
                 ))}
               </tbody>
-            </table>
+            </Table>
           </Card>
         </div>
       </div>
@@ -1604,7 +1605,7 @@ function FinanceWallet() {
       <SectionHeader eyebrow="TBL_TRANS_DAILY_SHIFT_COLLECTION · TBL_TRANS_WALLET_TRANSACTION" title="Finance & wallet" />
       <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 12 }}>
         <Card title="Cash reconciliation by depot">
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <Table>
             <thead><tr><Th>Depot</Th><Th align="right">Declared</Th><Th align="right">Deposited</Th><Th align="right">Discrepancy</Th></tr></thead>
             <tbody>
               {collections.map((c) => (
@@ -1620,10 +1621,10 @@ function FinanceWallet() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         </Card>
         <Card title="Wallet transactions">
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <Table>
             <thead><tr><Th>Ref</Th><Th>Passenger</Th><Th>Type</Th><Th align="right">Amount</Th></tr></thead>
             <tbody>
               {walletTxns.map((w) => (
@@ -1639,7 +1640,7 @@ function FinanceWallet() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         </Card>
       </div>
     </div>
@@ -1651,7 +1652,7 @@ function Support() {
     <div>
       <SectionHeader eyebrow="TBL_TRANS_COMPLAINT · TBL_TRANS_SOS_ALERT" title="Complaints & support" />
       <Card title="Open complaints">
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <Table>
           <thead><tr><Th>ID</Th><Th>Category</Th><Th>Trip</Th><Th>SLA</Th><Th>Status</Th></tr></thead>
           <tbody>
             {complaints.map((c) => (
@@ -1664,7 +1665,7 @@ function Support() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </Table>
       </Card>
     </div>
   );
@@ -1779,7 +1780,7 @@ function Admin() {
     <div>
       <SectionHeader eyebrow="TBL_MAST_APP_USER · TBL_MAST_ROLE" title="User & role administration" />
       <Card title="System users">
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <Table>
           <thead><tr><Th>User</Th><Th>Role</Th><Th>Depot scope</Th><Th>Status</Th></tr></thead>
           <tbody>
             {users.map((u) => (
@@ -1791,7 +1792,7 @@ function Admin() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </Table>
       </Card>
     </div>
   );
@@ -1939,7 +1940,7 @@ function ConsoleShell() {
             <div style={{ width: 26, height: 26, background: T.amber, borderRadius: 3, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Bus size={15} color={T.ink} />
             </div>
-            <span className="stc-display" style={{ color: "#F4F0E4", fontSize: 15, fontWeight: 600 }}>TransitX</span>
+            <span className="stc-display" style={{ color: "#F4F0E4", fontSize: 15, fontWeight: 600 }}>GenXTransit</span>
           </div>
           <div style={{ fontSize: 11, color: "#7C8A99", marginTop: 4, letterSpacing: "0.03em" }}>MSRTC · BEST · PMPML — MAHARASHTRA</div>
         </div>

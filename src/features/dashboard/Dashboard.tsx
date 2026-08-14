@@ -8,7 +8,7 @@ import {
   Tooltip, BarChart, Bar, PieChart, Pie, Cell
 } from "recharts";
 import { T } from "../../constants/theme";
-import { Card, RouteChip, StatusBadge, Td, KpiCard, SectionHeader } from "../../components/common";
+import { Card, RouteChip, StatusBadge, Td, KpiCard, SectionHeader, Table } from "../../components/common";
 
 export interface RevenueTrendItem {
   day: string;
@@ -141,7 +141,7 @@ export function Dashboard({
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <Card title="Live delay alerts">
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <Table>
             <tbody>
               {delayedTrips.map((t: TripAlertItem) => (
                 <tr key={t.id} className="stc-row">
@@ -151,7 +151,7 @@ export function Dashboard({
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         </Card>
 
         <Card title="Depot-wise revenue today (₹ '000)">

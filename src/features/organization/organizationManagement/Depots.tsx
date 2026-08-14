@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2, Bus, TrendingUp, Milestone, IndianRupee } from "lucide-react";
 import { T } from "../../../constants/theme";
-import { Card, RouteChip, StatusBadge, KpiCard, Th, Td, Modal } from "../../../components/common";
+import { Card, RouteChip, StatusBadge, KpiCard, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface Depot {
   code: string;
@@ -166,7 +166,7 @@ export function Depots({
                 <KpiCard label="Revenue today" value={`₹${(selected.revenueToday / 1000).toFixed(1)}K`} icon={IndianRupee} tone="green" />
               </div>
               <Card title={`Fleet at ${selected.code} · managed from Fleet`}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <Table>
                   <thead>
                     <tr><Th>Registration</Th><Th>Category</Th><Th>Status</Th><Th>Next service / doc</Th></tr>
                   </thead>
@@ -183,7 +183,7 @@ export function Depots({
                       <tr><Td colSpan={4}>No vehicles homed at this depot.</Td></tr>
                     )}
                   </tbody>
-                </table>
+                </Table>
               </Card>
             </>
           )}

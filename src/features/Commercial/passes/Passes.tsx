@@ -1,6 +1,6 @@
 import React from "react";
 import { Armchair, Clock, AlertTriangle, XCircle } from "lucide-react";
-import { Card, RouteChip, StatusBadge, Th, Td, KpiCard, SectionHeader } from "../../../components/common";
+import { Card, RouteChip, StatusBadge, Th, Td, KpiCard, SectionHeader, Table } from "../../../components/common";
 
 export interface PassRecord {
   number: string;
@@ -25,7 +25,7 @@ export function Passes({ passes }: PassesProps) {
         <KpiCard label="Expired (unrenewed)" value="1,205" icon={XCircle} tone="red" />
       </div>
       <Card title="Passenger passes">
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <Table>
           <thead>
             <tr>
               <Th>Pass no.</Th>
@@ -46,7 +46,7 @@ export function Passes({ passes }: PassesProps) {
               </tr>
             ))}
           </tbody>
-        </table>
+        </Table>
       </Card>
     </div>
   );

@@ -9,7 +9,7 @@ import {
   LineChart as LineChartIcon
 } from "lucide-react";
 
-import { T, fontStack } from "./constants/theme";
+import { T, fontStack, ThemeProvider } from "./constants/theme";
 import { Sidebar, Header, SubTabs, SectionHeader, KpiCard } from "./components/common";
 
 // Lazy-loaded Feature Pages
@@ -56,6 +56,14 @@ const UsersRoles = lazy(() => import("./features/Support/usersRoles/UsersRoles")
 const Help = lazy(() => import("./features/Support/help/Help"));
 
 const AdminAuthScreen = lazy(() => import("./features/auth/AdminAuthScreen"));
+
+const CHART_COLORS = {
+  green: "#2F8F5B",
+  amber: "#E5A339",
+  red: "#C6453B",
+  gray: "#8B9098",
+  blue: "#3E7CB1",
+};
 
 /* ---------------------------------------------------------------------
    MOCK DATA — Maharashtra: MSRTC (State Transport / ST) + BEST & PMPML
@@ -150,10 +158,10 @@ const revenueTrend = [
 ];
 
 const fleetStatus = [
-  { name: "Active", value: 256, color: T.green },
-  { name: "Maintenance", value: 29, color: T.amber },
-  { name: "Breakdown", value: 9, color: T.red },
-  { name: "Retired", value: 7, color: T.gray },
+  { name: "Active", value: 256, color: CHART_COLORS.green },
+  { name: "Maintenance", value: 29, color: CHART_COLORS.amber },
+  { name: "Breakdown", value: 9, color: CHART_COLORS.red },
+  { name: "Retired", value: 7, color: CHART_COLORS.gray },
 ];
 
 const depotRevenue = depots.map((d) => ({ name: d.code.split("-").slice(0, 2).join("-"), revenue: Math.round(d.revenueToday / 1000) }));
@@ -185,10 +193,10 @@ const onTimeByDepot = [
 ];
 
 const channelSplit = [
-  { name: "ETM", value: 44, color: T.blue },
-  { name: "Mobile app", value: 31, color: T.green },
-  { name: "Counter", value: 15, color: T.amber },
-  { name: "Web portal", value: 10, color: T.gray },
+  { name: "ETM", value: 44, color: CHART_COLORS.blue },
+  { name: "Mobile app", value: 31, color: CHART_COLORS.green },
+  { name: "Counter", value: 15, color: CHART_COLORS.amber },
+  { name: "Web portal", value: 10, color: CHART_COLORS.gray },
 ];
 
 const users = [
@@ -876,25 +884,27 @@ function AuthGate() {
 
 export default function TransitOpsConsole() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <DataProvider>
-        <BrowserRouter>
-          <AuthGate />
-        </BrowserRouter>
-      </DataProvider>
-      <Toaster
-        position="bottom-right"
-        toastOptions={{
-          duration: 3000,
-          style: {
-            background: "#112236",
-            color: "#ffffff",
-            border: "1px solid rgba(255,255,255,0.1)",
-            borderRadius: "8px",
-            fontSize: "13px",
-          },
-        }}
-      />
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <DataProvider>
+          <BrowserRouter>
+            <AuthGate />
+          </BrowserRouter>
+        </DataProvider>
+        <Toaster
+          position="bottom-right"
+          toastOptions={{
+            duration: 3000,
+            style: {
+              background: "#112236",
+              color: "#ffffff",
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: "8px",
+              fontSize: "13px",
+            },
+          }}
+        />
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }

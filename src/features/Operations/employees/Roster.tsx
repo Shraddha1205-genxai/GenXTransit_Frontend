@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, Th, Td, StatusBadge } from "../../../components/common";
+import { Card, Th, Td, StatusBadge, Table } from "../../../components/common";
 
 export interface EmployeeRecord {
   id: string;
@@ -17,7 +17,7 @@ interface RosterProps {
 export function Roster({ data }: RosterProps) {
   return (
     <Card title="Employee roster">
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      <Table>
         <thead>
           <tr>
             <Th>ID</Th>
@@ -42,7 +42,7 @@ export function Roster({ data }: RosterProps) {
             </tr>
           ))}
         </tbody>
-      </table>
+      </Table>
     </Card>
   );
 }

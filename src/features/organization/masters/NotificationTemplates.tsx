@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { T } from "../../../constants/theme";
-import { Card, Th, Td, Modal } from "../../../components/common";
+import { Card, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface NotificationTemplate {
   code: string;
@@ -89,7 +89,7 @@ export function NotificationTemplates({ data: propData, onAdd, onUpdate, onDelet
           </button>
         }
       >
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <Table>
           <thead>
             <tr>
               <Th>Code</Th>
@@ -122,7 +122,7 @@ export function NotificationTemplates({ data: propData, onAdd, onUpdate, onDelet
               </tr>
             )}
           </tbody>
-        </table>
+        </Table>
 
         {modal && (
           <Modal title={`${modal.mode === "add" ? "Add" : "Edit"} — Notification Templates`} onClose={() => setModal(null)}>

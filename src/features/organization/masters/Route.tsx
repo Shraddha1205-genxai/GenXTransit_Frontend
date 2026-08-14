@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { T } from "../../../constants/theme";
-import { Card, RouteChip, Th, Td, Modal } from "../../../components/common";
+import { Card, RouteChip, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface Route {
   code: string;
@@ -101,7 +101,7 @@ export function Route({ data: propData, onAdd, onUpdate, onDelete }: RoutesPageP
           </button>
         }
       >
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <Table>
           <thead>
             <tr>
               <Th>Route</Th>
@@ -143,7 +143,7 @@ export function Route({ data: propData, onAdd, onUpdate, onDelete }: RoutesPageP
               </tr>
             )}
           </tbody>
-        </table>
+        </Table>
 
         {modal && (
           <Modal title={`${modal.mode === "add" ? "Add" : "Edit"} — Routes`} onClose={() => setModal(null)}>

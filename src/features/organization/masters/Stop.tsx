@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { T } from "../../../constants/theme";
-import { Card, RouteChip, Th, Td, Modal } from "../../../components/common";
+import { Card, RouteChip, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface Stop {
   code: string;
@@ -93,7 +93,7 @@ export function Stop({ data: propData, routeOptions = [], onAdd, onUpdate, onDel
           </button>
         }
       >
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <Table>
           <thead>
             <tr>
               <Th>Stop code</Th>
@@ -128,7 +128,7 @@ export function Stop({ data: propData, routeOptions = [], onAdd, onUpdate, onDel
               </tr>
             )}
           </tbody>
-        </table>
+        </Table>
 
         {modal && (
           <Modal title={`${modal.mode === "add" ? "Add" : "Edit"} — Stops`} onClose={() => setModal(null)}>

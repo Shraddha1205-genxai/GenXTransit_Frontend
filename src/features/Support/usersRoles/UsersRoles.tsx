@@ -1,7 +1,7 @@
 import React from "react";
 import { Trash2 } from "lucide-react";
 import { T } from "../../../constants/theme";
-import { Card, StatusBadge, Th, Td, SectionHeader } from "../../../components/common";
+import { Card, StatusBadge, Th, Td, SectionHeader, Table } from "../../../components/common";
 
 export interface UserRecord {
   id: string;
@@ -22,7 +22,7 @@ export function UsersRoles({ data, onUpdate, onDelete }: UsersRolesProps) {
     <div>
       <SectionHeader eyebrow="TBL_MAST_APP_USER · TBL_MAST_ROLE" title="User & role administration" />
       <Card title="System users">
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <Table>
           <thead>
             <tr>
               <Th>User</Th>
@@ -54,7 +54,7 @@ export function UsersRoles({ data, onUpdate, onDelete }: UsersRolesProps) {
               </tr>
             ))}
           </tbody>
-        </table>
+        </Table>
       </Card>
     </div>
   );

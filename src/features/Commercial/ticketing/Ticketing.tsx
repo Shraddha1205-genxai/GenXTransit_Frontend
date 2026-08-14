@@ -1,7 +1,7 @@
 import React from "react";
 import { Ticket, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import { T } from "../../../constants/theme";
-import { Card, RouteChip, StatusBadge, Th, Td, KpiCard, SectionHeader } from "../../../components/common";
+import { Card, RouteChip, StatusBadge, Th, Td, KpiCard, SectionHeader, Table } from "../../../components/common";
 
 export interface TicketRecord {
   ref: string;
@@ -27,7 +27,7 @@ export function Ticketing({ tickets }: TicketingProps) {
         <KpiCard label="Voided (audit)" value="14" icon={AlertTriangle} tone="amber" />
       </div>
       <Card title="Recent tickets">
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <Table>
           <thead>
             <tr>
               <Th>Booking ref</Th>
@@ -50,7 +50,7 @@ export function Ticketing({ tickets }: TicketingProps) {
               </tr>
             ))}
           </tbody>
-        </table>
+        </Table>
       </Card>
     </div>
   );

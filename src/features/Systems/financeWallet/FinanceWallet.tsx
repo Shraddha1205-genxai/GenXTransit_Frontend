@@ -1,6 +1,6 @@
 import React from "react";
 import { T } from "../../../constants/theme";
-import { Card, Th, Td, SectionHeader } from "../../../components/common";
+import { Card, Th, Td, SectionHeader, Table } from "../../../components/common";
 
 export interface DailyCollectionRecord {
   depot: string;
@@ -27,7 +27,7 @@ export function FinanceWallet({ collections, walletTxns }: FinanceWalletProps) {
       <SectionHeader eyebrow="TBL_TRANS_DAILY_SHIFT_COLLECTION · TBL_TRANS_WALLET_TRANSACTION" title="Finance & wallet" />
       <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 12 }}>
         <Card title="Cash reconciliation by depot">
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <Table>
             <thead>
               <tr>
                 <Th>Depot</Th>
@@ -50,10 +50,10 @@ export function FinanceWallet({ collections, walletTxns }: FinanceWalletProps) {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         </Card>
         <Card title="Wallet transactions">
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <Table>
             <thead>
               <tr>
                 <Th>Ref</Th>
@@ -76,7 +76,7 @@ export function FinanceWallet({ collections, walletTxns }: FinanceWalletProps) {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         </Card>
       </div>
     </div>

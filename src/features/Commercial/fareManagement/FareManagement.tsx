@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { T } from "../../../constants/theme";
-import { Card, RouteChip, StatusBadge, Th, Td, SectionHeader } from "../../../components/common";
+import { Card, RouteChip, StatusBadge, Th, Td, SectionHeader, Table } from "../../../components/common";
 
 export interface FarePolicyRecord {
   code: string;
@@ -31,7 +31,7 @@ export function FareManagement({ farePolicies, concessions }: FareManagementProp
       <SectionHeader eyebrow="TBL_MAST_FARE_POLICY · TBL_MAST_CONCESSION_CATEGORY" title="Fare management" />
       <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: 12, marginBottom: 12 }}>
         <Card title="Fare policies">
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <Table>
             <thead>
               <tr>
                 <Th>Policy</Th>
@@ -52,7 +52,7 @@ export function FareManagement({ farePolicies, concessions }: FareManagementProp
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         </Card>
         <Card title="Public fare calculator">
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -68,7 +68,7 @@ export function FareManagement({ farePolicies, concessions }: FareManagementProp
         </Card>
       </div>
       <Card title="Concession categories">
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <Table>
           <thead>
             <tr>
               <Th>Category</Th>
@@ -85,7 +85,7 @@ export function FareManagement({ farePolicies, concessions }: FareManagementProp
               </tr>
             ))}
           </tbody>
-        </table>
+        </Table>
       </Card>
     </div>
   );

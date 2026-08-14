@@ -6,10 +6,24 @@ interface ThProps {
   align?: "left" | "right" | "center";
 }
 
+export function Table({ children, maxHeight = 400 }: { children: React.ReactNode; maxHeight?: number }) {
+  return (
+    <div className="stc-table-scroll" style={{ maxHeight, overflowY: "auto", overflowX: "auto" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        {children}
+      </table>
+    </div>
+  );
+}
+
 export function Th({ children, align }: ThProps) {
   return (
     <th
       style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 1,
+        background: T.panel,
         textAlign: align || "left",
         fontSize: 11,
         fontWeight: 600,

@@ -1,6 +1,6 @@
 import React from "react";
 import { T } from "../../../constants/theme";
-import { Card, RouteChip, StatusBadge, Th, Td, SectionHeader } from "../../../components/common";
+import { Card, RouteChip, StatusBadge, Th, Td, SectionHeader, Table } from "../../../components/common";
 
 export interface ComplaintRecord {
   id: string;
@@ -19,7 +19,7 @@ export function ComplaintsAlerts({ complaints }: ComplaintsAlertsProps) {
     <div>
       <SectionHeader eyebrow="TBL_TRANS_COMPLAINT · TBL_TRANS_SOS_ALERT" title="Complaints & support" />
       <Card title="Open complaints">
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <Table>
           <thead>
             <tr>
               <Th>ID</Th>
@@ -40,7 +40,7 @@ export function ComplaintsAlerts({ complaints }: ComplaintsAlertsProps) {
               </tr>
             ))}
           </tbody>
-        </table>
+        </Table>
       </Card>
     </div>
   );

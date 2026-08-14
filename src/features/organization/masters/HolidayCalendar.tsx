@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { T } from "../../../constants/theme";
-import { Card, Th, Td, Modal } from "../../../components/common";
+import { Card, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface HolidayItem {
   id: string;
@@ -93,7 +93,7 @@ export function HolidayCalendar({ data: propData, onAdd, onUpdate, onDelete }: H
           </button>
         }
       >
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <Table>
           <thead>
             <tr>
               <Th>Date</Th>
@@ -126,7 +126,7 @@ export function HolidayCalendar({ data: propData, onAdd, onUpdate, onDelete }: H
               </tr>
             )}
           </tbody>
-        </table>
+        </Table>
 
         {modal && (
           <Modal title={`${modal.mode === "add" ? "Add" : "Edit"} — Holiday Calendar`} onClose={() => setModal(null)}>
