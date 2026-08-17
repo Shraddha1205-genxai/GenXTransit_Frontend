@@ -43,7 +43,7 @@ export function Header() {
 
   return (
     <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 24px", borderBottom: `1px solid ${T.border}`, background: T.panel }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: T.textFaint }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: T.textSoft }}>
         <span>Transit Ops</span>
         {segments.length === 0 && (
           <>
@@ -54,7 +54,7 @@ export function Header() {
         {segments.map((seg, idx) => (
           <React.Fragment key={idx}>
             <ChevronRight size={14} />
-            <span style={{ color: idx === segments.length - 1 ? T.text : T.textFaint, fontWeight: idx === segments.length - 1 ? 600 : 400 }}>
+            <span style={{ color: idx === segments.length - 1 ? T.text : T.textSoft, fontWeight: idx === segments.length - 1 ? 600 : 400 }}>
               {seg}
             </span>
           </React.Fragment>
@@ -100,7 +100,7 @@ export function Header() {
         <div ref={langRef} style={{ position: "relative" }}>
           <div
             onClick={() => setLangOpen(!langOpen)}
-            style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: T.textFaint, cursor: "pointer", userSelect: "none" }}
+            style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: T.textSoft, cursor: "pointer", userSelect: "none" }}
           >
             <Globe size={13} /> {LANGUAGES.find((l) => l.code === selectedLang)?.label || "English"} <ChevronDown size={13} />
           </div>
@@ -129,7 +129,7 @@ export function Header() {
                   style={{
                     padding: "8px 12px",
                     fontSize: 12,
-                    color: lang.code === selectedLang ? T.text : T.textFaint,
+                    color: lang.code === selectedLang ? T.text : T.textSoft,
                     background: lang.code === selectedLang ? T.hover : "transparent",
                     cursor: "pointer",
                     whiteSpace: "nowrap",
@@ -148,7 +148,7 @@ export function Header() {
           )}
         </div>
         
-        <Bell size={17} color={T.textFaint} />
+        <Bell size={17} color={T.textSoft} />
       </div>
     </header>
   );

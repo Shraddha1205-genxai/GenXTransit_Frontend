@@ -16,6 +16,7 @@ export function Modal({ title, onClose, children, width }: ModalProps) {
       onClick={onClose}
     >
       <div
+        className="stc-no-scrollbar"
         onClick={(e) => e.stopPropagation()}
         style={{ background: T.panel, borderRadius: 8, width: width || 460, maxWidth: "100%", maxHeight: "85vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(16,27,38,0.35)" }}
       >

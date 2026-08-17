@@ -33,16 +33,16 @@ export function Sidebar({ nav, session, onLogout }: SidebarProps) {
           <div style={{ width: 26, height: 26, background: T.amber, borderRadius: 3, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Bus size={15} color={T.ink} />
           </div>
-          <span className="stc-display" style={{ color: T.panel, fontSize: 15, fontWeight: 600 }}>GenXTransit</span>
+          <span className="stc-display" style={{ color: "#F4F0E4", fontSize: 15, fontWeight: 600 }}>TransitX</span>
         </div>
-        <div style={{ fontSize: 11, color: T.canvas, marginTop: 4, letterSpacing: "0.03em" }}>MSRTC · BEST · PMPML — MAHARASHTRA</div>
+        <div style={{ fontSize: 11, color: "#7C8A99", marginTop: 4, letterSpacing: "0.03em" }}>MSRTC · BEST · PMPML — MAHARASHTRA</div>
       </div>
 
       <nav className="stc-scroll" style={{ flex: 1, overflowY: "auto", padding: "10px 10px" }}>
         {nav.map((g, gi) => (
           <div key={gi} style={{ marginBottom: 14 }}>
             {g.group && (
-              <div style={{ fontSize: 10, fontWeight: 800, color: T.textFaint, textTransform: "uppercase", letterSpacing: "0.07em", padding: "4px 10px" }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: "#5E6C7B", textTransform: "uppercase", letterSpacing: "0.07em", padding: "4px 10px" }}>
                 {g.group}
               </div>
             )}
@@ -56,13 +56,13 @@ export function Sidebar({ nav, session, onLogout }: SidebarProps) {
                   style={({ isActive }) => ({
                     display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "8px 10px 8px 13px",
                     background: isActive ? T.ink2 : "transparent", border: "none", borderRadius: 4, cursor: "pointer",
-                     color: isActive ? T.panel : T.canvas, fontSize: 13, fontWeight: 500, marginBottom: 1, textAlign: "left",
+                    color: isActive ? "#F4F0E4" : "#9AA6B2", fontSize: 13, fontWeight: 500, marginBottom: 1, textAlign: "left",
                     textDecoration: "none", boxSizing: "border-box"
                   })}
                 >
                   {({ isActive }) => (
                     <>
-                      <Icon size={16} color={isActive ? T.amber : T.canvas} />
+                      <Icon size={16} color={isActive ? T.amber : "#6B7885"} />
                       {item.label}
                     </>
                   )}
@@ -78,11 +78,11 @@ export function Sidebar({ nav, session, onLogout }: SidebarProps) {
           {session.name.slice(0, 2).toUpperCase()}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: T.panel, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{session.name}</div>
-          <div style={{ fontSize: 11, color: T.canvas, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{session.role} · {session.depot}</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "#F4F0E4", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{session.name}</div>
+          <div style={{ fontSize: 11, color: "#7C8A99", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{session.role} · {session.depot}</div>
         </div>
         <button onClick={onLogout} title="Log out" style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex", flexShrink: 0 }}>
-          <LogOut size={15} color={T.canvas} />
+          <LogOut size={15} color="#9AA6B2" />
         </button>
       </div>
     </aside>

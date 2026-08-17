@@ -589,7 +589,7 @@ function SeatLayoutsTab() {
 }
 function HolidayCalendarTab() {
   const [holidaysData, holidaysCrud] = useCrud("holidays", "id");
-  const [, dispatch] = useContext(DataContext);
+  // const [, dispatch] = useContext(DataContext);
   return <HolidayCalendar data={holidaysData} onAdd={(v) => holidaysCrud.add({ id: `HOL-${Math.floor(Math.random() * 9000) + 1000}`, ...v })} onUpdate={holidaysCrud.update} onDelete={holidaysCrud.remove} />;
 }
 function NotificationTemplatesTab() {
