@@ -146,29 +146,37 @@ export function Route({ data: propData, onAdd, onUpdate, onDelete }: RoutesPageP
         </Table>
 
         {modal && (
-          <Modal title={`${modal.mode === "add" ? "Add" : "Edit"} — Routes`} onClose={() => setModal(null)}>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>Route code</label>
-              <input
-                disabled={modal.mode === "edit"}
-                style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box" }}
-                value={formData.code || ""}
-                onChange={(e) => setFormData((s) => ({ ...s, code: e.target.value }))}
-              />
-            </div>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>Name</label>
-              <input
-                style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box" }}
-                value={formData.name || ""}
-                onChange={(e) => setFormData((s) => ({ ...s, name: e.target.value }))}
-              />
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-              <div>
-                <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>Service</label>
+          <Modal
+            title={`${modal.mode === "add" ? "Add" : "Edit"} — Routes`}
+            subtitle={modal.mode === "add" ? "Create a new route" : "Update route details"}
+            onClose={() => setModal(null)}
+            width={640}
+            footer={
+              <>
+                <button className="stc-btn stc-btn-ghost" onClick={() => setModal(null)}>Cancel</button>
+                <button className="stc-btn stc-btn-primary" onClick={handleSave}>Save changes</button>
+              </>
+            }
+          >
+            <div className="stc-form-grid">
+              <div className="stc-field">
+                <label className="stc-field-label">Route code</label>
+                <input
+                  disabled={modal.mode === "edit"}
+                  value={formData.code || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, code: e.target.value }))}
+                />
+              </div>
+              <div className="stc-field">
+                <label className="stc-field-label">Name</label>
+                <input
+                  value={formData.name || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, name: e.target.value }))}
+                />
+              </div>
+              <div className="stc-field">
+                <label className="stc-field-label">Service</label>
                 <select
-                  style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box", background: T.panel }}
                   value={formData.service || serviceOptions[0]}
                   onChange={(e) => setFormData((s) => ({ ...s, service: e.target.value }))}
                 >
@@ -177,10 +185,9 @@ export function Route({ data: propData, onAdd, onUpdate, onDelete }: RoutesPageP
                   ))}
                 </select>
               </div>
-              <div>
-                <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>Type</label>
+              <div className="stc-field">
+                <label className="stc-field-label">Type</label>
                 <select
-                  style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box", background: T.panel }}
                   value={formData.type || typeOptions[0]}
                   onChange={(e) => setFormData((s) => ({ ...s, type: e.target.value }))}
                 >
@@ -189,20 +196,16 @@ export function Route({ data: propData, onAdd, onUpdate, onDelete }: RoutesPageP
                   ))}
                 </select>
               </div>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-              <div>
-                <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>Distance</label>
+              <div className="stc-field">
+                <label className="stc-field-label">Distance</label>
                 <input
-                  style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box" }}
                   value={formData.distance || ""}
                   onChange={(e) => setFormData((s) => ({ ...s, distance: e.target.value }))}
                 />
               </div>
-              <div>
-                <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>Fare model</label>
+              <div className="stc-field">
+                <label className="stc-field-label">Fare model</label>
                 <select
-                  style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box", background: T.panel }}
                   value={formData.fareModel || fareModelOptions[0]}
                   onChange={(e) => setFormData((s) => ({ ...s, fareModel: e.target.value }))}
                 >
@@ -211,24 +214,27 @@ export function Route({ data: propData, onAdd, onUpdate, onDelete }: RoutesPageP
                   ))}
                 </select>
               </div>
+              <div className="stc-field">
+                <label className="stc-field-label">Duration</label>
+                <input
+                  value={formData.duration || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, duration: e.target.value }))}
+                />
+              </div>
             </div>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>Duration</label>
-              <input
-                style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box" }}
-                value={formData.duration || ""}
-                onChange={(e) => setFormData((s) => ({ ...s, duration: e.target.value }))}
-              />
-            </div>
+          </Modal>
+        )}
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12 }}>
-              <button onClick={() => setModal(null)} style={{ padding: "8px 14px", borderRadius: 4, border: `1px solid ${T.border}`, background: T.panel, color: T.textSoft, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                Cancel
-              </button>
-              <button onClick={handleSave} style={{ padding: "8px 14px", borderRadius: 4, border: "none", background: T.ink, color: "#F4F0E4", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                Save
-              </button>
-            </div>
+        {toDelete && (
+          <Modal title="Delete — Route" subtitle="This action cannot be undone" icon={<Trash2 size={20} color={T.red} />} iconVariant="danger" onClose={() => setToDelete(null)} width={420} footer={
+            <>
+              <button className="stc-btn stc-btn-ghost" onClick={() => setToDelete(null)}>Cancel</button>
+              <button className="stc-btn stc-btn-danger" onClick={handleConfirmDelete}>Delete</button>
+            </>
+          }>
+            <p style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.7, margin: 0 }}>
+              This will permanently remove {toDelete.code} from the list. This can't be undone.
+            </p>
           </Modal>
         )}
 
@@ -241,7 +247,7 @@ export function Route({ data: propData, onAdd, onUpdate, onDelete }: RoutesPageP
               <button onClick={() => setToDelete(null)} style={{ padding: "8px 14px", borderRadius: 4, border: `1px solid ${T.border}`, background: T.panel, color: T.textSoft, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                 Cancel
               </button>
-              <button onClick={handleConfirmDelete} style={{ padding: "8px 14px", borderRadius: 4, border: "none", background: T.red, color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              <button onClick={handleConfirmDelete} style={{ padding: "8px 14px", borderRadius: 4, border: "none", background: T.red, color: T.panel, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                 Delete
               </button>
             </div>

@@ -775,14 +775,15 @@ const NAV = [
 ];
 
 function ConsoleShell({ session, onLogout }: { session: any, onLogout: () => void }) {
+  const [collapsed, setCollapsed] = useState(false);
   return (
     <div className="stc-body" style={{ display: "flex", width: "100%", height: "100vh", overflow: "hidden", background: T.canvas, color: T.text }}>
       <style>{fontStack}</style>
 
-      <Sidebar nav={NAV} session={session} onLogout={onLogout} />
+      <Sidebar nav={NAV} session={session} onLogout={onLogout} collapsed={collapsed} onToggleCollapse={() => setCollapsed((c) => !c)} />
 
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
-        <Header />
+        <Header onToggleSidebar={() => setCollapsed((c) => !c)} />
         <main className="stc-scroll" style={{ flex: 1, overflowY: "auto", padding: 24 }}>
           <Outlet />
         </main>
@@ -896,9 +897,9 @@ export default function TransitOpsConsole() {
           toastOptions={{
             duration: 3000,
             style: {
-              background: "#112236",
-              color: "#ffffff",
-              border: "1px solid rgba(255,255,255,0.1)",
+              background: T.ink,
+              color: T.inkText,
+              border: "1px solid " + T.inkBorder,
               borderRadius: "8px",
               fontSize: "13px",
             },

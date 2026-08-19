@@ -125,57 +125,55 @@ export function TaxConfiguration({ data: propData, onAdd, onUpdate, onDelete }: 
         </Table>
 
         {modal && (
-          <Modal title={`${modal.mode === "add" ? "Add" : "Edit"} — Tax Configuration`} onClose={() => setModal(null)}>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>Code</label>
-              <input
-                disabled={modal.mode === "edit"}
-                style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box" }}
-                value={formData.code || ""}
-                onChange={(e) => setFormData((s) => ({ ...s, code: e.target.value }))}
-              />
-            </div>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>Name</label>
-              <input
-                style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box" }}
-                value={formData.name || ""}
-                onChange={(e) => setFormData((s) => ({ ...s, name: e.target.value }))}
-              />
-            </div>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>Rate</label>
-              <input
-                style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box" }}
-                value={formData.rate || ""}
-                onChange={(e) => setFormData((s) => ({ ...s, rate: e.target.value }))}
-              />
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12 }}>
-              <button onClick={() => setModal(null)} style={{ padding: "8px 14px", borderRadius: 4, border: `1px solid ${T.border}`, background: T.panel, color: T.textSoft, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                Cancel
-              </button>
-              <button onClick={handleSave} style={{ padding: "8px 14px", borderRadius: 4, border: "none", background: T.ink, color: "#F4F0E4", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                Save
-              </button>
+          <Modal
+            title={`${modal.mode === "add" ? "Add" : "Edit"} — Tax Configuration`}
+            subtitle={modal.mode === "add" ? "Add a new tax rule" : "Update tax rule"}
+            onClose={() => setModal(null)}
+            width={520}
+            footer={
+              <>
+                <button className="stc-btn stc-btn-ghost" onClick={() => setModal(null)}>Cancel</button>
+                <button className="stc-btn stc-btn-primary" onClick={handleSave}>Save changes</button>
+              </>
+            }
+          >
+            <div className="stc-form-grid">
+              <div className="stc-field">
+                <label className="stc-field-label">Code</label>
+                <input
+                  disabled={modal.mode === "edit"}
+                  value={formData.code || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, code: e.target.value }))}
+                />
+              </div>
+              <div className="stc-field">
+                <label className="stc-field-label">Name</label>
+                <input
+                  value={formData.name || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, name: e.target.value }))}
+                />
+              </div>
+              <div className="stc-field">
+                <label className="stc-field-label">Rate</label>
+                <input
+                  value={formData.rate || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, rate: e.target.value }))}
+                />
+              </div>
             </div>
           </Modal>
         )}
 
         {toDelete && (
-          <Modal title="Delete — Tax Configuration" onClose={() => setToDelete(null)}>
-            <p style={{ fontSize: 13, color: T.textSoft, lineHeight: 1.5, margin: "0 0 18px" }}>
+          <Modal title="Delete — Tax Configuration" subtitle="This action cannot be undone" icon={<Trash2 size={20} color={T.red} />} iconVariant="danger" onClose={() => setToDelete(null)} width={420} footer={
+            <>
+              <button className="stc-btn stc-btn-ghost" onClick={() => setToDelete(null)}>Cancel</button>
+              <button className="stc-btn stc-btn-danger" onClick={handleConfirmDelete}>Delete</button>
+            </>
+          }>
+            <p style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.7, margin: 0 }}>
               This will permanently remove {toDelete.code} from the list. This can't be undone.
             </p>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-              <button onClick={() => setToDelete(null)} style={{ padding: "8px 14px", borderRadius: 4, border: `1px solid ${T.border}`, background: T.panel, color: T.textSoft, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                Cancel
-              </button>
-              <button onClick={handleConfirmDelete} style={{ padding: "8px 14px", borderRadius: 4, border: "none", background: T.red, color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                Delete
-              </button>
-            </div>
           </Modal>
         )}
       </Card>
