@@ -135,37 +135,33 @@ export function VehicleRegister({ data: propData, depotOptions = [], onAdd, onUp
 
         {modal && (
           <Modal title={`${modal.mode === "add" ? "Add" : "Edit"} — Vehicle`} onClose={() => setModal(null)}>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>Registration</label>
+            <div className="stc-field">
+              <label className="stc-field-label">Registration</label>
               <input
                 disabled={modal.mode === "edit"}
-                style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box" }}
                 value={formData.reg || ""}
                 onChange={(e) => setFormData((s) => ({ ...s, reg: e.target.value }))}
               />
             </div>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>Category</label>
+            <div className="stc-field">
+              <label className="stc-field-label">Category</label>
               <input
-                style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box" }}
                 value={formData.category || ""}
                 onChange={(e) => setFormData((s) => ({ ...s, category: e.target.value }))}
               />
             </div>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>Home depot</label>
+            <div className="stc-field">
+              <label className="stc-field-label">Home depot</label>
               <select
-                style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box", background: T.panel }}
                 value={formData.depot || depotOptions[0] || ""}
                 onChange={(e) => setFormData((s) => ({ ...s, depot: e.target.value }))}
               >
                 {depotOptions.map((option) => <option key={option} value={option}>{option}</option>)}
               </select>
             </div>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>Status</label>
+            <div className="stc-field">
+              <label className="stc-field-label">Status</label>
               <select
-                style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box", background: T.panel }}
                 value={formData.status || "Active"}
                 onChange={(e) => setFormData((s) => ({ ...s, status: e.target.value }))}
               >
@@ -175,47 +171,38 @@ export function VehicleRegister({ data: propData, depotOptions = [], onAdd, onUp
                 <option value="Retired">Retired</option>
               </select>
             </div>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>Next service</label>
+            <div className="stc-field">
+              <label className="stc-field-label">Next service</label>
               <input
-                style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box" }}
                 value={formData.nextService || ""}
                 onChange={(e) => setFormData((s) => ({ ...s, nextService: e.target.value }))}
               />
             </div>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>Document expiry</label>
+            <div className="stc-field">
+              <label className="stc-field-label">Document expiry</label>
               <input
-                style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box" }}
                 value={formData.docExpiry || ""}
                 onChange={(e) => setFormData((s) => ({ ...s, docExpiry: e.target.value }))}
               />
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12 }}>
-              <button onClick={() => setModal(null)} style={{ padding: "8px 14px", borderRadius: 4, border: `1px solid ${T.border}`, background: T.panel, color: T.textSoft, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                Cancel
-              </button>
-              <button onClick={handleSave} style={{ padding: "8px 14px", borderRadius: 4, border: "none", background: T.ink, color: "#F4F0E4", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                Save
-              </button>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 12 }}>
+              <button className="stc-btn stc-btn-ghost" onClick={() => setModal(null)}>Cancel</button>
+              <button className="stc-btn stc-btn-primary" onClick={handleSave}>Save changes</button>
             </div>
           </Modal>
         )}
 
         {toDelete && (
-          <Modal title="Delete — Vehicle" onClose={() => setToDelete(null)}>
-            <p style={{ fontSize: 13, color: T.textSoft, lineHeight: 1.5, margin: "0 0 18px" }}>
+          <Modal title="Delete — Vehicle" subtitle="This action cannot be undone" icon={<Trash2 size={20} color={T.red} />} iconVariant="danger" onClose={() => setToDelete(null)} width={420} footer={
+            <>
+              <button className="stc-btn stc-btn-ghost" onClick={() => setToDelete(null)}>Cancel</button>
+              <button className="stc-btn stc-btn-danger" onClick={handleConfirmDelete}>Delete</button>
+            </>
+          }>
+            <p style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.7, margin: 0 }}>
               This will permanently remove {toDelete.reg} from the list. This can't be undone.
             </p>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-              <button onClick={() => setToDelete(null)} style={{ padding: "8px 14px", borderRadius: 4, border: `1px solid ${T.border}`, background: T.panel, color: T.textSoft, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                Cancel
-              </button>
-              <button onClick={handleConfirmDelete} style={{ padding: "8px 14px", borderRadius: 4, border: "none", background: T.red, color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                Delete
-              </button>
-            </div>
           </Modal>
         )}
       </Card>

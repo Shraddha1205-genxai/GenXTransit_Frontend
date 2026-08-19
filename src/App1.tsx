@@ -591,7 +591,7 @@ function RecordModal({ title, fields, initial, idKey, mode, onSave, onClose }) {
         <button onClick={onClose} style={{ padding: "8px 14px", borderRadius: 4, border: `1px solid ${T.border}`, background: T.panel, color: T.textSoft, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
           Cancel
         </button>
-        <button onClick={() => onSave(values)} style={{ padding: "8px 14px", borderRadius: 4, border: "none", background: T.ink, color: "#F4F0E4", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+        <button onClick={() => onSave(values)} style={{ padding: "8px 14px", borderRadius: 4, border: "none", background: T.ink, color: T.inkText, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
           Save
         </button>
       </div>
@@ -607,7 +607,7 @@ function ConfirmModal({ title, message, onConfirm, onClose }) {
         <button onClick={onClose} style={{ padding: "8px 14px", borderRadius: 4, border: `1px solid ${T.border}`, background: T.panel, color: T.textSoft, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
           Cancel
         </button>
-        <button onClick={onConfirm} style={{ padding: "8px 14px", borderRadius: 4, border: "none", background: T.red, color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+        <button onClick={onConfirm} style={{ padding: "8px 14px", borderRadius: 4, border: "none", background: T.red, color: T.panel, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
           Delete
         </button>
       </div>
@@ -1940,7 +1940,7 @@ function ConsoleShell() {
             <div style={{ width: 26, height: 26, background: T.amber, borderRadius: 3, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Bus size={15} color={T.ink} />
             </div>
-            <span className="stc-display" style={{ color: "#F4F0E4", fontSize: 15, fontWeight: 600 }}>GenXTransit</span>
+            <span className="stc-display" style={{ color: T.inkText, fontSize: 15, fontWeight: 600 }}>GenXTransit</span>
           </div>
           <div style={{ fontSize: 11, color: "#7C8A99", marginTop: 4, letterSpacing: "0.03em" }}>MSRTC · BEST · PMPML — MAHARASHTRA</div>
         </div>
@@ -1981,8 +1981,8 @@ function ConsoleShell() {
             CR
           </div>
           <div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "#F4F0E4" }}>Control Room</div>
-            <div style={{ fontSize: 11, color: "#7C8A99" }}>All depots</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: T.inkText }}>Control Room</div>
+            <div style={{ fontSize: 11, color: T.inkTextFaint }}>All depots</div>
           </div>
         </div>
       </aside>

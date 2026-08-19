@@ -191,64 +191,73 @@ export function Depots({
       </div>
 
       {modal && (
-        <Modal title={`${modal.mode === "add" ? "Add" : "Edit"} — Depot`} onClose={() => setModal(null)}>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>Depot code</label>
-            <input disabled={modal.mode === "edit"} style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box" }} value={formData.code || ""} onChange={(e) => setFormData((s) => ({ ...s, code: e.target.value }))} />
-          </div>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>Name</label>
-            <input style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box" }} value={formData.name || ""} onChange={(e) => setFormData((s) => ({ ...s, name: e.target.value }))} />
-          </div>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>Corporation</label>
-            <select style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box", background: T.panel }} value={formData.corp || "MSRTC"} onChange={(e) => setFormData((s) => ({ ...s, corp: e.target.value }))}>
-              {["MSRTC", "BEST", "PMPML"].map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>Service</label>
-            <select style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box", background: T.panel }} value={formData.service || "ST"} onChange={(e) => setFormData((s) => ({ ...s, service: e.target.value }))}>
-              {["ST", "Local"].map((svc) => <option key={svc} value={svc}>{svc}</option>)}
-            </select>
-          </div>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>Zone</label>
-            <input style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box" }} value={formData.zone || ""} onChange={(e) => setFormData((s) => ({ ...s, zone: e.target.value }))} />
-          </div>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>Fleet strength</label>
-            <input type="number" style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box" }} value={formData.fleet ?? 0} onChange={(e) => setFormData((s) => ({ ...s, fleet: Number(e.target.value) }))} />
-          </div>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>On road</label>
-            <input type="number" style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box" }} value={formData.onRoad ?? 0} onChange={(e) => setFormData((s) => ({ ...s, onRoad: Number(e.target.value) }))} />
-          </div>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>Trips today</label>
-            <input type="number" style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box" }} value={formData.tripsToday ?? 0} onChange={(e) => setFormData((s) => ({ ...s, tripsToday: Number(e.target.value) }))} />
-          </div>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>Revenue today (₹)</label>
-            <input type="number" style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box" }} value={formData.revenueToday ?? 0} onChange={(e) => setFormData((s) => ({ ...s, revenueToday: Number(e.target.value) }))} />
-          </div>
-
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12 }}>
-            <button onClick={() => setModal(null)} style={{ padding: "8px 14px", borderRadius: 4, border: `1px solid ${T.border}`, background: T.panel, color: T.textSoft, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-            <button onClick={handleSave} style={{ padding: "8px 14px", borderRadius: 4, border: "none", background: T.ink, color: "#F4F0E4", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Save</button>
+        <Modal
+          title={`${modal.mode === "add" ? "Add" : "Edit"} — Depot`}
+          subtitle={modal.mode === "add" ? "Create a new depot record" : "Update depot details"}
+          onClose={() => setModal(null)}
+          width={640}
+          footer={
+            <>
+              <button className="stc-btn stc-btn-ghost" onClick={() => setModal(null)}>Cancel</button>
+              <button className="stc-btn stc-btn-primary" onClick={handleSave}>Save changes</button>
+            </>
+          }
+        >
+          <div className="stc-form-grid">
+            <div className="stc-field">
+              <label className="stc-field-label">Depot code</label>
+              <input disabled={modal.mode === "edit"} value={formData.code || ""} onChange={(e) => setFormData((s) => ({ ...s, code: e.target.value }))} />
+            </div>
+            <div className="stc-field">
+              <label className="stc-field-label">Name</label>
+              <input value={formData.name || ""} onChange={(e) => setFormData((s) => ({ ...s, name: e.target.value }))} />
+            </div>
+            <div className="stc-field">
+              <label className="stc-field-label">Corporation</label>
+              <select value={formData.corp || "MSRTC"} onChange={(e) => setFormData((s) => ({ ...s, corp: e.target.value }))}>
+                {["MSRTC", "BEST", "PMPML"].map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div className="stc-field">
+              <label className="stc-field-label">Service</label>
+              <select value={formData.service || "ST"} onChange={(e) => setFormData((s) => ({ ...s, service: e.target.value }))}>
+                {["ST", "Local"].map((svc) => <option key={svc} value={svc}>{svc}</option>)}
+              </select>
+            </div>
+            <div className="stc-field">
+              <label className="stc-field-label">Zone</label>
+              <input value={formData.zone || ""} onChange={(e) => setFormData((s) => ({ ...s, zone: e.target.value }))} />
+            </div>
+            <div className="stc-field">
+              <label className="stc-field-label">Fleet strength</label>
+              <input type="number" value={formData.fleet ?? 0} onChange={(e) => setFormData((s) => ({ ...s, fleet: Number(e.target.value) }))} />
+            </div>
+            <div className="stc-field">
+              <label className="stc-field-label">On road</label>
+              <input type="number" value={formData.onRoad ?? 0} onChange={(e) => setFormData((s) => ({ ...s, onRoad: Number(e.target.value) }))} />
+            </div>
+            <div className="stc-field">
+              <label className="stc-field-label">Trips today</label>
+              <input type="number" value={formData.tripsToday ?? 0} onChange={(e) => setFormData((s) => ({ ...s, tripsToday: Number(e.target.value) }))} />
+            </div>
+            <div className="stc-field">
+              <label className="stc-field-label">Revenue today (₹)</label>
+              <input type="number" value={formData.revenueToday ?? 0} onChange={(e) => setFormData((s) => ({ ...s, revenueToday: Number(e.target.value) }))} />
+            </div>
           </div>
         </Modal>
       )}
 
       {toDelete && (
-        <Modal title="Delete — Depot" onClose={() => setToDelete(null)}>
-          <p style={{ fontSize: 13, color: T.textSoft, lineHeight: 1.5, margin: "0 0 18px" }}>
+        <Modal title="Delete — Depot" subtitle="This action cannot be undone" icon={<Trash2 size={20} color={T.red} />} iconVariant="danger" onClose={() => setToDelete(null)} width={420} footer={
+          <>
+            <button className="stc-btn stc-btn-ghost" onClick={() => setToDelete(null)}>Cancel</button>
+            <button className="stc-btn stc-btn-danger" onClick={handleConfirmDelete}>Delete</button>
+          </>
+        }>
+          <p style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.7, margin: 0 }}>
             This will permanently remove {toDelete.code} from the list. This can't be undone.
           </p>
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-            <button onClick={() => setToDelete(null)} style={{ padding: "8px 14px", borderRadius: 4, border: `1px solid ${T.border}`, background: T.panel, color: T.textSoft, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-            <button onClick={handleConfirmDelete} style={{ padding: "8px 14px", borderRadius: 4, border: "none", background: T.red, color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Delete</button>
-          </div>
         </Modal>
       )}
     </div>

@@ -121,79 +121,75 @@ export function ParkingYards({ data: propData, depotOptions = [], onAdd, onUpdat
         </Table>
 
         {modal && (
-          <Modal title={`${modal.mode === "add" ? "Add" : "Edit"} — Parking Yard`} onClose={() => setModal(null)}>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>Yard code</label>
-              <input
-                disabled={modal.mode === "edit"}
-                style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box" }}
-                value={formData.code || ""}
-                onChange={(e) => setFormData((s) => ({ ...s, code: e.target.value }))}
-              />
-            </div>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>Name</label>
-              <input
-                style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box" }}
-                value={formData.name || ""}
-                onChange={(e) => setFormData((s) => ({ ...s, name: e.target.value }))}
-              />
-            </div>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>Depot connection</label>
-              <select
-                style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box", background: T.panel }}
-                value={formData.depot || ""}
-                onChange={(e) => setFormData((s) => ({ ...s, depot: e.target.value }))}
-              >
-                {depotOptions.map((opt) => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
-            </div>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>Capacity</label>
-              <input
-                type="number"
-                style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box" }}
-                value={formData.capacity ?? 0}
-                onChange={(e) => setFormData((s) => ({ ...s, capacity: Number(e.target.value) }))}
-              />
-            </div>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: T.textSoft, textTransform: "uppercase", marginBottom: 5 }}>Occupied</label>
-              <input
-                type="number"
-                style={{ width: "100%", padding: "8px 10px", border: `1px solid ${T.border}`, borderRadius: 4, fontSize: 13, boxSizing: "border-box" }}
-                value={formData.occupied ?? 0}
-                onChange={(e) => setFormData((s) => ({ ...s, occupied: Number(e.target.value) }))}
-              />
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12 }}>
-              <button onClick={() => setModal(null)} style={{ padding: "8px 14px", borderRadius: 4, border: `1px solid ${T.border}`, background: T.panel, color: T.textSoft, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                Cancel
-              </button>
-              <button onClick={handleSave} style={{ padding: "8px 14px", borderRadius: 4, border: "none", background: T.ink, color: "#F4F0E4", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                Save
-              </button>
+          <Modal
+            title={`${modal.mode === "add" ? "Add" : "Edit"} — Parking Yard`}
+            subtitle={modal.mode === "add" ? "Add a new parking yard" : "Update yard details"}
+            onClose={() => setModal(null)}
+            width={520}
+            footer={
+              <>
+                <button className="stc-btn stc-btn-ghost" onClick={() => setModal(null)}>Cancel</button>
+                <button className="stc-btn stc-btn-primary" onClick={handleSave}>Save changes</button>
+              </>
+            }
+          >
+            <div className="stc-form-grid">
+              <div className="stc-field">
+                <label className="stc-field-label">Yard code</label>
+                <input
+                  disabled={modal.mode === "edit"}
+                  value={formData.code || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, code: e.target.value }))}
+                />
+              </div>
+              <div className="stc-field">
+                <label className="stc-field-label">Name</label>
+                <input
+                  value={formData.name || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, name: e.target.value }))}
+                />
+              </div>
+              <div className="stc-field">
+                <label className="stc-field-label">Depot connection</label>
+                <select
+                  value={formData.depot || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, depot: e.target.value }))}
+                >
+                  {depotOptions.map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="stc-field">
+                <label className="stc-field-label">Capacity</label>
+                <input
+                  type="number"
+                  value={formData.capacity ?? 0}
+                  onChange={(e) => setFormData((s) => ({ ...s, capacity: Number(e.target.value) }))}
+                />
+              </div>
+              <div className="stc-field">
+                <label className="stc-field-label">Occupied</label>
+                <input
+                  type="number"
+                  value={formData.occupied ?? 0}
+                  onChange={(e) => setFormData((s) => ({ ...s, occupied: Number(e.target.value) }))}
+                />
+              </div>
             </div>
           </Modal>
         )}
 
         {toDelete && (
-          <Modal title="Delete — Parking Yard" onClose={() => setToDelete(null)}>
-            <p style={{ fontSize: 13, color: T.textSoft, lineHeight: 1.5, margin: "0 0 18px" }}>
+          <Modal title="Delete — Parking Yard" subtitle="This action cannot be undone" icon={<Trash2 size={20} color={T.red} />} iconVariant="danger" onClose={() => setToDelete(null)} width={420} footer={
+            <>
+              <button className="stc-btn stc-btn-ghost" onClick={() => setToDelete(null)}>Cancel</button>
+              <button className="stc-btn stc-btn-danger" onClick={handleConfirmDelete}>Delete</button>
+            </>
+          }>
+            <p style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.7, margin: 0 }}>
               This will permanently remove {toDelete.code} from the list. This can't be undone.
             </p>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-              <button onClick={() => setToDelete(null)} style={{ padding: "8px 14px", borderRadius: 4, border: `1px solid ${T.border}`, background: T.panel, color: T.textSoft, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                Cancel
-              </button>
-              <button onClick={handleConfirmDelete} style={{ padding: "8px 14px", borderRadius: 4, border: "none", background: T.red, color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                Delete
-              </button>
-            </div>
           </Modal>
         )}
       </Card>

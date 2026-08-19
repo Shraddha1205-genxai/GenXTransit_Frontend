@@ -34,7 +34,7 @@ interface PrimaryButtonInlineProps {
 
 function PrimaryButtonInline({ children, onClick, icon: Icon }: PrimaryButtonInlineProps) {
   return (
-    <button onClick={onClick} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "11px 18px", borderRadius: 5, border: "none", cursor: "pointer", background: T.ink, color: "#F4F0E4", fontSize: 13, fontWeight: 600 }}>
+    <button onClick={onClick} className="stc-btn stc-btn-primary" style={{ width: "100%", height: "auto", padding: "11px 18px", borderRadius: 8 }}>
       {Icon && <Icon size={15} />} {children}
     </button>
   );
@@ -69,7 +69,7 @@ export function AdminAuthScreen({ onLogin, onAddUser }: AdminAuthScreenProps) {
     <div className="stc-body" style={{ minHeight: "100vh", display: "flex", background: T.canvas }}>
       <style>{fontStack}</style>
 
-      <div style={{ flex: "0 0 42%", background: T.ink, display: "flex", flexDirection: "column", justifyContent: "space-between", padding: 40, color: "#F4F0E4" }}>
+      <div style={{ flex: "0 0 42%", background: T.ink, display: "flex", flexDirection: "column", justifyContent: "space-between", padding: 40, color: T.inkText }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{ width: 26, height: 26, background: T.amber, borderRadius: 3, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Bus size={15} color={T.ink} />
@@ -80,11 +80,11 @@ export function AdminAuthScreen({ onLogin, onAddUser }: AdminAuthScreenProps) {
           <div className="stc-display" style={{ fontSize: 28, fontWeight: 600, lineHeight: 1.28, marginBottom: 14 }}>
             One console for depots, fleet, fares & the field.
           </div>
-          <div style={{ fontSize: 13.5, color: "#B8C0C8", lineHeight: 1.6, maxWidth: 380 }}>
+          <div style={{ fontSize: 13.5, color: T.inkTextSoft, lineHeight: 1.6, maxWidth: 380 }}>
             Operations, ticketing, tracking and finance across MSRTC, BEST and PMPML — role-scoped access for depot, control-room and back-office staff.
           </div>
         </div>
-        <div style={{ fontSize: 11, color: "#7E8A94" }}>© State Road Transport Corporation — internal use only</div>
+        <div style={{ fontSize: 11, color: T.inkTextFaint }}>© State Road Transport Corporation — internal use only</div>
       </div>
 
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>

@@ -13,7 +13,11 @@ const LANGUAGES = [
   { code: "gu", label: "ગુજરાતી" },
 ];
 
-export function Header() {
+interface HeaderProps {
+  onToggleSidebar?: () => void;
+}
+
+export function Header({ onToggleSidebar }: HeaderProps) {
   const location = useLocation();
   const [langOpen, setLangOpen] = useState(false);
   const [selectedLang, setSelectedLang] = useState("en");
@@ -61,6 +65,30 @@ export function Header() {
         ))}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        {onToggleSidebar && (
+          <button
+            onClick={onToggleSidebar}
+            title="Toggle sidebar"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              border: "1px solid " + T.border,
+              background: T.panel,
+              cursor: "pointer",
+              color: T.textSoft,
+              transition: "all 0.15s ease",
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <line x1="9" y1="3" x2="9" y2="21" />
+            </svg>
+          </button>
+        )}
         <button
           onClick={toggle}
           title={mode === "light" ? "Switch to dark mode" : "Switch to light mode"}
