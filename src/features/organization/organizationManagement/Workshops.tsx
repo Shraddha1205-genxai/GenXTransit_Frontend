@@ -1,18 +1,23 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { T } from "../../../constants/theme";
-import { Card, RouteChip, Th, Td, Modal, Table } from "../../../components/common";
+import { Card, RouteChip, StatusBadge, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface Workshop {
   code: string;
   name: string;
-  depot: string;
-  bays: number;
-  activeJobs: number;
+  regionCode: string;
+  divisionCode: string;
+  depotCode: string;
+  workBays: number;
+  activeRepairJobs: number;
+  isActive: boolean;
 }
 
 export interface WorkshopPageProps {
   data?: Workshop[];
+  regionOptions?: string[];
+  divisionOptions?: string[];
   depotOptions?: string[];
   onAdd?: (item: Workshop) => void;
   onUpdate?: (code: string, item: Workshop) => void;
@@ -20,12 +25,20 @@ export interface WorkshopPageProps {
 }
 
 const initialDefaultWorkshops: Workshop[] = [
-  { code: "WS-PUN-01", name: "Swargate Central Workshop", depot: "MSRTC-PUN-01", bays: 12, activeJobs: 7 },
-  { code: "WS-MUM-04", name: "Wadala Repair Workshop", depot: "BEST-MUM-04", bays: 8, activeJobs: 5 },
-  { code: "WS-PUN-02", name: "PMPML Swargate Workshop", depot: "PMPML-PUN-02", bays: 6, activeJobs: 2 },
+  { code: "WS-0001", name: "Swargate Central Workshop", regionCode: "REG-0001", divisionCode: "DIV-0001", depotCode: "MSRTC-PUN-01", workBays: 12, activeRepairJobs: 7, isActive: true },
+  { code: "WS-0002", name: "Wadala Repair Workshop", regionCode: "REG-0002", divisionCode: "DIV-0003", depotCode: "BEST-MUM-04", workBays: 8, activeRepairJobs: 5, isActive: true },
+  { code: "WS-0003", name: "PMPML Swargate Workshop", regionCode: "REG-0001", divisionCode: "DIV-0001", depotCode: "PMPML-PUN-02", workBays: 6, activeRepairJobs: 2, isActive: true },
 ];
 
-export function Workshops({ data: propData, depotOptions = [], onAdd, onUpdate, onDelete }: WorkshopPageProps) {
+const generateWorkshopCode = (existing: Workshop[]) => {
+  const numbers = existing
+    .map((item) => Number((item.code.match(/(\d+)$/) ?? ["0", "0"])[1]))
+    .filter((n) => Number.isFinite(n));
+  const next = (Math.max(0, ...numbers) + 1).toString().padStart(4, "0");
+  return `WS-${next}`;
+};
+
+export function Workshops({ data: propData, regionOptions = [], divisionOptions = [], depotOptions = [], onAdd, onUpdate, onDelete }: WorkshopPageProps) {
   const [internalData, setInternalData] = useState<Workshop[]>(initialDefaultWorkshops);
   const data = propData || internalData;
 
@@ -34,7 +47,7 @@ export function Workshops({ data: propData, depotOptions = [], onAdd, onUpdate, 
   const [formData, setFormData] = useState<Partial<Workshop>>({});
 
   const handleOpenAdd = () => {
-    setFormData({ code: "", name: "", depot: depotOptions[0] || "", bays: 0, activeJobs: 0 });
+    setFormData({ code: generateWorkshopCode(data), name: "", regionCode: regionOptions[0] || "", divisionCode: divisionOptions[0] || "", depotCode: depotOptions[0] || "", workBays: 0, activeRepairJobs: 0, isActive: true });
     setModal({ mode: "add" });
   };
 
@@ -44,13 +57,16 @@ export function Workshops({ data: propData, depotOptions = [], onAdd, onUpdate, 
   };
 
   const handleSave = () => {
-    if (!formData.code || !formData.name) return;
+    if (!formData.name) return;
     const newRecord: Workshop = {
-      code: formData.code,
+      code: modal?.mode === "edit" && modal.record ? modal.record.code : generateWorkshopCode(data),
       name: formData.name,
-      depot: formData.depot || depotOptions[0] || "",
-      bays: Number(formData.bays) || 0,
-      activeJobs: Number(formData.activeJobs) || 0,
+      regionCode: formData.regionCode || regionOptions[0] || "",
+      divisionCode: formData.divisionCode || divisionOptions[0] || "",
+      depotCode: formData.depotCode || depotOptions[0] || "",
+      workBays: Number(formData.workBays) || 0,
+      activeRepairJobs: Number(formData.activeRepairJobs) || 0,
+      isActive: modal?.mode === "edit" ? (formData.isActive ?? true) : true,
     };
 
     if (modal?.mode === "add") {
@@ -86,11 +102,14 @@ export function Workshops({ data: propData, depotOptions = [], onAdd, onUpdate, 
         <Table>
           <thead>
             <tr>
-              <Th>Workshop code</Th>
-              <Th>Name</Th>
-              <Th>Depot connection</Th>
-              <Th>Work bays</Th>
-              <Th>Active repair jobs</Th>
+              <Th>WorkShop Code</Th>
+              <Th>WorkShop Name</Th>
+              <Th>Region Code</Th>
+              <Th>Division Code</Th>
+              <Th>Depot Code</Th>
+              <Th>Work Bays</Th>
+              <Th>Active Repair Jobs</Th>
+              <Th>Status</Th>
               <Th align="right">Actions</Th>
             </tr>
           </thead>
@@ -99,9 +118,12 @@ export function Workshops({ data: propData, depotOptions = [], onAdd, onUpdate, 
               <tr key={w.code} className="stc-row">
                 <Td mono><RouteChip>{w.code}</RouteChip></Td>
                 <Td>{w.name}</Td>
-                <Td mono>{w.depot}</Td>
-                <Td>{w.bays}</Td>
-                <Td>{w.activeJobs}</Td>
+                <Td mono>{w.regionCode}</Td>
+                <Td mono>{w.divisionCode}</Td>
+                <Td mono>{w.depotCode}</Td>
+                <Td>{w.workBays}</Td>
+                <Td>{w.activeRepairJobs}</Td>
+                <Td><StatusBadge status={w.isActive ? "Active" : "Inactive"} /></Td>
                 <Td align="right">
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
                     <button onClick={() => handleOpenEdit(w)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
@@ -115,7 +137,7 @@ export function Workshops({ data: propData, depotOptions = [], onAdd, onUpdate, 
               </tr>
             ))}
             {data.length === 0 && (
-              <tr><Td colSpan={6}>No records yet — use Add workshop to create one.</Td></tr>
+              <tr><Td colSpan={9}>No records yet — use Add workshop to create one.</Td></tr>
             )}
           </tbody>
         </Table>
@@ -134,48 +156,62 @@ export function Workshops({ data: propData, depotOptions = [], onAdd, onUpdate, 
             }
           >
             <div className="stc-form-grid">
+              {modal.mode === "edit" && (
+                <div className="stc-field">
+                  <label className="stc-field-label">WorkShop Code</label>
+                  <input value={formData.code || ""} readOnly />
+                </div>
+              )}
               <div className="stc-field">
-                <label className="stc-field-label">Workshop code</label>
-                <input
-                  disabled={modal.mode === "edit"}
-                  value={formData.code || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, code: e.target.value }))}
-                />
-              </div>
-              <div className="stc-field">
-                <label className="stc-field-label">Name</label>
+                <label className="stc-field-label">WorkShop Name</label>
                 <input
                   value={formData.name || ""}
                   onChange={(e) => setFormData((s) => ({ ...s, name: e.target.value }))}
                 />
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Depot connection</label>
-                <select
-                  value={formData.depot || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, depot: e.target.value }))}
-                >
-                  {depotOptions.map((opt) => (
-                    <option key={opt} value={opt}>{opt}</option>
-                  ))}
+                <label className="stc-field-label">Region Code</label>
+                <select value={formData.regionCode || ""} onChange={(e) => setFormData((s) => ({ ...s, regionCode: e.target.value }))}>
+                  {regionOptions.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Work bays</label>
+                <label className="stc-field-label">Division Code</label>
+                <select value={formData.divisionCode || ""} onChange={(e) => setFormData((s) => ({ ...s, divisionCode: e.target.value }))}>
+                  {divisionOptions.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+              </div>
+              <div className="stc-field">
+                <label className="stc-field-label">Depot Code</label>
+                <select value={formData.depotCode || ""} onChange={(e) => setFormData((s) => ({ ...s, depotCode: e.target.value }))}>
+                  {depotOptions.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+              </div>
+              <div className="stc-field">
+                <label className="stc-field-label">Work Bays</label>
                 <input
                   type="number"
-                  value={formData.bays ?? 0}
-                  onChange={(e) => setFormData((s) => ({ ...s, bays: Number(e.target.value) }))}
+                  value={formData.workBays ?? 0}
+                  onChange={(e) => setFormData((s) => ({ ...s, workBays: Number(e.target.value) }))}
                 />
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Active repair jobs</label>
+                <label className="stc-field-label">Active Repair Jobs</label>
                 <input
                   type="number"
-                  value={formData.activeJobs ?? 0}
-                  onChange={(e) => setFormData((s) => ({ ...s, activeJobs: Number(e.target.value) }))}
+                  value={formData.activeRepairJobs ?? 0}
+                  onChange={(e) => setFormData((s) => ({ ...s, activeRepairJobs: Number(e.target.value) }))}
                 />
               </div>
+              {modal.mode === "edit" && (
+                <div className="stc-field">
+                  <label className="stc-field-label">Status</label>
+                  <select value={formData.isActive ? "Active" : "Inactive"} onChange={(e) => setFormData((s) => ({ ...s, isActive: e.target.value === "Active" }))}>
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              )}
             </div>
           </Modal>
         )}

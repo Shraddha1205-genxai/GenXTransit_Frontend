@@ -1,5 +1,6 @@
 export * from "./organizationManagement/Regions";
 export * from "./organizationManagement/Divisions";
+export * from "./organizationManagement/Corporations";
 export * from "./organizationManagement/Depots";
 export * from "./organizationManagement/BusStation";
 export * from "./organizationManagement/Workshops";

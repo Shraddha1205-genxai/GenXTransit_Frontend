@@ -4,25 +4,32 @@ import { T } from "../../../constants/theme";
 import { Card, RouteChip, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface Region {
-  code: string;
-  name: string;
-  divisions: number;
-  depots: number;
-  fleet: number;
+  id: string;
+  regionCode: string;
+  regionName: string;
+  isActive: boolean;
 }
 
 export interface RegionPageProps {
   data?: Region[];
   onAdd?: (item: Region) => void;
-  onUpdate?: (code: string, item: Region) => void;
-  onDelete?: (code: string) => void;
+  onUpdate?: (id: string, item: Region) => void;
+  onDelete?: (id: string) => void;
 }
 
 const initialDefaultRegions: Region[] = [
-  { code: "REG-PUN", name: "Pune Region", divisions: 3, depots: 18, fleet: 612 },
-  { code: "REG-MUM", name: "Mumbai Region", divisions: 2, depots: 11, fleet: 348 },
-  { code: "REG-NAS", name: "Nashik Region", divisions: 2, depots: 9, fleet: 241 },
+  { id: "REG-ID-1001", regionCode: "REG-0001", regionName: "Pune Region", isActive: true },
+  { id: "REG-ID-1002", regionCode: "REG-0002", regionName: "Mumbai Region", isActive: true },
+  { id: "REG-ID-1003", regionCode: "REG-0003", regionName: "Nashik Region", isActive: true },
 ];
+
+const generateRegionCode = (existing: Region[]) => {
+  const numbers = existing
+    .map((item) => Number((item.regionCode.match(/(\d+)$/) ?? ["0", "0"])[1]))
+    .filter((n) => Number.isFinite(n));
+  const next = (Math.max(0, ...numbers) + 1).toString().padStart(4, "0");
+  return `REG-${next}`;
+};
 
 export function Regions({ data: propData, onAdd, onUpdate, onDelete }: RegionPageProps) {
   const [internalData, setInternalData] = useState<Region[]>(initialDefaultRegions);
@@ -34,7 +41,7 @@ export function Regions({ data: propData, onAdd, onUpdate, onDelete }: RegionPag
   const [formData, setFormData] = useState<Partial<Region>>({});
 
   const handleOpenAdd = () => {
-    setFormData({ code: "", name: "", divisions: 0, depots: 0, fleet: 0 });
+    setFormData({ id: `REG-ID-${Date.now()}`, regionCode: generateRegionCode(data), regionName: "", isActive: true });
     setModal({ mode: "add" });
   };
 
@@ -44,13 +51,12 @@ export function Regions({ data: propData, onAdd, onUpdate, onDelete }: RegionPag
   };
 
   const handleSave = () => {
-    if (!formData.code || !formData.name) return;
+    if (!formData.regionName) return;
     const newRecord: Region = {
-      code: formData.code,
-      name: formData.name,
-      divisions: Number(formData.divisions) || 0,
-      depots: Number(formData.depots) || 0,
-      fleet: Number(formData.fleet) || 0,
+      id: modal?.mode === "edit" && modal.record ? modal.record.id : `REG-ID-${Date.now()}`,
+      regionCode: modal?.mode === "edit" && modal.record ? modal.record.regionCode : generateRegionCode(data),
+      regionName: formData.regionName.trim(),
+      isActive: formData.isActive ?? true,
     };
 
     if (modal?.mode === "add") {
@@ -61,9 +67,9 @@ export function Regions({ data: propData, onAdd, onUpdate, onDelete }: RegionPag
       }
     } else if (modal?.mode === "edit" && modal.record) {
       if (onUpdate) {
-        onUpdate(modal.record.code, newRecord);
+        onUpdate(modal.record.id, newRecord);
       } else {
-        setInternalData((prev) => prev.map((item) => (item.code === modal.record!.code ? newRecord : item)));
+        setInternalData((prev) => prev.map((item) => (item.id === modal.record!.id ? newRecord : item)));
       }
     }
     setModal(null);
@@ -72,9 +78,9 @@ export function Regions({ data: propData, onAdd, onUpdate, onDelete }: RegionPag
   const handleConfirmDelete = () => {
     if (!toDelete) return;
     if (onDelete) {
-      onDelete(toDelete.code);
+      onDelete(toDelete.id);
     } else {
-      setInternalData((prev) => prev.filter((item) => item.code !== toDelete.code));
+      setInternalData((prev) => prev.filter((item) => item.id !== toDelete.id));
     }
     setToDelete(null);
   };
@@ -95,22 +101,20 @@ export function Regions({ data: propData, onAdd, onUpdate, onDelete }: RegionPag
         <Table>
           <thead>
             <tr>
-              <Th>Region</Th>
-              <Th>Name</Th>
-              <Th>Divisions</Th>
-              <Th>Depots</Th>
-              <Th align="right">Fleet strength</Th>
+              <Th>Region ID</Th>
+              <Th>Region code</Th>
+              <Th>Region Name</Th>
+              <Th>Status</Th>
               <Th align="right">Actions</Th>
             </tr>
           </thead>
           <tbody>
             {data.map((r: Region) => (
-              <tr key={r.code} className="stc-row">
-                <Td mono><RouteChip>{r.code}</RouteChip></Td>
-                <Td>{r.name}</Td>
-                <Td>{r.divisions}</Td>
-                <Td>{r.depots}</Td>
-                <Td align="right" mono>{r.fleet}</Td>
+              <tr key={r.id} className="stc-row">
+                <Td mono>{r.id}</Td>
+                <Td mono>{r.regionCode}</Td>
+                <Td>{r.regionName}</Td>
+                <Td><StatusBadge status={r.isActive ? "Active" : "Inactive"} /></Td>
                 <Td align="right">
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
                     <button onClick={() => handleOpenEdit(r)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
@@ -124,7 +128,7 @@ export function Regions({ data: propData, onAdd, onUpdate, onDelete }: RegionPag
               </tr>
             ))}
             {data.length === 0 && (
-              <tr><Td colSpan={6}>No records yet — use Add region to create one.</Td></tr>
+              <tr><Td colSpan={5}>No records yet — use Add region to create one.</Td></tr>
             )}
           </tbody>
         </Table>
@@ -143,45 +147,47 @@ export function Regions({ data: propData, onAdd, onUpdate, onDelete }: RegionPag
             }
           >
             <div className="stc-form-grid">
-              <div className="stc-field">
-                <label className="stc-field-label">Region code</label>
+              {modal.mode === "edit" && (
+                <>
+                  <div className="stc-field">
+                    <label className="stc-field-label">Region ID</label>
+                    <input value={formData.id || ""} readOnly />
+                  </div>
+                  <div className="stc-field">
+                    <label className="stc-field-label">Region code</label>
+                    <input value={formData.regionCode || ""} readOnly />
+                  </div>
+                </>
+              )}
+
+              {modal.mode === "add" && (
+                <div className="stc-field" style={{ gridColumn: "1 / -1" }}>
+                  <div style={{ fontSize: 12, color: T.textSoft, padding: "8px 10px", borderRadius: 6, background: T.grayFill }}>
+                    Auto-generated region code: <strong>{formData.regionCode || "REG-0001"}</strong>
+                  </div>
+                </div>
+              )}
+
+              <div className="stc-field" style={{ gridColumn: "1 / -1" }}>
+                <label className="stc-field-label">Region Name</label>
                 <input
-                  disabled={modal.mode === "edit"}
-                  value={formData.code || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, code: e.target.value }))}
+                  value={formData.regionName || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, regionName: e.target.value }))}
                 />
               </div>
-              <div className="stc-field">
-                <label className="stc-field-label">Name</label>
-                <input
-                  value={formData.name || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, name: e.target.value }))}
-                />
-              </div>
-              <div className="stc-field">
-                <label className="stc-field-label">Divisions</label>
-                <input
-                  type="number"
-                  value={formData.divisions ?? 0}
-                  onChange={(e) => setFormData((s) => ({ ...s, divisions: Number(e.target.value) }))}
-                />
-              </div>
-              <div className="stc-field">
-                <label className="stc-field-label">Depots</label>
-                <input
-                  type="number"
-                  value={formData.depots ?? 0}
-                  onChange={(e) => setFormData((s) => ({ ...s, depots: Number(e.target.value) }))}
-                />
-              </div>
-              <div className="stc-field">
-                <label className="stc-field-label">Fleet strength</label>
-                <input
-                  type="number"
-                  value={formData.fleet ?? 0}
-                  onChange={(e) => setFormData((s) => ({ ...s, fleet: Number(e.target.value) }))}
-                />
-              </div>
+
+              {modal.mode === "edit" && (
+                <div className="stc-field">
+                  <label className="stc-field-label">Status</label>
+                  <select
+                    value={formData.isActive ? "Active" : "Inactive"}
+                    onChange={(e) => setFormData((s) => ({ ...s, isActive: e.target.value === "Active" }))}
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              )}
             </div>
           </Modal>
         )}
@@ -194,7 +200,7 @@ export function Regions({ data: propData, onAdd, onUpdate, onDelete }: RegionPag
             </>
           }>
             <p style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.7, margin: 0 }}>
-              This will permanently remove {toDelete.code} from the list. This can't be undone.
+              This will permanently remove {toDelete.regionName} from the list. This can't be undone.
             </p>
           </Modal>
         )}

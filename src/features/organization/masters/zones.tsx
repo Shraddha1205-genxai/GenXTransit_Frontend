@@ -4,25 +4,37 @@ import { T } from "../../../constants/theme";
 import { Card, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface Zone {
-  code: string;
-  name: string;
-  districts: string;
+  id: string;
+  zoneCode: string;
+  zoneName: string;
+  regionName: string;
+  districts: string[];
+  isActive: boolean;
 }
 
 export interface ZonesProps {
   data?: Zone[];
+  regionOptions?: string[];
   onAdd?: (item: Zone) => void;
-  onUpdate?: (code: string, item: Zone) => void;
-  onDelete?: (code: string) => void;
+  onUpdate?: (id: string, item: Zone) => void;
+  onDelete?: (id: string) => void;
 }
 
 const initialDefaultZones: Zone[] = [
-  { code: "ZN-PUN", name: "Pune Metropolitan Zone", districts: "Pune, Pimpri-Chinchwad" },
-  { code: "ZN-MUM", name: "Mumbai Zone", districts: "Mumbai, Thane" },
-  { code: "ZN-NAS", name: "Nashik Zone", districts: "Nashik, Ahmednagar" },
+  { id: "ZN-ID-1001", zoneCode: "ZN-0001", zoneName: "Pune Metropolitan Zone", regionName: "REG-0001", districts: ["Pune", "Pimpri-Chinchwad"], isActive: true },
+  { id: "ZN-ID-1002", zoneCode: "ZN-0002", zoneName: "Mumbai Zone", regionName: "REG-0002", districts: ["Mumbai", "Thane"], isActive: true },
+  { id: "ZN-ID-1003", zoneCode: "ZN-0003", zoneName: "Nashik Zone", regionName: "REG-0003", districts: ["Nashik", "Ahmednagar"], isActive: true },
 ];
 
-export function Zones({ data: propData, onAdd, onUpdate, onDelete }: ZonesProps) {
+const generateZoneCode = (existing: Zone[]) => {
+  const numbers = existing
+    .map((item) => Number((item.zoneCode.match(/(\d+)$/) ?? ["0", "0"])[1]))
+    .filter((n) => Number.isFinite(n));
+  const next = (Math.max(0, ...numbers) + 1).toString().padStart(4, "0");
+  return `ZN-${next}`;
+};
+
+export function Zones({ data: propData, regionOptions = ["REG-0001", "REG-0002", "REG-0003"], onAdd, onUpdate, onDelete }: ZonesProps) {
   const [internalData, setInternalData] = useState<Zone[]>(initialDefaultZones);
   const data = propData ?? internalData;
 
@@ -31,7 +43,7 @@ export function Zones({ data: propData, onAdd, onUpdate, onDelete }: ZonesProps)
   const [formData, setFormData] = useState<Partial<Zone>>({});
 
   const handleOpenAdd = () => {
-    setFormData({ code: "", name: "", districts: "" });
+    setFormData({ id: `ZN-ID-${Date.now()}`, zoneCode: generateZoneCode(data), zoneName: "", regionName: regionOptions[0] || "", districts: [], isActive: true });
     setModal({ mode: "add" });
   };
 
@@ -41,12 +53,15 @@ export function Zones({ data: propData, onAdd, onUpdate, onDelete }: ZonesProps)
   };
 
   const handleSave = () => {
-    if (!formData.code || !formData.name) return;
+    if (!formData.zoneName || !formData.regionName) return;
 
     const newRecord: Zone = {
-      code: formData.code,
-      name: formData.name,
-      districts: formData.districts || "",
+      id: modal?.mode === "edit" && modal.record ? modal.record.id : `ZN-ID-${Date.now()}`,
+      zoneCode: modal?.mode === "edit" && modal.record ? modal.record.zoneCode : generateZoneCode(data),
+      zoneName: formData.zoneName.trim(),
+      regionName: formData.regionName || regionOptions[0] || "",
+      districts: Array.isArray(formData.districts) ? formData.districts : (formData.districts ? String(formData.districts).split(",").map((v) => v.trim()).filter(Boolean) : []),
+      isActive: formData.isActive ?? true,
     };
 
     if (modal?.mode === "add") {
@@ -57,9 +72,9 @@ export function Zones({ data: propData, onAdd, onUpdate, onDelete }: ZonesProps)
       }
     } else if (modal?.mode === "edit" && modal.record) {
       if (onUpdate) {
-        onUpdate(modal.record.code, newRecord);
+        onUpdate(modal.record.id, newRecord);
       } else {
-        setInternalData((prev) => prev.map((item: Zone) => (item.code === modal.record!.code ? newRecord : item)));
+        setInternalData((prev) => prev.map((item: Zone) => (item.id === modal.record!.id ? newRecord : item)));
       }
     }
 
@@ -69,9 +84,9 @@ export function Zones({ data: propData, onAdd, onUpdate, onDelete }: ZonesProps)
   const handleConfirmDelete = () => {
     if (!toDelete) return;
     if (onDelete) {
-      onDelete(toDelete.code);
+      onDelete(toDelete.id);
     } else {
-      setInternalData((prev) => prev.filter((item: Zone) => item.code !== toDelete.code));
+      setInternalData((prev) => prev.filter((item: Zone) => item.id !== toDelete.id));
     }
     setToDelete(null);
   };
@@ -79,7 +94,7 @@ export function Zones({ data: propData, onAdd, onUpdate, onDelete }: ZonesProps)
   return (
     <div>
       <Card
-        title="Fare zones"
+        title="Zone"
         action={
           <button
             onClick={handleOpenAdd}
@@ -92,18 +107,22 @@ export function Zones({ data: propData, onAdd, onUpdate, onDelete }: ZonesProps)
         <Table>
           <thead>
             <tr>
-              <Th>Zone</Th>
-              <Th>Name</Th>
-              <Th>Districts covered</Th>
+              <Th>Zone Code</Th>
+              <Th>Zone Name</Th>
+              <Th>Region Name</Th>
+              <Th>Districts</Th>
+              <Th>Status</Th>
               <Th align="right">Actions</Th>
             </tr>
           </thead>
           <tbody>
             {data.map((item: Zone) => (
-              <tr key={item.code} className="stc-row">
-                <Td mono>{item.code}</Td>
-                <Td>{item.name}</Td>
-                <Td>{item.districts}</Td>
+              <tr key={item.id} className="stc-row">
+                <Td mono>{item.zoneCode}</Td>
+                <Td>{item.zoneName}</Td>
+                <Td mono>{item.regionName}</Td>
+                <Td>{item.districts.join(", ")}</Td>
+                <Td><StatusBadge status={item.isActive ? "Active" : "Inactive"} /></Td>
                 <Td align="right">
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
                     <button onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
@@ -118,7 +137,7 @@ export function Zones({ data: propData, onAdd, onUpdate, onDelete }: ZonesProps)
             ))}
             {data.length === 0 && (
               <tr>
-                <Td colSpan={4}>No records yet — use Add zone to create one.</Td>
+                <Td colSpan={6}>No records yet — use Add zone to create one.</Td>
               </tr>
             )}
           </tbody>
@@ -126,10 +145,10 @@ export function Zones({ data: propData, onAdd, onUpdate, onDelete }: ZonesProps)
 
         {modal && (
           <Modal
-            title={`${modal.mode === "add" ? "Add" : "Edit"} — Zones`}
+            title={`${modal.mode === "add" ? "Add" : "Edit"} — Zone`}
             subtitle={modal.mode === "add" ? "Add a new zone" : "Update zone details"}
             onClose={() => setModal(null)}
-            width={520}
+            width={620}
             footer={
               <>
                 <button className="stc-btn stc-btn-ghost" onClick={() => setModal(null)}>Cancel</button>
@@ -138,41 +157,66 @@ export function Zones({ data: propData, onAdd, onUpdate, onDelete }: ZonesProps)
             }
           >
             <div className="stc-form-grid">
-              <div className="stc-field">
-                <label className="stc-field-label">Zone code</label>
-                <input
-                  disabled={modal.mode === "edit"}
-                  value={formData.code || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, code: e.target.value }))}
-                />
-              </div>
-              <div className="stc-field">
-                <label className="stc-field-label">Name</label>
-                <input
-                  value={formData.name || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, name: e.target.value }))}
-                />
-              </div>
+              {modal.mode === "edit" && (
+                <div className="stc-field">
+                  <label className="stc-field-label">Zone Code</label>
+                  <input value={formData.zoneCode || ""} readOnly />
+                </div>
+              )}
+
               <div className="stc-field" style={{ gridColumn: "1 / -1" }}>
-                <label className="stc-field-label">Districts covered</label>
+                <label className="stc-field-label">Zone Name</label>
                 <input
-                  value={formData.districts || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, districts: e.target.value }))}
+                  value={formData.zoneName || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, zoneName: e.target.value }))}
                 />
               </div>
+
+              <div className="stc-field">
+                <label className="stc-field-label">Region Name</label>
+                <select
+                  value={formData.regionName || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, regionName: e.target.value }))}
+                >
+                  {regionOptions.map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="stc-field">
+                <label className="stc-field-label">Districts</label>
+                <input
+                  value={Array.isArray(formData.districts) ? formData.districts.join(", ") : (formData.districts || "")}
+                  onChange={(e) => setFormData((s) => ({ ...s, districts: e.target.value.split(",").map((v) => v.trim()).filter(Boolean) }))}
+                />
+              </div>
+
+              {modal.mode === "edit" && (
+                <div className="stc-field">
+                  <label className="stc-field-label">Status</label>
+                  <select
+                    value={formData.isActive ? "Active" : "Inactive"}
+                    onChange={(e) => setFormData((s) => ({ ...s, isActive: e.target.value === "Active" }))}
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              )}
             </div>
           </Modal>
         )}
 
         {toDelete && (
-          <Modal title="Delete — Zones" subtitle="This action cannot be undone" icon={<Trash2 size={20} color={T.red} />} iconVariant="danger" onClose={() => setToDelete(null)} width={420} footer={
+          <Modal title="Delete — Zone" subtitle="This action cannot be undone" icon={<Trash2 size={20} color={T.red} />} iconVariant="danger" onClose={() => setToDelete(null)} width={420} footer={
             <>
               <button className="stc-btn stc-btn-ghost" onClick={() => setToDelete(null)}>Cancel</button>
               <button className="stc-btn stc-btn-danger" onClick={handleConfirmDelete}>Delete</button>
             </>
           }>
             <p style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.7, margin: 0 }}>
-              This will permanently remove {toDelete.code} from the list. This can't be undone.
+              This will permanently remove {toDelete.zoneName} from the list. This can't be undone.
             </p>
           </Modal>
         )}
