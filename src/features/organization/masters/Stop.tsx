@@ -4,25 +4,36 @@ import { T } from "../../../constants/theme";
 import { Card, RouteChip, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface Stop {
-  code: string;
-  name: string;
-  route: string;
-  seq: number;
+  stopId: string;
+  stopCode: string;
+  stopName: string;
+  routeId: string;
+  routeCode: string;
+  routeName: string;
+  stopOrder: number;
+  isActive: boolean;
 }
-
+export interface StopPayload {
+  stopId: string;
+  stopCode: string;
+  stopName: string;
+  routeId: string;
+  stopOrder: number;
+  isActive: boolean;
+}
 export interface StopProps {
   data?: Stop[];
-  routeOptions?: string[];
-  onAdd?: (item: Stop) => void;
-  onUpdate?: (code: string, item: Stop) => void;
-  onDelete?: (code: string) => void;
+  routeOptions?: {routeId: string; routeCode: string; routeName: string}[];
+  onAdd?: (item: StopPayload) => void;
+  onUpdate?: (item: StopPayload) => void;
+  onDelete?: (stopId: string) => void;
 }
 
 const initialDefaultStops: Stop[] = [
-  { code: "STP-0142", name: "Lonavala Ghat", route: "MSRTC-9502", seq: 4 },
-  { code: "STP-0143", name: "Panvel Junction", route: "MSRTC-8801", seq: 6 },
-  { code: "STP-0144", name: "Prabhadevi", route: "BEST-AC-84", seq: 9 },
-  { code: "STP-0145", name: "Wakad Chowk", route: "PMPML-56", seq: 3 },
+  { stopId: "STP-0142", stopCode: "STP-0142", stopName: "Lonavala Ghat", routeId: "MSRTC-9502", routeCode: "MSRTC-9502", routeName: "Pune – Mumbai Shivneri (Expressway)", stopOrder: 4, isActive: true },
+  { stopId: "STP-0143", stopCode: "STP-0143", stopName: "Panvel Junction", routeId: "MSRTC-8801", routeCode: "MSRTC-8801", routeName: "Pune – Nashik ST Express", stopOrder: 6, isActive: true },
+  { stopId: "STP-0144", stopCode: "STP-0144", stopName: "Prabhadevi", routeId: "BEST-AC-84", routeCode: "BEST-AC-84", routeName: "Colaba – Bandra (via Worli Sea Face)", stopOrder: 9, isActive: true },
+  { stopId: "STP-0145", stopCode: "STP-0145", stopName: "Wakad Chowk", routeId: "PMPML-56", routeCode: "PMPML-56", routeName: "Pune – Nashik Local", stopOrder: 3, isActive: true },
 ];
 
 export function Stop({ data: propData, routeOptions = [], onAdd, onUpdate, onDelete }: StopProps) {
@@ -34,7 +45,7 @@ export function Stop({ data: propData, routeOptions = [], onAdd, onUpdate, onDel
   const [formData, setFormData] = useState<Partial<Stop>>({});
 
   const handleOpenAdd = () => {
-    setFormData({ code: "", name: "", route: routeOptions[0] || "", seq: 0 });
+    setFormData({ stopId: "", stopCode: "", stopName: "", routeId: routeOptions[0]?.routeId || "", stopOrder: 0, isActive: true });
     setModal({ mode: "add" });
   };
 
@@ -44,26 +55,28 @@ export function Stop({ data: propData, routeOptions = [], onAdd, onUpdate, onDel
   };
 
   const handleSave = () => {
-    if (!formData.code || !formData.name) return;
+    if (!formData.stopCode || !formData.stopName) return;
 
-    const newRecord: Stop = {
-      code: formData.code,
-      name: formData.name,
-      route: formData.route || routeOptions[0] || "",
-      seq: Number(formData.seq) || 0,
+    const newRecord: StopPayload = {
+      stopId: formData.stopId || "",
+      stopCode: formData.stopCode || "",
+      stopName: formData.stopName,
+      routeId: formData.routeId || routeOptions[0]?.routeId || "",
+      stopOrder: Number(formData.stopOrder) || 0,
+      isActive: formData.isActive !== undefined ? formData.isActive : true,
     };
 
     if (modal?.mode === "add") {
       if (onAdd) {
         onAdd(newRecord);
       } else {
-        setInternalData((prev) => [...prev, newRecord]);
+        setInternalData((prev) => [...prev]);
       }
     } else if (modal?.mode === "edit" && modal.record) {
       if (onUpdate) {
-        onUpdate(modal.record.code, newRecord);
+        onUpdate(newRecord);
       } else {
-        setInternalData((prev) => prev.map((item: Stop) => (item.code === modal.record!.code ? newRecord : item)));
+        setInternalData((prev) => prev.map((item: Stop) => (item)));
       }
     }
 
@@ -73,9 +86,9 @@ export function Stop({ data: propData, routeOptions = [], onAdd, onUpdate, onDel
   const handleConfirmDelete = () => {
     if (!toDelete) return;
     if (onDelete) {
-      onDelete(toDelete.code);
+      onDelete(toDelete.stopId);
     } else {
-      setInternalData((prev) => prev.filter((item: Stop) => item.code !== toDelete.code));
+      setInternalData((prev) => prev.filter((item: Stop) => item.stopId !== toDelete.stopId));
     }
     setToDelete(null);
   };
@@ -99,17 +112,19 @@ export function Stop({ data: propData, routeOptions = [], onAdd, onUpdate, onDel
               <Th>Stop code</Th>
               <Th>Name</Th>
               <Th>Route</Th>
-              <Th align="right">Sequence</Th>
+              <Th align="center">Stop Order</Th>
+              <Th>Status</Th>
               <Th align="right">Actions</Th>
             </tr>
           </thead>
           <tbody>
             {data.map((item: Stop) => (
-              <tr key={item.code} className="stc-row">
-                <Td mono><RouteChip>{item.code}</RouteChip></Td>
-                <Td>{item.name}</Td>
-                <Td mono>{item.route}</Td>
-                <Td align="right">{item.seq}</Td>
+              <tr key={item.stopId} className="stc-row">
+                <Td mono><RouteChip>{item.stopCode}</RouteChip></Td>
+                <Td>{item.stopName}</Td>
+                <Td mono>{item.routeName}</Td>
+                <Td align="center">{item.stopOrder}</Td>
+                <Td>{item.isActive ? "Active" : "Inactive"}</Td>
                 <Td align="right">
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
                     <button onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
@@ -124,7 +139,7 @@ export function Stop({ data: propData, routeOptions = [], onAdd, onUpdate, onDel
             ))}
             {data.length === 0 && (
               <tr>
-                <Td colSpan={5}>No records yet — use Add stop to create one.</Td>
+                <Td colSpan={6}>No records yet — use Add stop to create one.</Td>
               </tr>
             )}
           </tbody>
@@ -144,40 +159,55 @@ export function Stop({ data: propData, routeOptions = [], onAdd, onUpdate, onDel
             }
           >
             <div className="stc-form-grid">
-              <div className="stc-field">
-                <label className="stc-field-label">Stop code</label>
-                <input
-                  disabled={modal.mode === "edit"}
-                  value={formData.code || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, code: e.target.value }))}
+              {modal.mode == "edit" && (
+                <div className="stc-field">
+                  <label className="stc-field-label">Stop code</label>
+                  <input
+                    disabled={modal.mode === "edit"}
+                    value={formData.stopCode || ""}
+                    onChange={(e) => setFormData((s) => ({ ...s, stopCode: e.target.value }))}
                 />
-              </div>
+              </div>)}
               <div className="stc-field">
                 <label className="stc-field-label">Name</label>
                 <input
-                  value={formData.name || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, name: e.target.value }))}
+                  value={formData.stopName || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, stopName: e.target.value }))}
                 />
               </div>
               <div className="stc-field">
                 <label className="stc-field-label">Route</label>
                 <select
-                  value={formData.route || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, route: e.target.value }))}
+                  value={formData.routeId || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, routeId: e.target.value }))}
                 >
-                  {routeOptions.map((opt: string) => (
-                    <option key={opt} value={opt}>{opt}</option>
+                  {routeOptions.map((opt) => (
+                    <option key={opt.routeId} value={opt.routeId}>
+                      {opt.routeName}
+                    </option>
                   ))}
                 </select>
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Sequence</label>
+                <label className="stc-field-label">Stop Order</label>
                 <input
                   type="number"
-                  value={formData.seq ?? 0}
-                  onChange={(e) => setFormData((s) => ({ ...s, seq: Number(e.target.value) }))}
+                  value={formData.stopOrder ?? 0}
+                  onChange={(e) => setFormData((s) => ({ ...s, stopOrder: Number(e.target.value) }))}
                 />
               </div>
+              {modal.mode === "edit" && (
+                <div className="stc-field">
+                  <label className="stc-field-label">Status</label>
+                  <select
+                    value={formData.isActive ? "Active" : "Inactive"}
+                    onChange={(e) => setFormData((s) => ({ ...s, isActive: e.target.value === "Active" }))}
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              )}
             </div>
           </Modal>
         )}
@@ -190,7 +220,7 @@ export function Stop({ data: propData, routeOptions = [], onAdd, onUpdate, onDel
             </>
           }>
             <p style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.7, margin: 0 }}>
-              This will permanently remove {toDelete.code} from the list. This can't be undone.
+              This will permanently remove {toDelete.stopCode} from the list. This can't be undone.
             </p>
           </Modal>
         )}

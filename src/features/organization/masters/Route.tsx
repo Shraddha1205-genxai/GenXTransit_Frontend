@@ -4,31 +4,37 @@ import { T } from "../../../constants/theme";
 import { Card, RouteChip, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface Route {
-  code: string;
-  name: string;
+  routeId: string;
+  routeCode: string;
+  routeName: string;
   service: string;
+  fromLocation: string;
+  toLocation: string;
   type: string;
   distance: string;
   fareModel: string;
   duration: string;
+  isActive: boolean;
 }
 
 export interface RoutesPageProps {
   data?: Route[];
   onAdd?: (item: Route) => void;
-  onUpdate?: (code: string, item: Route) => void;
-  onDelete?: (code: string) => void;
+  onUpdate?: (item: Route) => void;
+  onDelete?: (routeId: string) => void;
 }
 
 const initialDefaultRoutes: Route[] = [
-  { code: "MSRTC-9502", name: "Pune – Mumbai Shivneri (Expressway)", service: "ST", type: "Luxury", distance: "150 km", fareModel: "Fixed", duration: "3h 10m" },
-  { code: "MSRTC-7714", name: "Pune – Nashik ST Express", service: "ST", type: "Express", distance: "210 km", fareModel: "Distance", duration: "4h 30m" },
-  { code: "BEST-A-1", name: "Colaba – Bandra (via Worli Sea Face)", service: "Local", type: "City", distance: "18 km", fareModel: "Distance", duration: "1h 05m" },
+  { routeId: "R-9502", routeCode: "MSRTC-9502", routeName: "Pune – Mumbai Shivneri (Expressway)", fromLocation: "Pune", toLocation: "Mumbai", service: "ST", type: "Luxury", distance: "150 km", fareModel: "Fixed", duration: "3h 10m", isActive: true },
+  { routeId: "R-7714", routeCode: "MSRTC-7714", routeName: "Pune – Nashik ST Express", fromLocation: "Pune", toLocation: "Nashik", service: "ST", type: "Express", distance: "210 km", fareModel: "Distance", duration: "4h 30m", isActive: true },
+  { routeId: "R-BEST-A-1", routeCode: "BEST-A-1", routeName: "Colaba – Bandra (via Worli Sea Face)", fromLocation: "Colaba", toLocation: "Bandra", service: "Local", type: "City", distance: "18 km", fareModel: "Distance", duration: "1h 05m", isActive: true },
 ];
 
 const serviceOptions = ["ST", "Local"];
 const typeOptions = ["Luxury", "Express", "Ordinary", "City"];
 const fareModelOptions = ["Fixed", "Distance", "Zone"];
+const fromLocationOptions = ["Pune", "Mumbai", "Nashik", "Colaba", "Bandra"];
+const toLocationOptions = ["Pune", "Mumbai", "Nashik", "Colaba", "Bandra"];
 
 export function Route({ data: propData, onAdd, onUpdate, onDelete }: RoutesPageProps) {
   const [internalData, setInternalData] = useState<Route[]>(initialDefaultRoutes);
@@ -39,7 +45,7 @@ export function Route({ data: propData, onAdd, onUpdate, onDelete }: RoutesPageP
   const [formData, setFormData] = useState<Partial<Route>>({});
 
   const handleOpenAdd = () => {
-    setFormData({ code: "", name: "", service: serviceOptions[0], type: typeOptions[0], distance: "", fareModel: fareModelOptions[0], duration: "" });
+    setFormData({ routeCode: "", routeName: "", fromLocation: "", toLocation: "", service: serviceOptions[0], type: typeOptions[0], distance: "", fareModel: fareModelOptions[0], duration: "" });
     setModal({ mode: "add" });
   };
 
@@ -49,29 +55,33 @@ export function Route({ data: propData, onAdd, onUpdate, onDelete }: RoutesPageP
   };
 
   const handleSave = () => {
-    if (!formData.code || !formData.name) return;
+    if (!formData.routeCode || !formData.routeName) return;
 
     const newRecord: Route = {
-      code: formData.code,
-      name: formData.name,
+      routeId: formData.routeId || "",
+      routeCode: formData.routeCode || "",
+      routeName: formData.routeName || "",
+      fromLocation: formData.fromLocation || "",
+      toLocation: formData.toLocation || "",
       service: formData.service || serviceOptions[0],
       type: formData.type || typeOptions[0],
       distance: formData.distance || "",
       fareModel: formData.fareModel || fareModelOptions[0],
       duration: formData.duration || "",
+      isActive: formData.isActive !== undefined ? formData.isActive : true,
     };
 
     if (modal?.mode === "add") {
       if (onAdd) {
         onAdd(newRecord);
       } else {
-        setInternalData((prev) => [...prev, newRecord]);
+        setInternalData((prev) => [...prev]);
       }
     } else if (modal?.mode === "edit" && modal.record) {
       if (onUpdate) {
-        onUpdate(modal.record.code, newRecord);
+        onUpdate(newRecord);
       } else {
-        setInternalData((prev) => prev.map((item) => (item.code === modal.record!.code ? newRecord : item)));
+        setInternalData((prev) => prev.map((item) => (item)));
       }
     }
 
@@ -81,9 +91,9 @@ export function Route({ data: propData, onAdd, onUpdate, onDelete }: RoutesPageP
   const handleConfirmDelete = () => {
     if (!toDelete) return;
     if (onDelete) {
-      onDelete(toDelete.code);
+      onDelete(toDelete.routeId);
     } else {
-      setInternalData((prev) => prev.filter((item) => item.code !== toDelete.code));
+      setInternalData((prev) => prev.filter((item) => item.routeId !== toDelete.routeId));
     }
     setToDelete(null);
   };
@@ -106,6 +116,8 @@ export function Route({ data: propData, onAdd, onUpdate, onDelete }: RoutesPageP
             <tr>
               <Th>Route</Th>
               <Th>Service</Th>
+              <Th>From Location</Th>
+              <Th>To Location</Th>
               <Th>Type</Th>
               <Th>Distance</Th>
               <Th>Fare model</Th>
@@ -114,14 +126,16 @@ export function Route({ data: propData, onAdd, onUpdate, onDelete }: RoutesPageP
           </thead>
           <tbody>
             {data.map((item: Route) => (
-              <tr key={item.code} className="stc-row">
+              <tr key={item.routeCode} className="stc-row">
                 <Td mono>
                   <div>
-                    <RouteChip>{item.code}</RouteChip>
-                    <div style={{ fontSize: 12, color: T.textSoft, marginTop: 3 }}>{item.name}</div>
+                    <RouteChip>{item.routeCode}</RouteChip>
+                    <div style={{ fontSize: 12, color: T.textSoft, marginTop: 3 }}>{item.routeName}</div>
                   </div>
                 </Td>
                 <Td>{item.service}</Td>
+                <Td>{item.fromLocation}</Td>
+                <Td>{item.toLocation}</Td>
                 <Td>{item.type}</Td>
                 <Td>{item.distance}</Td>
                 <Td>{item.fareModel}</Td>
@@ -139,7 +153,7 @@ export function Route({ data: propData, onAdd, onUpdate, onDelete }: RoutesPageP
             ))}
             {data.length === 0 && (
               <tr>
-                <Td colSpan={6}>No records yet — use Add route to create one.</Td>
+                <Td colSpan={8}>No records yet — use Add route to create one.</Td>
               </tr>
             )}
           </tbody>
@@ -159,19 +173,19 @@ export function Route({ data: propData, onAdd, onUpdate, onDelete }: RoutesPageP
             }
           >
             <div className="stc-form-grid">
-              <div className="stc-field">
+              {modal.mode == "edit" && (<div className="stc-field">
                 <label className="stc-field-label">Route code</label>
                 <input
                   disabled={modal.mode === "edit"}
-                  value={formData.code || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, code: e.target.value }))}
+                  value={formData.routeCode || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, routeCode: e.target.value }))}
                 />
-              </div>
+              </div>)}
               <div className="stc-field">
                 <label className="stc-field-label">Name</label>
                 <input
-                  value={formData.name || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, name: e.target.value }))}
+                  value={formData.routeName || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, routeName: e.target.value }))}
                 />
               </div>
               <div className="stc-field">
@@ -181,6 +195,28 @@ export function Route({ data: propData, onAdd, onUpdate, onDelete }: RoutesPageP
                   onChange={(e) => setFormData((s) => ({ ...s, service: e.target.value }))}
                 >
                   {serviceOptions.map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="stc-field">
+                <label className="stc-field-label">From Location</label>
+                <select
+                  value={formData.fromLocation || fromLocationOptions[0]}
+                  onChange={(e) => setFormData((s) => ({ ...s, fromLocation: e.target.value }))}
+                >
+                  {fromLocationOptions.map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="stc-field">
+                <label className="stc-field-label">To Location</label>
+                <select
+                  value={formData.toLocation || toLocationOptions[0]}
+                  onChange={(e) => setFormData((s) => ({ ...s, toLocation: e.target.value }))}
+                >
+                  {toLocationOptions.map((opt) => (
                     <option key={opt} value={opt}>{opt}</option>
                   ))}
                 </select>
@@ -221,6 +257,18 @@ export function Route({ data: propData, onAdd, onUpdate, onDelete }: RoutesPageP
                   onChange={(e) => setFormData((s) => ({ ...s, duration: e.target.value }))}
                 />
               </div>
+              {modal.mode === "edit" && (
+                <div className="stc-field">
+                  <label className="stc-field-label">Status</label>
+                  <select
+                    value={formData.isActive ? "Active" : "Inactive"}
+                    onChange={(e) => setFormData((s) => ({ ...s, isActive: e.target.value === "Active" }))}
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              )}
             </div>
           </Modal>
         )}
@@ -233,24 +281,8 @@ export function Route({ data: propData, onAdd, onUpdate, onDelete }: RoutesPageP
             </>
           }>
             <p style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.7, margin: 0 }}>
-              This will permanently remove {toDelete.code} from the list. This can't be undone.
+              This will permanently remove {toDelete.routeName} from the list. This can't be undone
             </p>
-          </Modal>
-        )}
-
-        {toDelete && (
-          <Modal title="Delete — Routes" onClose={() => setToDelete(null)}>
-            <p style={{ fontSize: 13, color: T.textSoft, lineHeight: 1.5, margin: "0 0 18px" }}>
-              This will permanently remove {toDelete.code} from the list. This can't be undone.
-            </p>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-              <button onClick={() => setToDelete(null)} style={{ padding: "8px 14px", borderRadius: 4, border: `1px solid ${T.border}`, background: T.panel, color: T.textSoft, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                Cancel
-              </button>
-              <button onClick={handleConfirmDelete} style={{ padding: "8px 14px", borderRadius: 4, border: "none", background: T.red, color: T.panel, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                Delete
-              </button>
-            </div>
           </Modal>
         )}
       </Card>

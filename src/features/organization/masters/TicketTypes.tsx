@@ -4,22 +4,24 @@ import { T } from "../../../constants/theme";
 import { Card, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface TicketType {
-  code: string;
-  name: string;
-  desc: string;
+  ticketId: string;
+  ticketCode: string;
+  ticketName: string;
+  description: string;
+  isActive: boolean;
 }
 
 export interface TicketTypesProps {
   data?: TicketType[];
   onAdd?: (item: TicketType) => void;
-  onUpdate?: (code: string, item: TicketType) => void;
-  onDelete?: (code: string) => void;
+  onUpdate?: (item: TicketType) => void;
+  onDelete?: (ticketId: string) => void;
 }
 
 const initialDefaultTicketTypes: TicketType[] = [
-  { code: "TT-ADULT", name: "Adult", desc: "Standard full fare" },
-  { code: "TT-STUDENT", name: "Student", desc: "Concession ticket" },
-  { code: "TT-SENIOR", name: "Senior citizen", desc: "Discounted fare" },
+  { ticketId: "TT-ADULT", ticketCode: "TT-ADULT", ticketName: "Adult", description: "Standard full fare", isActive: true },
+  { ticketId: "TT-STUDENT", ticketCode: "TT-STUDENT", ticketName: "Student", description: "Concession ticket", isActive: true },
+  { ticketId: "TT-SENIOR", ticketCode: "TT-SENIOR", ticketName: "Senior citizen", description: "Discounted fare", isActive: true },
 ];
 
 export function TicketTypes({ data: propData, onAdd, onUpdate, onDelete }: TicketTypesProps) {
@@ -31,7 +33,7 @@ export function TicketTypes({ data: propData, onAdd, onUpdate, onDelete }: Ticke
   const [formData, setFormData] = useState<Partial<TicketType>>({});
 
   const handleOpenAdd = () => {
-    setFormData({ code: "", name: "", desc: "" });
+    setFormData({ ticketId: "", ticketCode: "", ticketName: "", description: "", isActive: true });
     setModal({ mode: "add" });
   };
 
@@ -41,25 +43,27 @@ export function TicketTypes({ data: propData, onAdd, onUpdate, onDelete }: Ticke
   };
 
   const handleSave = () => {
-    if (!formData.code || !formData.name) return;
+    if (!formData.ticketId || !formData.ticketName) return;
 
     const newRecord: TicketType = {
-      code: formData.code,
-      name: formData.name,
-      desc: formData.desc || "",
+      ticketId: formData.ticketId || "",
+      ticketCode: formData.ticketCode || "",
+      ticketName: formData.ticketName || "",
+      description: formData.description || "",
+      isActive: formData.isActive || true,
     };
 
     if (modal?.mode === "add") {
       if (onAdd) {
         onAdd(newRecord);
       } else {
-        setInternalData((prev) => [...prev, newRecord]);
+        setInternalData((prev) => [...prev]);
       }
     } else if (modal?.mode === "edit" && modal.record) {
       if (onUpdate) {
-        onUpdate(modal.record.code, newRecord);
+        onUpdate(newRecord);
       } else {
-        setInternalData((prev) => prev.map((item: TicketType) => (item.code === modal.record!.code ? newRecord : item)));
+        setInternalData((prev) => prev.map((item: TicketType) => (item)));
       }
     }
 
@@ -69,9 +73,9 @@ export function TicketTypes({ data: propData, onAdd, onUpdate, onDelete }: Ticke
   const handleConfirmDelete = () => {
     if (!toDelete) return;
     if (onDelete) {
-      onDelete(toDelete.code);
+      onDelete(toDelete.ticketId);
     } else {
-      setInternalData((prev) => prev.filter((item: TicketType) => item.code !== toDelete.code));
+      setInternalData((prev) => prev.filter((item: TicketType) => item.ticketId !== toDelete.ticketId));
     }
     setToDelete(null);
   };
@@ -100,10 +104,10 @@ export function TicketTypes({ data: propData, onAdd, onUpdate, onDelete }: Ticke
           </thead>
           <tbody>
             {data.map((item: TicketType) => (
-              <tr key={item.code} className="stc-row">
-                <Td mono>{item.code}</Td>
-                <Td>{item.name}</Td>
-                <Td>{item.desc}</Td>
+              <tr key={item.ticketId} className="stc-row">
+                <Td mono>{item.ticketCode}</Td>
+                <Td>{item.ticketName}</Td>
+                <Td>{item.description}</Td>
                 <Td align="right">
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
                     <button onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
@@ -138,28 +142,40 @@ export function TicketTypes({ data: propData, onAdd, onUpdate, onDelete }: Ticke
             }
           >
             <div className="stc-form-grid">
-              <div className="stc-field">
+             {modal.mode == "edit" && (<div className="stc-field">
                 <label className="stc-field-label">Code</label>
                 <input
                   disabled={modal.mode === "edit"}
-                  value={formData.code || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, code: e.target.value }))}
+                  value={formData.ticketCode || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, ticketCode: e.target.value }))}
                 />
-              </div>
+              </div>)}
               <div className="stc-field">
                 <label className="stc-field-label">Name</label>
                 <input
-                  value={formData.name || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, name: e.target.value }))}
+                  value={formData.ticketName || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, ticketName: e.target.value }))}
                 />
               </div>
               <div className="stc-field" style={{ gridColumn: "1 / -1" }}>
                 <label className="stc-field-label">Description</label>
                 <input
-                  value={formData.desc || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, desc: e.target.value }))}
+                  value={formData.description || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, description: e.target.value }))}
                 />
               </div>
+              {modal.mode === "edit" && (
+                <div className="stc-field">
+                  <label className="stc-field-label">Status</label>
+                  <select
+                    value={formData.isActive ? "Active" : "Inactive"}
+                    onChange={(e) => setFormData((s) => ({ ...s, isActive: e.target.value === "Active" }))}
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              )}
             </div>
           </Modal>
         )}
@@ -172,7 +188,7 @@ export function TicketTypes({ data: propData, onAdd, onUpdate, onDelete }: Ticke
             </>
           }>
             <p style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.7, margin: 0 }}>
-              This will permanently remove {toDelete.code} from the list. This can't be undone.
+              This will permanently remove {toDelete.ticketCode} from the list. This can't be undone.
             </p>
           </Modal>
         )}

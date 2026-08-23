@@ -4,9 +4,12 @@ import { T } from "../../../constants/theme";
 import { Card, StatusBadge, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface PaymentMode {
-  code: string;
-  name: string;
-  status: string;
+  modeId: string;
+  modeCode: string;
+  modeName: string;
+  modeStatus: string;
+  description: string;
+  isActive: boolean;
 }
 
 export interface PaymentModesProps {
@@ -17,9 +20,9 @@ export interface PaymentModesProps {
 }
 
 const initialDefaultPaymentModes: PaymentMode[] = [
-  { code: "PM-CASH", name: "Cash", status: "Active" },
-  { code: "PM-CARD", name: "Debit / credit card", status: "Active" },
-  { code: "PM-NETBANK", name: "Net banking", status: "Disabled" },
+  { modeId: "PM-CASH", modeCode: "PM-CASH", modeName: "Cash", modeStatus: "", description: "", isActive: true },
+  { modeId: "PM-CARD", modeCode: "PM-CARD", modeName: "Debit / credit card", modeStatus: "", description: "", isActive: true },
+  { modeId: "PM-NETBANK", modeCode: "PM-NETBANK", modeName: "Net banking", modeStatus: "", description: "", isActive: false },
 ];
 
 export function PaymentModes({ data: propData, onAdd, onUpdate, onDelete }: PaymentModesProps) {
@@ -31,7 +34,7 @@ export function PaymentModes({ data: propData, onAdd, onUpdate, onDelete }: Paym
   const [formData, setFormData] = useState<Partial<PaymentMode>>({});
 
   const handleOpenAdd = () => {
-    setFormData({ code: "", name: "", status: "Active" });
+    setFormData({ modeId: "", modeCode: "", modeName: "", modeStatus:"", description: "", isActive: true });
     setModal({ mode: "add" });
   };
 
@@ -41,12 +44,15 @@ export function PaymentModes({ data: propData, onAdd, onUpdate, onDelete }: Paym
   };
 
   const handleSave = () => {
-    if (!formData.code || !formData.name) return;
+    if (!formData.modeCode || !formData.modeName) return;
 
     const newRecord: PaymentMode = {
-      code: formData.code,
-      name: formData.name,
-      status: formData.status || "Active",
+      modeId: formData.modeId || "",
+      modeCode: formData.modeCode || "",
+      modeName: formData.modeName || "",
+      modeStatus: formData.modeStatus || "",
+      description: formData.description || "",
+      isActive: formData.isActive || true,
     };
 
     if (modal?.mode === "add") {
@@ -57,9 +63,9 @@ export function PaymentModes({ data: propData, onAdd, onUpdate, onDelete }: Paym
       }
     } else if (modal?.mode === "edit" && modal.record) {
       if (onUpdate) {
-        onUpdate(modal.record.code, newRecord);
+        onUpdate(modal.record.modeCode, newRecord);
       } else {
-        setInternalData((prev) => prev.map((item: PaymentMode) => (item.code === modal.record!.code ? newRecord : item)));
+        setInternalData((prev) => prev.map((item: PaymentMode) => (item.modeCode === modal.record!.modeCode ? newRecord : item)));
       }
     }
 
@@ -69,9 +75,9 @@ export function PaymentModes({ data: propData, onAdd, onUpdate, onDelete }: Paym
   const handleConfirmDelete = () => {
     if (!toDelete) return;
     if (onDelete) {
-      onDelete(toDelete.code);
+      onDelete(toDelete.modeCode);
     } else {
-      setInternalData((prev) => prev.filter((item: PaymentMode) => item.code !== toDelete.code));
+      setInternalData((prev) => prev.filter((item: PaymentMode) => item.modeCode !== toDelete.modeCode));
     }
     setToDelete(null);
   };
@@ -100,10 +106,10 @@ export function PaymentModes({ data: propData, onAdd, onUpdate, onDelete }: Paym
           </thead>
           <tbody>
             {data.map((item: PaymentMode) => (
-              <tr key={item.code} className="stc-row">
-                <Td mono>{item.code}</Td>
-                <Td>{item.name}</Td>
-                <Td><StatusBadge status={item.status} /></Td>
+              <tr key={item.modeCode} className="stc-row">
+                <Td mono>{item.modeCode}</Td>
+                <Td>{item.modeName}</Td>
+                <Td><StatusBadge status={item.isActive ? "Active" : "Inactive"} /></Td>
                 <Td align="right">
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
                     <button onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
@@ -138,31 +144,50 @@ export function PaymentModes({ data: propData, onAdd, onUpdate, onDelete }: Paym
             }
           >
             <div className="stc-form-grid">
-              <div className="stc-field">
+              {modal.mode == "edit" && (<div className="stc-field">
                 <label className="stc-field-label">Code</label>
                 <input
                   disabled={modal.mode === "edit"}
-                  value={formData.code || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, code: e.target.value }))}
+                  value={formData.modeCode || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, modeCode: e.target.value }))}
                 />
-              </div>
+              </div>)}
               <div className="stc-field">
                 <label className="stc-field-label">Name</label>
                 <input
-                  value={formData.name || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, name: e.target.value }))}
+                  value={formData.modeName || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, modeName: e.target.value }))}
                 />
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Status</label>
-                <select
-                  value={formData.status || "Active"}
-                  onChange={(e) => setFormData((s) => ({ ...s, status: e.target.value }))}
-                >
-                  <option value="Active">Active</option>
-                  <option value="Disabled">Disabled</option>
-                </select>
+                  <label className="stc-field-label">Mode Status</label>
+                  <select
+                    value={formData.modeStatus ? "Active" : "Inactive"}
+                    onChange={(e) => setFormData((s) => ({ ...s, modeStatus: e.target.value }))}
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+                <div className="stc-field">
+                <label className="stc-field-label">Description</label>
+                <input
+                  value={formData.description || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, description: e.target.value }))}
+                />
               </div>
+              {modal.mode === "edit" && (
+                <div className="stc-field">
+                  <label className="stc-field-label">Status</label>
+                  <select
+                    value={formData.isActive ? "Active" : "Inactive"}
+                    onChange={(e) => setFormData((s) => ({ ...s, isActive: e.target.value === "Active" }))}
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              )}
             </div>
           </Modal>
         )}
@@ -175,7 +200,7 @@ export function PaymentModes({ data: propData, onAdd, onUpdate, onDelete }: Paym
             </>
           }>
             <p style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.7, margin: 0 }}>
-              This will permanently remove {toDelete.code} from the list. This can't be undone.
+              This will permanently remove {toDelete.modeCode} from the list. This can't be undone.
             </p>
           </Modal>
         )}

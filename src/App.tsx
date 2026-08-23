@@ -16,7 +16,7 @@ import { Sidebar, Header, SubTabs, SectionHeader, KpiCard } from "./components/c
 const DashboardTab = lazy(() => import("./features/dashboard"));
 const Regions = lazy(() => import("./features/organization/organizationManagement/Regions"));
 const Divisions = lazy(() => import("./features/organization/organizationManagement/Divisions"));
-const Zones = lazy(() => import("./features/organization/organizationManagement/Zones"));
+const Zones = lazy(() => import("./features/organization/organizationManagement/zones"));
 const Corporations = lazy(() => import("./features/organization/organizationManagement/Corporations"));
 const Depots = lazy(() => import("./features/organization/organizationManagement/Depots"));
 const BusStation = lazy(() => import("./features/organization/organizationManagement/BusStation"));
@@ -86,12 +86,9 @@ const vehicles = [
 ];
 
 const routes = [
-  { code: "MSRTC-9502", name: "Pune – Mumbai Shivneri (Expressway)", type: "Luxury", distance: "150 km", fareModel: "Fixed", duration: "3h 10m", service: "ST" },
-  { code: "MSRTC-7714", name: "Pune – Nashik ST Express", type: "Express", distance: "210 km", fareModel: "Distance", duration: "4h 30m", service: "ST" },
-  { code: "MSRTC-8801", name: "Mumbai Central – Mahabaleshwar", type: "Ordinary", distance: "247 km", fareModel: "Zone", duration: "5h 45m", service: "ST" },
-  { code: "BEST-A-1", name: "Colaba – Bandra (via Worli Sea Face)", type: "City", distance: "18 km", fareModel: "Distance", duration: "1h 05m", service: "Local" },
-  { code: "BEST-AC-84", name: "Colaba – Andheri Station AC", type: "City", distance: "24 km", fareModel: "Distance", duration: "1h 20m", service: "Local" },
-  { code: "PMPML-56", name: "Swargate – Hinjawadi IT Park", type: "City", distance: "21 km", fareModel: "Distance", duration: "1h 10m", service: "Local" },
+  { routeId: "R-9502", routeCode: "MSRTC-9502", routeName: "Pune – Mumbai Shivneri (Expressway)", fromLocation: "Pune", toLocation: "Mumbai", service: "ST", type: "Luxury", distance: "150 km", fareModel: "Fixed", duration: "3h 10m", isActive: true },
+  { routeId: "R-7714", routeCode: "MSRTC-7714", routeName: "Pune – Nashik ST Express", fromLocation: "Pune", toLocation: "Nashik", service: "ST", type: "Express", distance: "210 km", fareModel: "Distance", duration: "4h 30m", isActive: true },
+  { routeId: "R-BEST-A-1", routeCode: "BEST-A-1", routeName: "Colaba – Bandra (via Worli Sea Face)", fromLocation: "Colaba", toLocation: "Bandra", service: "Local", type: "City", distance: "18 km", fareModel: "Distance", duration: "1h 05m", isActive: true },
 ];
 
 const trips = [
@@ -110,11 +107,9 @@ const liveBuses = [
 ];
 
 const farePolicies = [
-  { code: "FP-FIX-01", model: "Fixed", base: 350, rate: "Flat (Shivneri)", route: "MSRTC-9502", status: "Published" },
-  { code: "FP-DIST-02", model: "Distance", base: 20, rate: "₹1.45/km", route: "MSRTC-7714", status: "Published" },
-  { code: "FP-ZONE-03", model: "Zone", base: 15, rate: "Zone matrix", route: "MSRTC-8801", status: "Simulated" },
-  { code: "FP-DIST-04", model: "Distance", base: 8, rate: "₹2.00/km", route: "BEST-A-1", status: "Published" },
-  { code: "FP-DIST-05", model: "Distance", base: 10, rate: "₹2.50/km", route: "PMPML-56", status: "Published" },
+  { policyId: "01", policyCode: "FP-FIX-01", model: "Fixed", categoryId:"01", categoryCode: "CAT-FIX-01", baseFare: 350, rateDescription: "Flat (Shivneri)", routeId: "MSRTC-9502", routeCode: "MSRTC-9502", routeName: "Pune – Mumbai Shivneri (Expressway)",policyStatus: "Published", isActive: true },
+  { policyId: "02", policyCode: "FP-DIST-02", model: "Distance", categoryId:"02", categoryCode: "CAT-DIST-02", baseFare: 20, rateDescription: "₹1.45/km", routeId: "MSRTC-7714", routeCode: "MSRTC-7714", routeName: "Pune – Nashik ST Express", policyStatus: "Simulated", isActive: true },
+  { policyId: "03", policyCode: "FP-ZONE-03", model: "Zone", categoryId:"03", categoryCode: "CAT-ZONE-03", baseFare: 15, rateDescription: "Zone matrix", routeId: "MSRTC-8801", routeCode: "MSRTC-8801", routeName: "Pune – Nashik Local", policyStatus: "Draft", isActive: false },
 ];
 
 const concessions = [
@@ -244,17 +239,16 @@ const parkingYards = [
 ];
 
 const stops = [
-  { code: "STP-0142", name: "Lonavala Ghat", route: "MSRTC-9502", seq: 4 },
-  { code: "STP-0143", name: "Panvel Junction", route: "MSRTC-8801", seq: 6 },
-  { code: "STP-0144", name: "Prabhadevi", route: "BEST-AC-84", seq: 9 },
-  { code: "STP-0145", name: "Wakad Chowk", route: "PMPML-56", seq: 3 },
-];
+  { stopId: "STP-0142", stopCode: "STP-0142", stopName: "Lonavala Ghat", routeId: "MSRTC-9502", routeCode: "MSRTC-9502", routeName: "Pune – Mumbai Shivneri (Expressway)", stopOrder: 4, isActive: true },
+  { stopId: "STP-0143", stopCode: "STP-0143", stopName: "Panvel Junction", routeId: "MSRTC-8801", routeCode: "MSRTC-8801", routeName: "Pune – Nashik ST Express", stopOrder: 6, isActive: true },
+  { stopId: "STP-0144", stopCode: "STP-0144", stopName: "Prabhadevi", routeId: "BEST-AC-84", routeCode: "BEST-AC-84", routeName: "Colaba – Bandra (via Worli Sea Face)", stopOrder: 9, isActive: true },
+  { stopId: "STP-0145", stopCode: "STP-0145", stopName: "Wakad Chowk", routeId: "PMPML-56", routeCode: "PMPML-56", routeName: "Pune – Nashik Local", stopOrder: 3, isActive: true },
+];;
 
 const stages = [
-  { code: "STG-01", route: "MSRTC-7714", name: "Pune – Chakan", km: 22 },
-  { date: "15 Aug 2026", name: "Independence Day", type: "National" },
-  { code: "STG-02", route: "MSRTC-7714", name: "Chakan – Sangamner", km: 88 },
-  { code: "STG-03", route: "BEST-A-1", name: "Colaba – Worli", km: 8 },
+  { stageId: "STG-001", stageCode: "STG-001", stageName: "Pune Section", routeId: "9502", routeCode: "MSRTC-9502", routeName: "MSRTC-9502", sectionFromId: "001", sectionFromCode: "SEC-001", sectionFromName: "Pune Section", sectionToId: "002", sectionToCode: "SEC-002", sectionToName: "Lonavala Section", distance: 40, isActive: true },
+  { stageId: "STG-002", stageCode: "STG-002", stageName: "Lonavala Section", routeId: "9502", routeCode: "MSRTC-9502", routeName: "MSRTC-9502", sectionFromId: "002", sectionFromCode: "SEC-002", sectionFromName: "Lonavala Section", sectionToId: "003", sectionToCode: "SEC-003", sectionToName: "Colaba Section", distance: 82, isActive: true },
+  { stageId: "STG-003", stageCode: "STG-003", stageName: "Colaba Section", routeId: "101", routeCode: "BEST-A-1", routeName: "BEST-A-1", sectionFromId: "003", sectionFromCode: "SEC-003", sectionFromName: "Colaba Section", sectionToId: "004", sectionToCode: "SEC-004", sectionToName: "Mumbai Section", distance: 6, isActive: true },
 ];
 
 const zones = [
@@ -264,25 +258,22 @@ const zones = [
 ];
 
 const ticketTypes = [
-  { code: "TT-ADULT", name: "Adult full fare", desc: "Standard passenger fare" },
-  { code: "TT-CHILD", name: "Child (5–12 yrs)", desc: "50% of adult fare" },
-  { code: "TT-LUGGAGE", name: "Luggage ticket", desc: "Excess luggage surcharge" },
-  { code: "TT-GROUP", name: "Group booking", desc: "10+ passengers, single trip" },
+  { ticketId: "TT-ADULT", ticketCode: "TT-ADULT", ticketName: "Adult", description: "Standard full fare", isActive: true },
+  { ticketId: "TT-STUDENT", ticketCode: "TT-STUDENT", ticketName: "Student", description: "Concession ticket", isActive: true },
+  { ticketId: "TT-SENIOR", ticketCode: "TT-SENIOR", ticketName: "Senior citizen", description: "Discounted fare", isActive: true },
 ];
 
 const paymentModes = [
-  { code: "PM-CASH", name: "Cash", status: "Active" },
-  { code: "PM-UPI", name: "UPI", status: "Active" },
-  { code: "PM-WALLET", name: "Transit wallet", status: "Active" },
-  { code: "PM-CARD", name: "Debit / credit card", status: "Active" },
-  { code: "PM-NETBANK", name: "Net banking", status: "Disabled" },
+  { modeId: "PM-CASH", modeCode: "PM-CASH", modeName: "Cash", modeStatus: "", description: "", isActive: true },
+  { modeId: "PM-CARD", modeCode: "PM-CARD", modeName: "Debit / credit card", modeStatus: "", description: "", isActive: true },
+  { modeId: "PM-NETBANK", modeCode: "PM-NETBANK", modeName: "Net banking", modeStatus: "", description: "", isActive: false },
 ];
 
 const vehicleCategories = [
-  { code: "VC-SHIV", name: "AC Shivneri", capacity: 42, class: "Luxury" },
-  { code: "VC-EXP", name: "Express (ST)", capacity: 52, class: "Standard" },
-  { code: "VC-ORD", name: "Ordinary Local", capacity: 58, class: "Standard" },
-  { code: "VC-DD", name: "Double-decker", capacity: 96, class: "City" },
+  { categoryId: "VC-SHIV", categoryCode: "VC-SHIV", categoryName: "AC Shivneri", capacity: 42, type: "AC", class: "Luxury", isActive: true },
+  { categoryId: "VC-EXP", categoryCode: "VC-EXP", categoryName: "Express (ST)", capacity: 52, type: "AC", class: "Standard", isActive: true },
+  { categoryId: "VC-ORD", categoryCode: "VC-ORD", categoryName: "Ordinary Local", capacity: 58, type: "AC", class: "Standard", isActive: true },
+  { categoryId: "VC-DD", categoryCode: "VC-DD", categoryName: "Double-decker", capacity: 96, type: "Non AC", class: "City", isActive: true },
 ];
 
 const seatLayouts = [
@@ -512,8 +503,8 @@ function MasterDataLayout() {
       <SectionHeader eyebrow="Reference data used across scheduling, ticketing & fares" title="Master data" />
       <SubTabs
         tabs={[
-          "Routes", "Stops", "Stages", "Zones", "Fare Policies", "Ticket Types", "Payment Modes",
-          "Vehicle Categories", "Seat Layouts", "Holiday Calendar", "Notification Templates",
+          "Vehicle Categories", "Routes", "Stops", "Stages", "Fare Policies", "Ticket Types", "Payment Modes",
+          "Seat Layouts", "Holiday Calendar", "Notification Templates",
           "Complaint Categories", "Tax Configuration"
         ]}
         active={activeTab}
@@ -600,17 +591,19 @@ function RouteTab() {
 function StopTab() {
   const [routesData] = useCrud("routes", "code");
   const [stopsData, stopsCrud] = useCrud("stops", "code");
-  return <Stop data={stopsData} routeOptions={routesData.map((r) => r.code)} onAdd={stopsCrud.add} onUpdate={stopsCrud.update} onDelete={stopsCrud.remove} />;
+  return <Stop data={stopsData} routeOptions={routesData} onAdd={stopsCrud.add} onUpdate={stopsCrud.update} onDelete={stopsCrud.remove} />;
 }
 function StagesTab() {
   const [routesData] = useCrud("routes", "code");
   const [stagesData, stagesCrud] = useCrud("stages", "code");
-  return <Stages data={stagesData} routeOptions={routesData.map((r) => r.code)} onAdd={stagesCrud.add} onUpdate={stagesCrud.update} onDelete={stagesCrud.remove} />;
+  const [stopsData] = useCrud("stops", "code");
+  return <Stages data={stagesData} routeOptions={routesData} stopOptions={stopsData} onAdd={stagesCrud.add} onUpdate={stagesCrud.update} onDelete={stagesCrud.remove} />;
 }
 function FarePoliciesTab() {
   const [routesData] = useCrud("routes", "code");
+  const [vehicleCategoriesData] = useCrud("vehicleCategories", "code");
   const [farePoliciesData, farePoliciesCrud] = useCrud("farePolicies", "code");
-  return <FarePolicies data={farePoliciesData} routeOptions={routesData.map((r) => r.code)} onAdd={farePoliciesCrud.add} onUpdate={farePoliciesCrud.update} onDelete={farePoliciesCrud.remove} />;
+  return <FarePolicies data={farePoliciesData} routeOptions={routesData} categoryOptions={vehicleCategoriesData} onAdd={farePoliciesCrud.add} onUpdate={farePoliciesCrud.update} onDelete={farePoliciesCrud.remove} />;
 }
 function TicketTypesTab() {
   const [ticketTypesData, ticketTypesCrud] = useCrud("ticketTypes", "code");

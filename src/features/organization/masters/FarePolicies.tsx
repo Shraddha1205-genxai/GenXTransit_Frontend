@@ -4,32 +4,49 @@ import { T } from "../../../constants/theme";
 import { Card, RouteChip, StatusBadge, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface FarePolicy {
-  code: string;
+  policyId: string;
+  policyCode: string;
   model: string;
-  base: number;
-  rate: string;
-  route: string;
-  status: string;
+  policyStatus: string;
+  categoryId: string;
+  categoryCode: string;
+  routeId: string;
+  routeCode: string;
+  routeName: string;
+  baseFare: number;
+  rateDescription: string;
+  isActive: boolean;
 }
-
+export interface FarePolicyPayload {
+  policyId: string;
+  policyCode: string;
+  model: string;
+  policyStatus: string;
+  categoryId: string;
+  routeId: string;
+  baseFare: number;
+  rateDescription: string;
+  isActive: boolean;
+}
 export interface FarePoliciesProps {
   data?: FarePolicy[];
-  routeOptions?: string[];
-  onAdd?: (item: FarePolicy) => void;
-  onUpdate?: (code: string, item: FarePolicy) => void;
-  onDelete?: (code: string) => void;
+  routeOptions?: { routeId: string; routeCode: string; routeName: string }[];
+  categoryOptions?: { categoryId: string; categoryCode: string; }[];
+  onAdd?: (item: FarePolicyPayload) => void;
+  onUpdate?: (item: FarePolicyPayload) => void;
+  onDelete?: (policyCode: string) => void;
 }
 
 const initialDefaultFarePolicies: FarePolicy[] = [
-  { code: "FP-FIX-01", model: "Fixed", base: 350, rate: "Flat (Shivneri)", route: "MSRTC-9502", status: "Published" },
-  { code: "FP-DIST-02", model: "Distance", base: 20, rate: "₹1.45/km", route: "MSRTC-7714", status: "Published" },
-  { code: "FP-ZONE-03", model: "Zone", base: 15, rate: "Zone matrix", route: "MSRTC-8801", status: "Simulated" },
+  { policyId: "01", policyCode: "FP-FIX-01", model: "Fixed", categoryId:"01", categoryCode: "CAT-FIX-01", baseFare: 350, rateDescription: "Flat (Shivneri)", routeId: "MSRTC-9502", routeCode: "MSRTC-9502", routeName: "Pune – Mumbai Shivneri (Expressway)",policyStatus: "Published", isActive: true },
+  { policyId: "02", policyCode: "FP-DIST-02", model: "Distance", categoryId:"02", categoryCode: "CAT-DIST-02", baseFare: 20, rateDescription: "₹1.45/km", routeId: "MSRTC-7714", routeCode: "MSRTC-7714", routeName: "Pune – Nashik ST Express", policyStatus: "Simulated", isActive: true },
+  { policyId: "03", policyCode: "FP-ZONE-03", model: "Zone", categoryId:"03", categoryCode: "CAT-ZONE-03", baseFare: 15, rateDescription: "Zone matrix", routeId: "MSRTC-8801", routeCode: "MSRTC-8801", routeName: "Pune – Nashik Local", policyStatus: "Draft", isActive: false },
 ];
 
 const modelOptions = ["Fixed", "Distance", "Zone"];
 const statusOptions = ["Published", "Simulated", "Draft"];
 
-export function FarePolicies({ data: propData, routeOptions = [], onAdd, onUpdate, onDelete }: FarePoliciesProps) {
+export function FarePolicies({ data: propData, routeOptions = [], categoryOptions = [], onAdd, onUpdate, onDelete }: FarePoliciesProps) {
   const [internalData, setInternalData] = useState<FarePolicy[]>(initialDefaultFarePolicies);
   const data = propData || internalData;
 
@@ -38,7 +55,7 @@ export function FarePolicies({ data: propData, routeOptions = [], onAdd, onUpdat
   const [formData, setFormData] = useState<Partial<FarePolicy>>({});
 
   const handleOpenAdd = () => {
-    setFormData({ code: "", model: modelOptions[0], base: 0, rate: "", route: routeOptions[0] || "", status: statusOptions[0] });
+    setFormData({ policyId: "", policyCode: "", model: modelOptions[0], baseFare: 0, rateDescription: "", routeId: routeOptions[0]?.routeId || "", isActive: true });
     setModal({ mode: "add" });
   };
 
@@ -48,40 +65,42 @@ export function FarePolicies({ data: propData, routeOptions = [], onAdd, onUpdat
   };
 
   const handleSave = () => {
-    if (!formData.code) return;
+    if (!formData.policyCode) return;
 
-    const newRecord: FarePolicy = {
-      code: formData.code,
+    const newRecord: FarePolicyPayload = {
+      policyId: formData.policyId || "",
+      policyCode: formData.policyCode,
       model: formData.model || modelOptions[0],
-      base: Number(formData.base) || 0,
-      rate: formData.rate || "",
-      route: formData.route || routeOptions[0] || "",
-      status: formData.status || statusOptions[0],
+      policyStatus: formData.policyStatus || "Draft",
+      categoryId: formData.categoryId || "",
+      baseFare: Number(formData.baseFare) || 0,
+      rateDescription: formData.rateDescription || "",
+      routeId: formData.routeId || routeOptions[0]?.routeId || "",
+      isActive: formData.isActive ?? true,
     };
 
     if (modal?.mode === "add") {
       if (onAdd) {
         onAdd(newRecord);
       } else {
-        setInternalData((prev) => [...prev, newRecord]);
+        setInternalData((prev) => [...prev]);
       }
     } else if (modal?.mode === "edit" && modal.record) {
       if (onUpdate) {
-        onUpdate(modal.record.code, newRecord);
+        onUpdate(newRecord);
       } else {
-        setInternalData((prev) => prev.map((item: FarePolicy) => (item.code === modal.record!.code ? newRecord : item)));
+        setInternalData((prev) => prev.map((item: FarePolicy) => (item)));
       }
     }
-
     setModal(null);
   };
 
   const handleConfirmDelete = () => {
     if (!toDelete) return;
     if (onDelete) {
-      onDelete(toDelete.code);
+      onDelete(toDelete.policyId);
     } else {
-      setInternalData((prev) => prev.filter((item: FarePolicy) => item.code !== toDelete.code));
+      setInternalData((prev) => prev.filter((item: FarePolicy) => item.policyId !== toDelete.policyId));
     }
     setToDelete(null);
   };
@@ -104,20 +123,24 @@ export function FarePolicies({ data: propData, routeOptions = [], onAdd, onUpdat
             <tr>
               <Th>Policy</Th>
               <Th>Model</Th>
-              <Th>Base / rate</Th>
+              <Th>Base</Th>
+              <Th>Category</Th>
               <Th>Route</Th>
+              <Th>Policy Status</Th>
               <Th>Status</Th>
               <Th align="right">Actions</Th>
             </tr>
           </thead>
           <tbody>
             {data.map((item: FarePolicy) => (
-              <tr key={item.code} className="stc-row">
-                <Td mono><RouteChip>{item.code}</RouteChip></Td>
+              <tr key={item.policyCode} className="stc-row">
+                <Td mono><RouteChip>{item.policyCode}</RouteChip></Td>
                 <Td>{item.model}</Td>
-                <Td>₹{item.base} · {item.rate}</Td>
-                <Td mono>{item.route}</Td>
-                <Td><StatusBadge status={item.status} /></Td>
+                <Td>₹{item.baseFare}</Td>
+                <Td mono>{item.categoryCode}</Td>
+                <Td mono>{item.routeName}</Td>
+                <Td>{item.policyStatus}</Td>
+                <Td><StatusBadge status={item.isActive ? "Active" : "Inactive"} /></Td>
                 <Td align="right">
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
                     <button onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
@@ -152,14 +175,14 @@ export function FarePolicies({ data: propData, routeOptions = [], onAdd, onUpdat
             }
           >
             <div className="stc-form-grid">
-              <div className="stc-field">
-                <label className="stc-field-label">Policy code</label>
+              {modal.mode == "edit" && (<div className="stc-field">
+                <label className="stc-field-label">Policy policyCode</label>
                 <input
                   disabled={modal.mode === "edit"}
-                  value={formData.code || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, code: e.target.value }))}
+                  value={formData.policyCode || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, policyCode: e.target.value }))}
                 />
-              </div>
+              </div>)}
               <div className="stc-field">
                 <label className="stc-field-label">Model</label>
                 <select
@@ -170,10 +193,19 @@ export function FarePolicies({ data: propData, routeOptions = [], onAdd, onUpdat
                 </select>
               </div>
               <div className="stc-field">
+                <label className="stc-field-label">Category</label>
+                <select
+                  value={formData.categoryId || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, categoryId: e.target.value }))}
+                >
+                  {categoryOptions.map((opt: any) => <option key={opt.categoryId} value={opt.categoryId}>{opt.categoryName}</option>)}
+                </select>
+              </div>
+              <div className="stc-field">
                 <label className="stc-field-label">Status</label>
                 <select
-                  value={formData.status || statusOptions[0]}
-                  onChange={(e) => setFormData((s) => ({ ...s, status: e.target.value }))}
+                  value={formData.policyStatus || statusOptions[0]}
+                  onChange={(e) => setFormData((s) => ({ ...s, policyStatus: e.target.value }))}
                 >
                   {statusOptions.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
@@ -182,26 +214,38 @@ export function FarePolicies({ data: propData, routeOptions = [], onAdd, onUpdat
                 <label className="stc-field-label">Base fare (₹)</label>
                 <input
                   type="number"
-                  value={formData.base ?? 0}
-                  onChange={(e) => setFormData((s) => ({ ...s, base: Number(e.target.value) }))}
+                  value={formData.baseFare ?? 0}
+                  onChange={(e) => setFormData((s) => ({ ...s, baseFare: Number(e.target.value) }))}
                 />
               </div>
               <div className="stc-field">
                 <label className="stc-field-label">Route</label>
                 <select
-                  value={formData.route || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, route: e.target.value }))}
+                  value={formData.routeId || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, routeId: e.target.value }))}
                 >
-                  {routeOptions.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
+                  {routeOptions.map((opt: any) => <option key={opt.routeId} value={opt.routeId}>{opt.routeName}</option>)}
                 </select>
               </div>
               <div className="stc-field">
                 <label className="stc-field-label">Rate description</label>
                 <input
-                  value={formData.rate || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, rate: e.target.value }))}
+                  value={formData.rateDescription || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, rateDescription: e.target.value }))}
                 />
               </div>
+              {modal.mode === "edit" && (
+                <div className="stc-field">
+                  <label className="stc-field-label">Status</label>
+                  <select
+                    value={formData.isActive ? "Active" : "Inactive"}
+                    onChange={(e) => setFormData((s) => ({ ...s, isActive: e.target.value === "Active" }))}
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              )}
             </div>
           </Modal>
         )}
@@ -214,7 +258,7 @@ export function FarePolicies({ data: propData, routeOptions = [], onAdd, onUpdat
             </>
           }>
             <p style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.7, margin: 0 }}>
-              This will permanently remove {toDelete.code} from the list. This can't be undone.
+              This will permanently remove {toDelete.policyCode} from the list. This can't be undone.
             </p>
           </Modal>
         )}

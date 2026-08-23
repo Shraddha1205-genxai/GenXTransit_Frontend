@@ -4,24 +4,27 @@ import { T } from "../../../constants/theme";
 import { Card, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface VehicleCategory {
-  code: string;
-  name: string;
+  categoryId: string;
+  categoryCode: string;
+  categoryName: string;
   capacity: number;
+  type: string;
   class: string;
+  isActive: boolean;
 }
 
 export interface VehicleCategoriesProps {
   data?: VehicleCategory[];
   onAdd?: (item: VehicleCategory) => void;
-  onUpdate?: (code: string, item: VehicleCategory) => void;
-  onDelete?: (code: string) => void;
+  onUpdate?: (item: VehicleCategory) => void;
+  onDelete?: (categoryId: string) => void;
 }
 
 const initialDefaultVehicleCategories: VehicleCategory[] = [
-  { code: "VC-SHIV", name: "AC Shivneri", capacity: 42, class: "Luxury" },
-  { code: "VC-EXP", name: "Express (ST)", capacity: 52, class: "Standard" },
-  { code: "VC-ORD", name: "Ordinary Local", capacity: 58, class: "Standard" },
-  { code: "VC-DD", name: "Double-decker", capacity: 96, class: "City" },
+  { categoryId: "VC-SHIV", categoryCode: "VC-SHIV", categoryName: "AC Shivneri", capacity: 42, type: "AC", class: "Luxury", isActive: true },
+  { categoryId: "VC-EXP", categoryCode: "VC-EXP", categoryName: "Express (ST)", capacity: 52, type: "AC", class: "Standard", isActive: true },
+  { categoryId: "VC-ORD", categoryCode: "VC-ORD", categoryName: "Ordinary Local", capacity: 58, type: "AC", class: "Standard", isActive: true },
+  { categoryId: "VC-DD", categoryCode: "VC-DD", categoryName: "Double-decker", capacity: 96, type: "Non AC", class: "City", isActive: true },
 ];
 
 export function VehicleCategories({ data: propData, onAdd, onUpdate, onDelete }: VehicleCategoriesProps) {
@@ -33,7 +36,7 @@ export function VehicleCategories({ data: propData, onAdd, onUpdate, onDelete }:
   const [formData, setFormData] = useState<Partial<VehicleCategory>>({});
 
   const handleOpenAdd = () => {
-    setFormData({ code: "", name: "", capacity: 0, class: "Standard" });
+    setFormData({ categoryCode: "", categoryName: "", capacity: 0, type: "Non AC", class: "Standard" });
     setModal({ mode: "add" });
   };
 
@@ -43,26 +46,29 @@ export function VehicleCategories({ data: propData, onAdd, onUpdate, onDelete }:
   };
 
   const handleSave = () => {
-    if (!formData.code || !formData.name) return;
+    if (!formData.categoryCode || !formData.categoryName) return;
 
     const newRecord: VehicleCategory = {
-      code: formData.code,
-      name: formData.name,
+      categoryId: formData.categoryId  || "",
+      categoryCode: formData.categoryCode || "",
+      categoryName: formData.categoryName,
       capacity: Number(formData.capacity) || 0,
+      type: formData.type || "Non AC",
       class: formData.class || "Standard",
+      isActive: formData.isActive !== undefined ? formData.isActive : true,
     };
 
     if (modal?.mode === "add") {
       if (onAdd) {
         onAdd(newRecord);
       } else {
-        setInternalData((prev) => [...prev, newRecord]);
+        setInternalData((prev) => [...prev]);
       }
     } else if (modal?.mode === "edit" && modal.record) {
       if (onUpdate) {
-        onUpdate(modal.record.code, newRecord);
+        onUpdate(newRecord);
       } else {
-        setInternalData((prev) => prev.map((item: VehicleCategory) => (item.code === modal.record!.code ? newRecord : item)));
+        setInternalData((prev) => prev.map((item: VehicleCategory) => (item)));
       }
     }
 
@@ -72,9 +78,9 @@ export function VehicleCategories({ data: propData, onAdd, onUpdate, onDelete }:
   const handleConfirmDelete = () => {
     if (!toDelete) return;
     if (onDelete) {
-      onDelete(toDelete.code);
+      onDelete(toDelete.categoryId);
     } else {
-      setInternalData((prev) => prev.filter((item: VehicleCategory) => item.code !== toDelete.code));
+      setInternalData((prev) => prev.filter((item: VehicleCategory) => item.categoryId !== toDelete.categoryId));
     }
     setToDelete(null);
   };
@@ -97,18 +103,22 @@ export function VehicleCategories({ data: propData, onAdd, onUpdate, onDelete }:
             <tr>
               <Th>Code</Th>
               <Th>Name</Th>
-              <Th align="right">Capacity</Th>
+              <Th align="center">Capacity</Th>
+              <Th>Type</Th>
               <Th>Class</Th>
+              <Th>Status</Th>
               <Th align="right">Actions</Th>
             </tr>
           </thead>
           <tbody>
             {data.map((item: VehicleCategory) => (
-              <tr key={item.code} className="stc-row">
-                <Td mono>{item.code}</Td>
-                <Td>{item.name}</Td>
-                <Td align="right">{item.capacity}</Td>
+              <tr key={item.categoryId} className="stc-row">
+                <Td mono>{item.categoryCode}</Td>
+                <Td>{item.categoryName}</Td>
+                <Td align="center">{item.capacity}</Td>
+                <Td>{item.type}</Td>
                 <Td>{item.class}</Td>
+                <Td>{item.isActive ? "Active" : "Inactive"}</Td>
                 <Td align="right">
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
                     <button onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
@@ -123,7 +133,7 @@ export function VehicleCategories({ data: propData, onAdd, onUpdate, onDelete }:
             ))}
             {data.length === 0 && (
               <tr>
-                <Td colSpan={5}>No records yet — use Add category to create one.</Td>
+                <Td colSpan={7}>No records yet — use Add category to create one.</Td>
               </tr>
             )}
           </tbody>
@@ -143,19 +153,19 @@ export function VehicleCategories({ data: propData, onAdd, onUpdate, onDelete }:
             }
           >
             <div className="stc-form-grid">
-              <div className="stc-field">
+              {modal.mode == "edit" && (<div className="stc-field">
                 <label className="stc-field-label">Code</label>
                 <input
                   disabled={modal.mode === "edit"}
-                  value={formData.code || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, code: e.target.value }))}
+                  value={formData.categoryCode || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, categoryCode: e.target.value }))}
                 />
-              </div>
+              </div>)}
               <div className="stc-field">
                 <label className="stc-field-label">Name</label>
                 <input
-                  value={formData.name || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, name: e.target.value }))}
+                  value={formData.categoryName || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, categoryName: e.target.value }))}
                 />
               </div>
               <div className="stc-field">
@@ -165,6 +175,16 @@ export function VehicleCategories({ data: propData, onAdd, onUpdate, onDelete }:
                   value={formData.capacity ?? 0}
                   onChange={(e) => setFormData((s) => ({ ...s, capacity: Number(e.target.value) }))}
                 />
+              </div>
+              <div className="stc-field">
+                <label className="stc-field-label">Type</label>
+                <select
+                  value={formData.type || "Non AC"}
+                  onChange={(e) => setFormData((s) => ({ ...s, type: e.target.value }))}
+                >
+                  <option value="Luxury">AC</option>
+                  <option value="Standard">Non AC</option>
+                </select>
               </div>
               <div className="stc-field">
                 <label className="stc-field-label">Class</label>
@@ -177,6 +197,18 @@ export function VehicleCategories({ data: propData, onAdd, onUpdate, onDelete }:
                   <option value="City">City</option>
                 </select>
               </div>
+              {modal.mode === "edit" && (
+                <div className="stc-field">
+                  <label className="stc-field-label">Status</label>
+                  <select
+                    value={formData.isActive ? "Active" : "Inactive"}
+                    onChange={(e) => setFormData((s) => ({ ...s, isActive: e.target.value === "Active" }))}
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              )}
             </div>
           </Modal>
         )}
@@ -189,7 +221,7 @@ export function VehicleCategories({ data: propData, onAdd, onUpdate, onDelete }:
             </>
           }>
             <p style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.7, margin: 0 }}>
-              This will permanently remove {toDelete.code} from the list. This can't be undone.
+              This will permanently remove {toDelete.categoryName} from the list. This can't be undone.
             </p>
           </Modal>
         )}

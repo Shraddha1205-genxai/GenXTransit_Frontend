@@ -4,27 +4,47 @@ import { T } from "../../../constants/theme";
 import { Card, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface Stage {
-  code: string;
-  route: string;
-  name: string;
-  km: number;
+  stageId: string;
+  stageCode: string;
+  stageName: string;
+  routeId: string;
+  routeCode: string;
+  routeName: string;
+  sectionFromId: string;
+  sectionFromCode: string;
+  sectionFromName: string;
+  sectionToId: string;
+  sectionToCode: string;
+  sectionToName: string;
+  distance: number;
+  isActive: boolean;
 }
-
+export interface StagePayload {
+  stageId: string;
+  stageCode: string;
+  stageName: string;
+  routeId: string;
+  sectionFromId: string;
+  sectionToId: string;
+  distance: number;
+  isActive: boolean;
+}
 export interface StagesProps {
   data?: Stage[];
-  routeOptions?: string[];
-  onAdd?: (item: Stage) => void;
-  onUpdate?: (code: string, item: Stage) => void;
-  onDelete?: (code: string) => void;
+  routeOptions?: {routeId: string, routeCode: string, routeName: string}[];
+  stopOptions?: {stopId: string, stopCode: string, stopName: string}[];
+  onAdd?: (item: StagePayload) => void;
+  onUpdate?: (item: StagePayload) => void;
+  onDelete?: (stopId: string) => void;
 }
 
 const initialDefaultStages: Stage[] = [
-  { code: "STG-001", route: "MSRTC-9502", name: "Pune Section", km: 40 },
-  { code: "STG-002", route: "MSRTC-9502", name: "Lonavala Section", km: 82 },
-  { code: "STG-003", route: "BEST-A-1", name: "Colaba Section", km: 6 },
+  { stageId: "STG-001", stageCode: "STG-001", stageName: "Pune Section", routeId: "9502", routeCode: "MSRTC-9502", routeName: "MSRTC-9502", sectionFromId: "001", sectionFromCode: "SEC-001", sectionFromName: "Pune Section", sectionToId: "002", sectionToCode: "SEC-002", sectionToName: "Lonavala Section", distance: 40, isActive: true },
+  { stageId: "STG-002", stageCode: "STG-002", stageName: "Lonavala Section", routeId: "9502", routeCode: "MSRTC-9502", routeName: "MSRTC-9502", sectionFromId: "002", sectionFromCode: "SEC-002", sectionFromName: "Lonavala Section", sectionToId: "003", sectionToCode: "SEC-003", sectionToName: "Colaba Section", distance: 82, isActive: true },
+  { stageId: "STG-003", stageCode: "STG-003", stageName: "Colaba Section", routeId: "101", routeCode: "BEST-A-1", routeName: "BEST-A-1", sectionFromId: "003", sectionFromCode: "SEC-003", sectionFromName: "Colaba Section", sectionToId: "004", sectionToCode: "SEC-004", sectionToName: "Mumbai Section", distance: 6, isActive: true },
 ];
 
-export function Stages({ data: propData, routeOptions = [], onAdd, onUpdate, onDelete }: StagesProps) {
+export function Stages({ data: propData, routeOptions = [], stopOptions = [], onAdd, onUpdate, onDelete }: StagesProps) {
   const [internalData, setInternalData] = useState<Stage[]>(initialDefaultStages);
   const data = propData ?? internalData;
 
@@ -33,7 +53,7 @@ export function Stages({ data: propData, routeOptions = [], onAdd, onUpdate, onD
   const [formData, setFormData] = useState<Partial<Stage>>({});
 
   const handleOpenAdd = () => {
-    setFormData({ code: "", route: routeOptions[0] || "", name: "", km: 0 });
+    setFormData({stageId: "", stageCode: "", routeId: routeOptions[0]?.routeId || "", stageName: "", sectionFromId: "", sectionToId: "", distance: 0 });
     setModal({ mode: "add" });
   };
 
@@ -43,26 +63,30 @@ export function Stages({ data: propData, routeOptions = [], onAdd, onUpdate, onD
   };
 
   const handleSave = () => {
-    if (!formData.code || !formData.name) return;
+    if (!formData.stageCode || !formData.stageName) return;
 
-    const newRecord: Stage = {
-      code: formData.code,
-      route: formData.route || routeOptions[0] || "",
-      name: formData.name,
-      km: Number(formData.km) || 0,
+    const newRecord: StagePayload = {
+      stageId: formData.stageCode,
+      stageCode: formData.stageCode,
+      stageName: formData.stageName,
+      routeId: formData.routeId || "",
+      sectionFromId: formData.sectionFromId || "",
+      sectionToId: formData.sectionToId || "",
+      distance: Number(formData.distance) || 0,
+      isActive: true,
     };
 
     if (modal?.mode === "add") {
       if (onAdd) {
         onAdd(newRecord);
       } else {
-        setInternalData((prev) => [...prev, newRecord]);
+        setInternalData((prev) => [...prev]);
       }
     } else if (modal?.mode === "edit" && modal.record) {
       if (onUpdate) {
-        onUpdate(modal.record.code, newRecord);
+        onUpdate(newRecord);
       } else {
-        setInternalData((prev) => prev.map((item: Stage) => (item.code === modal.record!.code ? newRecord : item)));
+        setInternalData((prev) => prev.map((item: Stage) => (item)));
       }
     }
 
@@ -72,9 +96,9 @@ export function Stages({ data: propData, routeOptions = [], onAdd, onUpdate, onD
   const handleConfirmDelete = () => {
     if (!toDelete) return;
     if (onDelete) {
-      onDelete(toDelete.code);
+      onDelete(toDelete.stageId);
     } else {
-      setInternalData((prev) => prev.filter((item: Stage) => item.code !== toDelete.code));
+      setInternalData((prev) => prev.filter((item: Stage) => item.stageId !== toDelete.stageId));
     }
     setToDelete(null);
   };
@@ -97,18 +121,20 @@ export function Stages({ data: propData, routeOptions = [], onAdd, onUpdate, onD
             <tr>
               <Th>Stage code</Th>
               <Th>Route</Th>
-              <Th>Section</Th>
+              <Th>From Section</Th>
+              <Th>To Section</Th>
               <Th align="right">Distance (km)</Th>
               <Th align="right">Actions</Th>
             </tr>
           </thead>
           <tbody>
             {data.map((item: Stage) => (
-              <tr key={item.code} className="stc-row">
-                <Td mono>{item.code}</Td>
-                <Td mono>{item.route}</Td>
-                <Td>{item.name}</Td>
-                <Td align="right">{item.km}</Td>
+              <tr key={item.stageId} className="stc-row">
+                <Td mono>{item.stageCode}</Td>
+                <Td mono>{item.routeName}</Td>
+                <Td mono>{item.sectionFromName}</Td>
+                <Td mono>{item.sectionToName}</Td>
+                <Td align="right">{item.distance}</Td>
                 <Td align="right">
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
                     <button onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
@@ -123,7 +149,7 @@ export function Stages({ data: propData, routeOptions = [], onAdd, onUpdate, onD
             ))}
             {data.length === 0 && (
               <tr>
-                <Td colSpan={5}>No records yet — use Add stage to create one.</Td>
+                <Td colSpan={6}>No records yet — use Add stage to create one.</Td>
               </tr>
             )}
           </tbody>
@@ -143,38 +169,68 @@ export function Stages({ data: propData, routeOptions = [], onAdd, onUpdate, onD
             }
           >
             <div className="stc-form-grid">
-              <div className="stc-field">
+              {modal.mode === "edit" && (<div className="stc-field">
                 <label className="stc-field-label">Stage code</label>
                 <input
                   disabled={modal.mode === "edit"}
-                  value={formData.code || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, code: e.target.value }))}
+                  value={formData.stageCode || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, stageCode: e.target.value }))}
+                />
+              </div>)}
+              <div className="stc-field">
+                <label className="stc-field-label">Stage Name</label>
+                <input
+                  value={formData.stageName || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, stageName: e.target.value }))}
                 />
               </div>
               <div className="stc-field">
                 <label className="stc-field-label">Route</label>
                 <select
-                  value={formData.route || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, route: e.target.value }))}
+                  value={formData.routeId || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, routeId: e.target.value }))}
                 >
-                  {routeOptions.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
+                  {routeOptions.map((opt) => <option key={opt.routeId} value={opt.routeName}>{opt.routeName}</option>)}
                 </select>
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Section</label>
-                <input
-                  value={formData.name || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, name: e.target.value }))}
-                />
+                <label className="stc-field-label">From Section</label>
+                <select
+                  value={formData.sectionFromId || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, sectionFromId: e.target.value }))}
+                >
+                  {stopOptions.map((opt) => <option key={opt.stopId} value={opt.stopId}>{opt.stopName}</option>)}
+                </select>
+              </div>
+              <div className="stc-field">
+                <label className="stc-field-label">To Section</label>
+                <select
+                  value={formData.sectionToId || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, sectionToId: e.target.value }))}
+                >
+                  {stopOptions.map((opt) => <option key={opt.stopId} value={opt.stopId}>{opt.stopName}</option>)}
+                </select>
               </div>
               <div className="stc-field">
                 <label className="stc-field-label">Distance (km)</label>
                 <input
                   type="number"
-                  value={formData.km ?? 0}
-                  onChange={(e) => setFormData((s) => ({ ...s, km: Number(e.target.value) }))}
+                  value={formData.distance ?? 0}
+                  onChange={(e) => setFormData((s) => ({ ...s, distance: Number(e.target.value) }))}
                 />
               </div>
+              {modal.mode === "edit" && (
+                <div className="stc-field">
+                  <label className="stc-field-label">Status</label>
+                  <select
+                    value={formData.isActive ? "Active" : "Inactive"}
+                    onChange={(e) => setFormData((s) => ({ ...s, isActive: e.target.value === "Active" }))}
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              )}
             </div>
           </Modal>
         )}
@@ -187,7 +243,7 @@ export function Stages({ data: propData, routeOptions = [], onAdd, onUpdate, onD
             </>
           }>
             <p style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.7, margin: 0 }}>
-              This will permanently remove {toDelete.code} from the list. This can't be undone.
+              This will permanently remove {toDelete.stageName} from the list. This can't be undone.
             </p>
           </Modal>
         )}
