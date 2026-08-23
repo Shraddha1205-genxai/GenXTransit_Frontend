@@ -16,6 +16,7 @@ import { Sidebar, Header, SubTabs, SectionHeader, KpiCard } from "./components/c
 const DashboardTab = lazy(() => import("./features/dashboard"));
 const Regions = lazy(() => import("./features/organization/organizationManagement/Regions"));
 const Divisions = lazy(() => import("./features/organization/organizationManagement/Divisions"));
+const Corporations = lazy(() => import("./features/organization/organizationManagement/Corporations"));
 const Depots = lazy(() => import("./features/organization/organizationManagement/Depots"));
 const BusStation = lazy(() => import("./features/organization/organizationManagement/BusStation"));
 const Workshops = lazy(() => import("./features/organization/organizationManagement/Workshops"));
@@ -208,28 +209,33 @@ const users = [
 ];
 
 const regions = [
-  { code: "REG-PUN", name: "Pune Region", divisions: 3, depots: 18, fleet: 612 },
-  { code: "REG-MUM", name: "Mumbai Region", divisions: 2, depots: 11, fleet: 348 },
-  { code: "REG-NAS", name: "Nashik Region", divisions: 2, depots: 9, fleet: 241 },
+  { id: "REG-ID-1001", regionCode: "REG-0001", regionName: "Pune Region", isActive: true },
+  { id: "REG-ID-1002", regionCode: "REG-0002", regionName: "Mumbai Region", isActive: true },
+  { id: "REG-ID-1003", regionCode: "REG-0003", regionName: "Nashik Region", isActive: true },
+];
+
+const corporations = [
+  { id: "CORP-ID-1001", corpCode: "CORP-0001", corporationName: "Maharashtra State Road Transport Corporation", stateName: "Maharashtra", districtName: "Pune", cityName: "Pune", status: "Active" },
+  { id: "CORP-ID-1002", corpCode: "CORP-0002", corporationName: "Brihanmumbai Electric Supply and Transport", stateName: "Maharashtra", districtName: "Mumbai", cityName: "Mumbai", status: "Active" },
+  { id: "CORP-ID-1003", corpCode: "CORP-0003", corporationName: "Pune Mahanagar Parivahan Mahamandal Limited", stateName: "Maharashtra", districtName: "Pune", cityName: "Pune", status: "Active" },
 ];
 
 const divisions = [
-  { code: "DIV-PUN-01", name: "Pune Division", region: "REG-PUN", depots: 7 },
-  { code: "DIV-PUN-02", name: "Solapur Division", region: "REG-PUN", depots: 6 },
-  { code: "DIV-MUM-01", name: "Mumbai Division", region: "REG-MUM", depots: 5 },
-  { code: "DIV-MUM-02", name: "Thane Division", region: "REG-MUM", depots: 6 },
+  { id: "DIV-ID-1001", divisionCode: "DIV-0001", divisionName: "Pune Division", region: "REG-0001", isActive: true },
+  { id: "DIV-ID-1002", divisionCode: "DIV-0002", divisionName: "Solapur Division", region: "REG-0001", isActive: true },
+  { id: "DIV-ID-1003", divisionCode: "DIV-0003", divisionName: "Mumbai Division", region: "REG-0002", isActive: true },
 ];
 
 const busStations = [
-  { code: "BS-PUN-SWG", name: "Swargate Bus Station", depot: "MSRTC-PUN-01", platforms: 14, footfall: "38,000/day" },
-  { code: "BS-MUM-CST", name: "Mumbai Central Bus Terminus", depot: "MSRTC-MUM-03", platforms: 10, footfall: "22,500/day" },
-  { code: "BS-MUM-COL", name: "Colaba Bus Depot Stand", depot: "BEST-MUM-07", platforms: 6, footfall: "9,200/day" },
+  { code: "STN-0001", name: "Swargate Bus Station", regionCode: "REG-0001", divisionCode: "DIV-0001", depotCode: "MSRTC-PUN-01", platforms: 14, dailyFootfall: 38000, isActive: true },
+  { code: "STN-0002", name: "Mumbai Central Bus Terminus", regionCode: "REG-0002", divisionCode: "DIV-0003", depotCode: "MSRTC-MUM-03", platforms: 10, dailyFootfall: 22500, isActive: true },
+  { code: "STN-0003", name: "Colaba Bus Depot Stand", regionCode: "REG-0002", divisionCode: "DIV-0003", depotCode: "BEST-MUM-07", platforms: 6, dailyFootfall: 9200, isActive: true },
 ];
 
 const workshops = [
-  { code: "WS-PUN-01", name: "Swargate Central Workshop", depot: "MSRTC-PUN-01", bays: 12, activeJobs: 7 },
-  { code: "WS-MUM-04", name: "Wadala Repair Workshop", depot: "BEST-MUM-04", bays: 8, activeJobs: 5 },
-  { code: "WS-PUN-02", name: "PMPML Swargate Workshop", depot: "PMPML-PUN-02", bays: 6, activeJobs: 2 },
+  { code: "WS-0001", name: "Swargate Central Workshop", regionCode: "REG-0001", divisionCode: "DIV-0001", depotCode: "MSRTC-PUN-01", workBays: 12, activeRepairJobs: 7, isActive: true },
+  { code: "WS-0002", name: "Wadala Repair Workshop", regionCode: "REG-0002", divisionCode: "DIV-0003", depotCode: "BEST-MUM-04", workBays: 8, activeRepairJobs: 5, isActive: true },
+  { code: "WS-0003", name: "PMPML Swargate Workshop", regionCode: "REG-0001", divisionCode: "DIV-0001", depotCode: "PMPML-PUN-02", workBays: 6, activeRepairJobs: 2, isActive: true },
 ];
 
 const parkingYards = [
@@ -359,7 +365,7 @@ const faqs = [
    SHARED DATA STORE — enables Add / Update / Delete across screens.
 --------------------------------------------------------------------- */
 const initialData = {
-  regions, divisions, depots, busStations, workshops, parkingYards,
+  regions, divisions, corporations, depots, busStations, workshops, parkingYards,
   routes, stops, stages, zones, farePolicies, ticketTypes, paymentModes,
   vehicleCategories, seatLayouts, holidays: holidays.map((h, i) => ({ id: `HOL-${i + 1}`, ...h })),
   notificationTemplates, complaintCategories, taxConfig,
@@ -428,23 +434,27 @@ function OrganizationLayout() {
   const location = useLocation();
 
   const tabMap: Record<string, string> = {
+    "/Organization/organizationManagement/Corporations": "Corporation",
     "/Organization/organizationManagement/Regions": "Regions",
     "/Organization/organizationManagement/Divisions": "Divisions",
+    "/Organization/organizationManagement/Zone": "Zone",
     "/Organization/organizationManagement/Depots": "Depots",
-    "/Organization/organizationManagement/BusStation": "Bus Stations",
-    "/Organization/organizationManagement/Workshops": "Workshops",
+    "/Organization/organizationManagement/Stations": "Stations",
+    "/Organization/organizationManagement/WorkShop": "WorkShop",
     "/Organization/organizationManagement/ParkingYards": "Parking Yards",
   };
 
-  const activeTab = tabMap[location.pathname] || "Depots";
+  const activeTab = tabMap[location.pathname] || "Corporation";
 
   const handleTabChange = (tabName: string) => {
     const routeMap: Record<string, string> = {
+      "Corporation": "/Organization/organizationManagement/Corporations",
       "Regions": "/Organization/organizationManagement/Regions",
       "Divisions": "/Organization/organizationManagement/Divisions",
+      "Zone": "/Organization/organizationManagement/Zone",
       "Depots": "/Organization/organizationManagement/Depots",
-      "Bus Stations": "/Organization/organizationManagement/BusStation",
-      "Workshops": "/Organization/organizationManagement/Workshops",
+      "Stations": "/Organization/organizationManagement/Stations",
+      "WorkShop": "/Organization/organizationManagement/WorkShop",
       "Parking Yards": "/Organization/organizationManagement/ParkingYards",
     };
     navigate(routeMap[tabName]);
@@ -453,7 +463,7 @@ function OrganizationLayout() {
   return (
     <div>
       <SectionHeader eyebrow="TBL_MAST_ORG_UNIT · TBL_MAST_DEPOT" title="Organization management" />
-      <SubTabs tabs={["Regions", "Divisions", "Depots", "Bus Stations", "Workshops", "Parking Yards"]} active={activeTab} onChange={handleTabChange} />
+      <SubTabs tabs={["Corporation", "Regions", "Divisions", "Zone", "Depots", "Stations", "WorkShop", "Parking Yards"]} active={activeTab} onChange={handleTabChange} />
       <Outlet />
     </div>
   );
@@ -518,13 +528,17 @@ function MasterDataLayout() {
 }
 
 function RegionsTab() {
-  const [regionsData, regionsCrud] = useCrud("regions", "code");
+  const [regionsData, regionsCrud] = useCrud("regions", "id");
   return <Regions data={regionsData} onAdd={regionsCrud.add} onUpdate={regionsCrud.update} onDelete={regionsCrud.remove} />;
 }
 function DivisionsTab() {
-  const [regionsData] = useCrud("regions", "code");
-  const [divisionsData, divisionsCrud] = useCrud("divisions", "code");
-  return <Divisions data={divisionsData} regionOptions={regionsData.map((r) => r.code)} onAdd={divisionsCrud.add} onUpdate={divisionsCrud.update} onDelete={divisionsCrud.remove} />;
+  const [regionsData] = useCrud("regions", "id");
+  const [divisionsData, divisionsCrud] = useCrud("divisions", "id");
+  return <Divisions data={divisionsData} regionOptions={regionsData.map((r) => r.regionCode)} onAdd={divisionsCrud.add} onUpdate={divisionsCrud.update} onDelete={divisionsCrud.remove} />;
+}
+function CorporationsTab() {
+  const [corporationsData, corporationsCrud] = useCrud("corporations", "id");
+  return <Corporations data={corporationsData} onAdd={corporationsCrud.add} onUpdate={corporationsCrud.update} onDelete={corporationsCrud.remove} />;
 }
 function DepotsTab() {
   const [depotsData, depotsCrud] = useCrud("depots", "code");
@@ -532,14 +546,38 @@ function DepotsTab() {
   return <Depots depotsData={depotsData} vehiclesData={vehiclesData} onAddDepot={depotsCrud.add} onUpdateDepot={depotsCrud.update} onDeleteDepot={depotsCrud.remove} />;
 }
 function BusStationTab() {
+  const [regionsData] = useCrud("regions", "id");
+  const [divisionsData] = useCrud("divisions", "id");
   const [depotsData] = useCrud("depots", "code");
   const [busStationsData, busStationsCrud] = useCrud("busStations", "code");
-  return <BusStation data={busStationsData} depotOptions={depotsData.map((d) => d.code)} onAdd={busStationsCrud.add} onUpdate={busStationsCrud.update} onDelete={busStationsCrud.remove} />;
+  return (
+    <BusStation
+      data={busStationsData}
+      regionOptions={regionsData.map((r) => r.regionCode)}
+      divisionOptions={divisionsData.map((d) => d.divisionCode)}
+      depotOptions={depotsData.map((d) => d.code)}
+      onAdd={busStationsCrud.add}
+      onUpdate={busStationsCrud.update}
+      onDelete={busStationsCrud.remove}
+    />
+  );
 }
 function WorkshopsTab() {
+  const [regionsData] = useCrud("regions", "id");
+  const [divisionsData] = useCrud("divisions", "id");
   const [depotsData] = useCrud("depots", "code");
   const [workshopsData, workshopsCrud] = useCrud("workshops", "code");
-  return <Workshops data={workshopsData} depotOptions={depotsData.map((d) => d.code)} onAdd={workshopsCrud.add} onUpdate={workshopsCrud.update} onDelete={workshopsCrud.remove} />;
+  return (
+    <Workshops
+      data={workshopsData}
+      regionOptions={regionsData.map((r) => r.regionCode)}
+      divisionOptions={divisionsData.map((d) => d.divisionCode)}
+      depotOptions={depotsData.map((d) => d.code)}
+      onAdd={workshopsCrud.add}
+      onUpdate={workshopsCrud.update}
+      onDelete={workshopsCrud.remove}
+    />
+  );
 }
 function ParkingYardsTab() {
   const [depotsData] = useCrud("depots", "code");
@@ -562,8 +600,9 @@ function StagesTab() {
   return <Stages data={stagesData} routeOptions={routesData.map((r) => r.code)} onAdd={stagesCrud.add} onUpdate={stagesCrud.update} onDelete={stagesCrud.remove} />;
 }
 function ZonesTab() {
+  const [regionsData] = useCrud("regions", "code");
   const [zonesData, zonesCrud] = useCrud("zones", "code");
-  return <Zones data={zonesData} onAdd={zonesCrud.add} onUpdate={zonesCrud.update} onDelete={zonesCrud.remove} />;
+  return <Zones data={zonesData} regionOptions={regionsData.map((r) => r.code)} onAdd={zonesCrud.add} onUpdate={zonesCrud.update} onDelete={zonesCrud.remove} />;
 }
 function FarePoliciesTab() {
   const [routesData] = useCrud("routes", "code");
@@ -822,12 +861,14 @@ function AuthGate() {
           
           {/* Organization Sub-Routes */}
           <Route path="Organization/organizationManagement" element={<OrganizationLayout />}>
-            <Route index element={<Navigate to="Depots" replace />} />
+            <Route index element={<Navigate to="Corporations" replace />} />
+            <Route path="Corporations" element={<CorporationsTab />} />
             <Route path="Regions" element={<RegionsTab />} />
             <Route path="Divisions" element={<DivisionsTab />} />
+            <Route path="Zone" element={<ZonesTab />} />
             <Route path="Depots" element={<DepotsTab />} />
-            <Route path="BusStation" element={<BusStationTab />} />
-            <Route path="Workshops" element={<WorkshopsTab />} />
+            <Route path="Stations" element={<BusStationTab />} />
+            <Route path="WorkShop" element={<WorkshopsTab />} />
             <Route path="ParkingYards" element={<ParkingYardsTab />} />
           </Route>
           

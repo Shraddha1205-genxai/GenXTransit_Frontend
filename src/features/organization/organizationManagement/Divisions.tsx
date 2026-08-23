@@ -4,28 +4,36 @@ import { T } from "../../../constants/theme";
 import { Card, RouteChip, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface Division {
-  code: string;
-  name: string;
+  id: string;
+  divisionCode: string;
+  divisionName: string;
   region: string;
-  depots: number;
+  isActive: boolean;
 }
 
 export interface DivisionPageProps {
   data?: Division[];
   regionOptions?: string[];
   onAdd?: (item: Division) => void;
-  onUpdate?: (code: string, item: Division) => void;
-  onDelete?: (code: string) => void;
+  onUpdate?: (id: string, item: Division) => void;
+  onDelete?: (id: string) => void;
 }
 
 const initialDefaultDivisions: Division[] = [
-  { code: "DIV-PUN-01", name: "Pune Division", region: "REG-PUN", depots: 7 },
-  { code: "DIV-PUN-02", name: "Solapur Division", region: "REG-PUN", depots: 6 },
-  { code: "DIV-MUM-01", name: "Mumbai Division", region: "REG-MUM", depots: 5 },
-  { code: "DIV-MUM-02", name: "Thane Division", region: "REG-MUM", depots: 6 },
+  { id: "DIV-ID-1001", divisionCode: "DIV-0001", divisionName: "Pune Division", region: "REG-0001", isActive: true },
+  { id: "DIV-ID-1002", divisionCode: "DIV-0002", divisionName: "Solapur Division", region: "REG-0001", isActive: true },
+  { id: "DIV-ID-1003", divisionCode: "DIV-0003", divisionName: "Mumbai Division", region: "REG-0002", isActive: true },
 ];
 
-const defaultRegionOptions = ["REG-PUN", "REG-MUM", "REG-NAS"];
+const generateDivisionCode = (existing: Division[]) => {
+  const numbers = existing
+    .map((item) => Number((item.divisionCode.match(/(\d+)$/) ?? ["0", "0"])[1]))
+    .filter((n) => Number.isFinite(n));
+  const next = (Math.max(0, ...numbers) + 1).toString().padStart(4, "0");
+  return `DIV-${next}`;
+};
+
+const defaultRegionOptions = ["REG-0001", "REG-0002", "REG-0003"];
 
 export function Divisions({
   data: propData,
@@ -42,7 +50,7 @@ export function Divisions({
   const [formData, setFormData] = useState<Partial<Division>>({});
 
   const handleOpenAdd = () => {
-    setFormData({ code: "", name: "", region: regionOptions[0] || "", depots: 0 });
+    setFormData({ id: `DIV-ID-${Date.now()}`, divisionCode: generateDivisionCode(data), divisionName: "", region: regionOptions[0] || "", isActive: true });
     setModal({ mode: "add" });
   };
 
@@ -52,12 +60,13 @@ export function Divisions({
   };
 
   const handleSave = () => {
-    if (!formData.code || !formData.name) return;
+    if (!formData.divisionName) return;
     const newRecord: Division = {
-      code: formData.code,
-      name: formData.name,
+      id: modal?.mode === "edit" && modal.record ? modal.record.id : `DIV-ID-${Date.now()}`,
+      divisionCode: modal?.mode === "edit" && modal.record ? modal.record.divisionCode : generateDivisionCode(data),
+      divisionName: formData.divisionName.trim(),
       region: formData.region || regionOptions[0] || "",
-      depots: Number(formData.depots) || 0,
+      isActive: formData.isActive ?? true,
     };
 
     if (modal?.mode === "add") {
@@ -68,9 +77,9 @@ export function Divisions({
       }
     } else if (modal?.mode === "edit" && modal.record) {
       if (onUpdate) {
-        onUpdate(modal.record.code, newRecord);
+        onUpdate(modal.record.id, newRecord);
       } else {
-        setInternalData((prev) => prev.map((item) => (item.code === modal.record!.code ? newRecord : item)));
+        setInternalData((prev) => prev.map((item) => (item.id === modal.record!.id ? newRecord : item)));
       }
     }
     setModal(null);
@@ -79,9 +88,9 @@ export function Divisions({
   const handleConfirmDelete = () => {
     if (!toDelete) return;
     if (onDelete) {
-      onDelete(toDelete.code);
+      onDelete(toDelete.id);
     } else {
-      setInternalData((prev) => prev.filter((item) => item.code !== toDelete.code));
+      setInternalData((prev) => prev.filter((item) => item.id !== toDelete.id));
     }
     setToDelete(null);
   };
@@ -102,20 +111,20 @@ export function Divisions({
         <Table>
           <thead>
             <tr>
-              <Th>Division</Th>
-              <Th>Name</Th>
+              <Th>Division Code</Th>
+              <Th>Division Name</Th>
               <Th>Region</Th>
-              <Th>Depots</Th>
+              <Th>Status</Th>
               <Th align="right">Actions</Th>
             </tr>
           </thead>
           <tbody>
             {data.map((d: Division) => (
-              <tr key={d.code} className="stc-row">
-                <Td mono><RouteChip>{d.code}</RouteChip></Td>
-                <Td>{d.name}</Td>
+              <tr key={d.id} className="stc-row">
+                <Td mono>{d.divisionCode}</Td>
+                <Td>{d.divisionName}</Td>
                 <Td mono>{d.region}</Td>
-                <Td>{d.depots}</Td>
+                <Td><StatusBadge status={d.isActive ? "Active" : "Inactive"} /></Td>
                 <Td align="right">
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
                     <button onClick={() => handleOpenEdit(d)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
@@ -148,21 +157,21 @@ export function Divisions({
             }
           >
             <div className="stc-form-grid">
-              <div className="stc-field">
-                <label className="stc-field-label">Division code</label>
+              {modal.mode === "edit" && (
+                <div className="stc-field">
+                  <label className="stc-field-label">Division Code</label>
+                  <input value={formData.divisionCode || ""} readOnly />
+                </div>
+              )}
+
+              <div className="stc-field" style={{ gridColumn: "1 / -1" }}>
+                <label className="stc-field-label">Division Name</label>
                 <input
-                  disabled={modal.mode === "edit"}
-                  value={formData.code || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, code: e.target.value }))}
+                  value={formData.divisionName || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, divisionName: e.target.value }))}
                 />
               </div>
-              <div className="stc-field">
-                <label className="stc-field-label">Name</label>
-                <input
-                  value={formData.name || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, name: e.target.value }))}
-                />
-              </div>
+
               <div className="stc-field">
                 <label className="stc-field-label">Region</label>
                 <select
@@ -174,14 +183,19 @@ export function Divisions({
                   ))}
                 </select>
               </div>
-              <div className="stc-field">
-                <label className="stc-field-label">Depots</label>
-                <input
-                  type="number"
-                  value={formData.depots ?? 0}
-                  onChange={(e) => setFormData((s) => ({ ...s, depots: Number(e.target.value) }))}
-                />
-              </div>
+
+              {modal.mode === "edit" && (
+                <div className="stc-field">
+                  <label className="stc-field-label">Status</label>
+                  <select
+                    value={formData.isActive ? "Active" : "Inactive"}
+                    onChange={(e) => setFormData((s) => ({ ...s, isActive: e.target.value === "Active" }))}
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              )}
             </div>
           </Modal>
         )}
@@ -194,7 +208,7 @@ export function Divisions({
             </>
           }>
             <p style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.7, margin: 0 }}>
-              This will permanently remove {toDelete.code} from the list. This can't be undone.
+              This will permanently remove {toDelete.divisionName} from the list. This can't be undone.
             </p>
           </Modal>
         )}
