@@ -4,22 +4,24 @@ import { T } from "../../../constants/theme";
 import { Card, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface TaxConfiguration {
-  code: string;
-  name: string;
+  textId: string
+  textCode: string;
+  textType: string;
   rate: string;
+  description?: string;
 }
 
 export interface TaxConfigurationProps {
   data?: TaxConfiguration[];
   onAdd?: (item: TaxConfiguration) => void;
-  onUpdate?: (code: string, item: TaxConfiguration) => void;
-  onDelete?: (code: string) => void;
+  onUpdate?: (item: TaxConfiguration) => void;
+  onDelete?: (textId: string) => void;
 }
 
 const initialDefaultTaxConfigurations: TaxConfiguration[] = [
-  { code: "TX-GST5", name: "GST — Local city service", rate: "5%" },
-  { code: "TX-GST12", name: "GST — AC / Luxury service", rate: "12%" },
-  { code: "TX-CESS", name: "State road cess", rate: "1%" },
+  { textId: "TX-GST5", textCode: "TX-GST5", textType: "GST — Local city service", rate: "5%", description: "GST for local city service" },
+  { textId: "TX-GST12", textCode: "TX-GST12", textType: "GST — AC / Luxury service", rate: "12%", description: "GST for AC / Luxury service" },
+  { textId: "TX-CESS", textCode: "TX-CESS", textType: "State road cess", rate: "1%", description: "State road cess" },
 ];
 
 export function TaxConfiguration({ data: propData, onAdd, onUpdate, onDelete }: TaxConfigurationProps) {
@@ -31,7 +33,7 @@ export function TaxConfiguration({ data: propData, onAdd, onUpdate, onDelete }: 
   const [formData, setFormData] = useState<Partial<TaxConfiguration>>({});
 
   const handleOpenAdd = () => {
-    setFormData({ code: "", name: "", rate: "" });
+    setFormData({ textId: "", textCode: "", textType: "", rate: "" });
     setModal({ mode: "add" });
   };
 
@@ -41,12 +43,14 @@ export function TaxConfiguration({ data: propData, onAdd, onUpdate, onDelete }: 
   };
 
   const handleSave = () => {
-    if (!formData.code || !formData.name) return;
+    if (!formData.textId || !formData.textType) return;
 
     const newRecord: TaxConfiguration = {
-      code: formData.code,
-      name: formData.name,
+      textId: formData.textId || "",
+      textCode: formData.textCode || "",
+      textType: formData.textType || "",
       rate: formData.rate || "",
+      description: formData.description || "",
     };
 
     if (modal?.mode === "add") {
@@ -57,9 +61,9 @@ export function TaxConfiguration({ data: propData, onAdd, onUpdate, onDelete }: 
       }
     } else if (modal?.mode === "edit" && modal.record) {
       if (onUpdate) {
-        onUpdate(modal.record.code, newRecord);
+        onUpdate(newRecord);
       } else {
-        setInternalData((prev) => prev.map((item: TaxConfiguration) => (item.code === modal.record!.code ? newRecord : item)));
+        setInternalData((prev) => prev.map((item: TaxConfiguration) => (item.textId === modal.record!.textId ? newRecord : item)));
       }
     }
 
@@ -69,9 +73,9 @@ export function TaxConfiguration({ data: propData, onAdd, onUpdate, onDelete }: 
   const handleConfirmDelete = () => {
     if (!toDelete) return;
     if (onDelete) {
-      onDelete(toDelete.code);
+      onDelete(toDelete.textId);
     } else {
-      setInternalData((prev) => prev.filter((item: TaxConfiguration) => item.code !== toDelete.code));
+      setInternalData((prev) => prev.filter((item: TaxConfiguration) => item.textId !== toDelete.textId));
     }
     setToDelete(null);
   };
@@ -100,9 +104,9 @@ export function TaxConfiguration({ data: propData, onAdd, onUpdate, onDelete }: 
           </thead>
           <tbody>
             {data.map((item: TaxConfiguration) => (
-              <tr key={item.code} className="stc-row">
-                <Td mono>{item.code}</Td>
-                <Td>{item.name}</Td>
+              <tr key={item.textId} className="stc-row">
+                <Td mono>{item.textCode}</Td>
+                <Td>{item.textType}</Td>
                 <Td align="right">{item.rate}</Td>
                 <Td align="right">
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
@@ -138,19 +142,19 @@ export function TaxConfiguration({ data: propData, onAdd, onUpdate, onDelete }: 
             }
           >
             <div className="stc-form-grid">
-              <div className="stc-field">
+              {modal.mode === "edit" && (<div className="stc-field">
                 <label className="stc-field-label">Code</label>
                 <input
                   disabled={modal.mode === "edit"}
-                  value={formData.code || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, code: e.target.value }))}
+                  value={formData.textCode || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, textCode: e.target.value }))}
                 />
-              </div>
+              </div>)}
               <div className="stc-field">
-                <label className="stc-field-label">Name</label>
+                <label className="stc-field-label">Type</label>
                 <input
-                  value={formData.name || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, name: e.target.value }))}
+                  value={formData.textType || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, textType: e.target.value }))}
                 />
               </div>
               <div className="stc-field">
@@ -160,6 +164,25 @@ export function TaxConfiguration({ data: propData, onAdd, onUpdate, onDelete }: 
                   onChange={(e) => setFormData((s) => ({ ...s, rate: e.target.value }))}
                 />
               </div>
+              <div className="stc-field">
+                <label className="stc-field-label">Description</label>
+                <input
+                  value={formData.description || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, description: e.target.value }))}
+                />
+              </div>
+              {modal.mode === "edit" && (
+                <div className="stc-field">
+                  <label className="stc-field-label">Status</label>
+                  <select
+                    value={formData.isActive ? "Active" : "Inactive"}
+                    onChange={(e) => setFormData((s) => ({ ...s, isActive: e.target.value === "Active" }))}
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              )}
             </div>
           </Modal>
         )}
@@ -172,7 +195,7 @@ export function TaxConfiguration({ data: propData, onAdd, onUpdate, onDelete }: 
             </>
           }>
             <p style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.7, margin: 0 }}>
-              This will permanently remove {toDelete.code} from the list. This can't be undone.
+              This will permanently remove {toDelete.textCode} from the list. This can't be undone.
             </p>
           </Modal>
         )}

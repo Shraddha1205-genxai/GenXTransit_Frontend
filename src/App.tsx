@@ -289,22 +289,21 @@ const holidays = [
 ];
 
 const notificationTemplates = [
-  { code: "NT-DELAY", name: "Trip delay alert", channel: "SMS + Push" },
-  { code: "NT-CONFIRM", name: "Booking confirmation", channel: "SMS + Email" },
-  { code: "NT-REFUND", name: "Refund processed", channel: "Push" },
+  { notificationId: "NT-DELAY", notificationCode: "NT-DELAY", notificationTitle: "Trip delay alert", channel: "SMS + Push", isActive: true },
+  { notificationId: "NT-CONFIRM", notificationCode: "NT-CONFIRM", notificationTitle: "Booking confirmation", channel: "SMS + Email", isActive: true },
+  { notificationId: "NT-REFUND", notificationCode: "NT-REFUND", notificationTitle: "Refund processed", channel: "Push", isActive: true },
 ];
 
 const complaintCategories = [
-  { code: "CC-BEHAV", name: "Conductor / driver behaviour", sla: "8h" },
-  { code: "CC-DELAY", name: "Trip delay", sla: "4h" },
-  { code: "CC-CLEAN", name: "Cleanliness", sla: "24h" },
-  { code: "CC-FARE", name: "Fare dispute", sla: "12h" },
+  { complaintId: "001", complaintCode: "CMP-001", complaintTitle: "Driver behavior", complaintCategory: "Behavioral", sla: "4h", isActive: true },
+  { complaintId: "002", complaintCode: "CMP-002", complaintTitle: "Vehicle cleanliness", complaintCategory: "Cleanliness", sla: "8h", isActive: true },
+  { complaintId: "003", complaintCode: "CMP-003", complaintTitle: "Ticketing issue", complaintCategory: "Fare Management", sla: "6h", isActive: true },
 ];
 
 const taxConfig = [
-  { code: "TX-GST5", name: "GST — Local city service", rate: "5%" },
-  { code: "TX-GST12", name: "GST — AC / Luxury service", rate: "12%" },
-  { code: "TX-CESS", name: "State road cess", rate: "1%" },
+  { textId: "TX-GST5", textCode: "TX-GST5", textType: "GST — Local city service", rate: "5%", description: "GST for local city service" },
+  { textId: "TX-GST12", textCode: "TX-GST12", textType: "GST — AC / Luxury service", rate: "12%", description: "GST for AC / Luxury service" },
+  { textId: "TX-CESS", textCode: "TX-CESS", textType: "State road cess", rate: "1%", description: "State road cess" },
 ];
 
 const employees = [
@@ -632,7 +631,7 @@ function NotificationTemplatesTab() {
   return <NotificationTemplates data={notificationTemplatesData} onAdd={notificationTemplatesCrud.add} onUpdate={notificationTemplatesCrud.update} onDelete={notificationTemplatesCrud.remove} />;
 }
 function ComplaintCategoriesTab() {
-  const [complaintCategoriesData, complaintCategoriesCrud] = useCrud("complaintCategories", "code");
+  const [complaintCategoriesData, complaintCategoriesCrud] = useCrud("complaintCategories", "complaintId");
   return <ComplaintCategories data={complaintCategoriesData} onAdd={complaintCategoriesCrud.add} onUpdate={complaintCategoriesCrud.update} onDelete={complaintCategoriesCrud.remove} />;
 }
 function TaxConfigurationTab() {

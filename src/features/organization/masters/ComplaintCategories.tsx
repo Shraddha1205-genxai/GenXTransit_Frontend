@@ -4,22 +4,26 @@ import { T } from "../../../constants/theme";
 import { Card, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface ComplaintCategory {
-  code: string;
-  name: string;
+  complaintId: string;
+  complaintCode: string;
+  complaintTitle: string;
+  complaintCategory: string;
   sla: string;
+  description?: string;
+  isActive: boolean;
 }
 
 export interface ComplaintCategoriesProps {
   data?: ComplaintCategory[];
   onAdd?: (item: ComplaintCategory) => void;
-  onUpdate?: (code: string, item: ComplaintCategory) => void;
-  onDelete?: (code: string) => void;
+  onUpdate?: (item: ComplaintCategory) => void;
+  onDelete?: (complaintId: string) => void;
 }
 
 const initialDefaultComplaintCategories: ComplaintCategory[] = [
-  { code: "CMP-001", name: "Driver behavior", sla: "4h" },
-  { code: "CMP-002", name: "Vehicle cleanliness", sla: "8h" },
-  { code: "CMP-003", name: "Ticketing issue", sla: "6h" },
+  { complaintId: "001", complaintCode: "CMP-001", complaintTitle: "Driver behavior", complaintCategory: "Behavioral", sla: "4h", isActive: true },
+  { complaintId: "002", complaintCode: "CMP-002", complaintTitle: "Vehicle cleanliness", complaintCategory: "Cleanliness", sla: "8h", isActive: true },
+  { complaintId: "003", complaintCode: "CMP-003", complaintTitle: "Ticketing issue", complaintCategory: "Fare Management", sla: "6h", isActive: true },
 ];
 
 export function ComplaintCategories({ data: propData, onAdd, onUpdate, onDelete }: ComplaintCategoriesProps) {
@@ -31,7 +35,7 @@ export function ComplaintCategories({ data: propData, onAdd, onUpdate, onDelete 
   const [formData, setFormData] = useState<Partial<ComplaintCategory>>({});
 
   const handleOpenAdd = () => {
-    setFormData({ code: "", name: "", sla: "" });
+    setFormData({ complaintId: "", complaintCode: "", complaintTitle: "", sla: "", description: "", isActive: true });
     setModal({ mode: "add" });
   };
 
@@ -41,25 +45,29 @@ export function ComplaintCategories({ data: propData, onAdd, onUpdate, onDelete 
   };
 
   const handleSave = () => {
-    if (!formData.code || !formData.name) return;
+    if (!formData.complaintCode || !formData.complaintTitle) return;
 
     const newRecord: ComplaintCategory = {
-      code: formData.code,
-      name: formData.name,
+      complaintId: formData.complaintId || "",
+      complaintCode: formData.complaintCode || "",
+      complaintTitle: formData.complaintTitle || "",
       sla: formData.sla || "",
+      complaintCategory: formData.complaintCategory || "",
+      description: formData.description || "",
+      isActive: formData.isActive !== undefined ? formData.isActive : true,
     };
 
     if (modal?.mode === "add") {
       if (onAdd) {
         onAdd(newRecord);
       } else {
-        setInternalData((prev) => [...prev, newRecord]);
+        setInternalData((prev) => [...prev]);
       }
     } else if (modal?.mode === "edit" && modal.record) {
       if (onUpdate) {
-        onUpdate(modal.record.code, newRecord);
+        onUpdate(newRecord);
       } else {
-        setInternalData((prev) => prev.map((item: ComplaintCategory) => (item.code === modal.record!.code ? newRecord : item)));
+        setInternalData((prev) => prev.map((item: ComplaintCategory) => (item)));
       }
     }
 
@@ -69,9 +77,9 @@ export function ComplaintCategories({ data: propData, onAdd, onUpdate, onDelete 
   const handleConfirmDelete = () => {
     if (!toDelete) return;
     if (onDelete) {
-      onDelete(toDelete.code);
+      onDelete(toDelete.complaintId);
     } else {
-      setInternalData((prev) => prev.filter((item: ComplaintCategory) => item.code !== toDelete.code));
+      setInternalData((prev) => prev.filter((item: ComplaintCategory) => item.complaintId !== toDelete.complaintId));
     }
     setToDelete(null);
   };
@@ -93,6 +101,7 @@ export function ComplaintCategories({ data: propData, onAdd, onUpdate, onDelete 
           <thead>
             <tr>
               <Th>Code</Th>
+              <Th>Title</Th>
               <Th>Category</Th>
               <Th>SLA</Th>
               <Th align="right">Actions</Th>
@@ -100,9 +109,10 @@ export function ComplaintCategories({ data: propData, onAdd, onUpdate, onDelete 
           </thead>
           <tbody>
             {data.map((item: ComplaintCategory) => (
-              <tr key={item.code} className="stc-row">
-                <Td mono>{item.code}</Td>
-                <Td>{item.name}</Td>
+              <tr key={item.complaintId} className="stc-row">
+                <Td mono>{item.complaintCode}</Td>
+                <Td>{item.complaintTitle}</Td>
+                <Td>{item.complaintCategory}</Td>
                 <Td>{item.sla}</Td>
                 <Td align="right">
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
@@ -118,7 +128,7 @@ export function ComplaintCategories({ data: propData, onAdd, onUpdate, onDelete 
             ))}
             {data.length === 0 && (
               <tr>
-                <Td colSpan={4}>No records yet — use Add category to create one.</Td>
+                <Td colSpan={5}>No records yet — use Add category to create one.</Td>
               </tr>
             )}
           </tbody>
@@ -138,19 +148,26 @@ export function ComplaintCategories({ data: propData, onAdd, onUpdate, onDelete 
             }
           >
             <div className="stc-form-grid">
-              <div className="stc-field">
+              {modal.mode === "edit" && (<div className="stc-field">
                 <label className="stc-field-label">Code</label>
                 <input
                   disabled={modal.mode === "edit"}
-                  value={formData.code || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, code: e.target.value }))}
+                  value={formData.complaintCode || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, complaintCode: e.target.value }))}
                 />
-              </div>
+              </div>)}
               <div className="stc-field">
                 <label className="stc-field-label">Category</label>
                 <input
-                  value={formData.name || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, name: e.target.value }))}
+                  value={formData.complaintCategory || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, complaintCategory: e.target.value }))}
+                />
+              </div>
+              <div className="stc-field">
+                <label className="stc-field-label">Title</label>
+                <input
+                  value={formData.complaintTitle || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, complaintTitle: e.target.value }))}
                 />
               </div>
               <div className="stc-field">
@@ -160,6 +177,25 @@ export function ComplaintCategories({ data: propData, onAdd, onUpdate, onDelete 
                   onChange={(e) => setFormData((s) => ({ ...s, sla: e.target.value }))}
                 />
               </div>
+              <div className="stc-field">
+                <label className="stc-field-label">Description</label>
+                <input
+                  value={formData.description || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, description: e.target.value }))}
+                />
+              </div>
+              {modal.mode === "edit" && (
+                <div className="stc-field">
+                  <label className="stc-field-label">Status</label>
+                  <select
+                    value={formData.isActive ? "Active" : "Inactive"}
+                    onChange={(e) => setFormData((s) => ({ ...s, isActive: e.target.value === "Active" }))}
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              )}
             </div>
           </Modal>
         )}
@@ -172,7 +208,7 @@ export function ComplaintCategories({ data: propData, onAdd, onUpdate, onDelete 
             </>
           }>
             <p style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.7, margin: 0 }}>
-              This will permanently remove {toDelete.code} from the list. This can't be undone.
+              This will permanently remove {toDelete.complaintCode} from the list. This can't be undone.
             </p>
           </Modal>
         )}

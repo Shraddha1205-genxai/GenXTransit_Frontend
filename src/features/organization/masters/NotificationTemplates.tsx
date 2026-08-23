@@ -4,22 +4,25 @@ import { T } from "../../../constants/theme";
 import { Card, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface NotificationTemplate {
-  code: string;
-  name: string;
+  notificationId: string
+  notificationCode: string;
+  notificationTitle: string;
   channel: string;
+  description?: string;
+  isActive: boolean;
 }
 
 export interface NotificationTemplatesProps {
   data?: NotificationTemplate[];
   onAdd?: (item: NotificationTemplate) => void;
-  onUpdate?: (code: string, item: NotificationTemplate) => void;
-  onDelete?: (code: string) => void;
+  onUpdate?: (item: NotificationTemplate) => void;
+  onDelete?: (notificationId: string) => void;
 }
 
 const initialDefaultNotificationTemplates: NotificationTemplate[] = [
-  { code: "NT-DELAY", name: "Trip delay alert", channel: "SMS + Push" },
-  { code: "NT-CONFIRM", name: "Booking confirmation", channel: "SMS + Email" },
-  { code: "NT-REFUND", name: "Refund processed", channel: "Push" },
+  { notificationId: "NT-DELAY", notificationCode: "NT-DELAY", notificationTitle: "Trip delay alert", channel: "SMS + Push", isActive: true },
+  { notificationId: "NT-CONFIRM", notificationCode: "NT-CONFIRM", notificationTitle: "Booking confirmation", channel: "SMS + Email", isActive: true },
+  { notificationId: "NT-REFUND", notificationCode: "NT-REFUND", notificationTitle: "Refund processed", channel: "Push", isActive: true },
 ];
 
 export function NotificationTemplates({ data: propData, onAdd, onUpdate, onDelete }: NotificationTemplatesProps) {
@@ -31,7 +34,7 @@ export function NotificationTemplates({ data: propData, onAdd, onUpdate, onDelet
   const [formData, setFormData] = useState<Partial<NotificationTemplate>>({});
 
   const handleOpenAdd = () => {
-    setFormData({ code: "", name: "", channel: "" });
+    setFormData({ notificationId: "", notificationCode: "", notificationTitle: "", channel: "", description:"", isActive: true });
     setModal({ mode: "add" });
   };
 
@@ -41,25 +44,28 @@ export function NotificationTemplates({ data: propData, onAdd, onUpdate, onDelet
   };
 
   const handleSave = () => {
-    if (!formData.code || !formData.name) return;
+    if (!formData.notificationCode || !formData.notificationTitle) return;
 
     const newRecord: NotificationTemplate = {
-      code: formData.code,
-      name: formData.name,
+      notificationId: formData.notificationId || "",
+      notificationCode: formData.notificationCode || "",
+      notificationTitle: formData.notificationTitle || "",
       channel: formData.channel || "",
+      description: formData.description || "",
+      isActive: formData.isActive ?? false,
     };
 
     if (modal?.mode === "add") {
       if (onAdd) {
         onAdd(newRecord);
       } else {
-        setInternalData((prev) => [...prev, newRecord]);
+        setInternalData((prev) => [...prev]);
       }
     } else if (modal?.mode === "edit" && modal.record) {
       if (onUpdate) {
-        onUpdate(modal.record.code, newRecord);
+        onUpdate(newRecord);
       } else {
-        setInternalData((prev) => prev.map((item: NotificationTemplate) => (item.code === modal.record!.code ? newRecord : item)));
+        setInternalData((prev) => prev.map((item: NotificationTemplate) => (item)));
       }
     }
 
@@ -69,9 +75,9 @@ export function NotificationTemplates({ data: propData, onAdd, onUpdate, onDelet
   const handleConfirmDelete = () => {
     if (!toDelete) return;
     if (onDelete) {
-      onDelete(toDelete.code);
+      onDelete(toDelete.notificationId);
     } else {
-      setInternalData((prev) => prev.filter((item: NotificationTemplate) => item.code !== toDelete.code));
+      setInternalData((prev) => prev.filter((item: NotificationTemplate) => item.notificationId !== toDelete.notificationId));
     }
     setToDelete(null);
   };
@@ -93,17 +99,19 @@ export function NotificationTemplates({ data: propData, onAdd, onUpdate, onDelet
           <thead>
             <tr>
               <Th>Code</Th>
-              <Th>Name</Th>
+              <Th>Title</Th>
               <Th>Channel</Th>
+              <Th>Status</Th>
               <Th align="right">Actions</Th>
             </tr>
           </thead>
           <tbody>
             {data.map((item: NotificationTemplate) => (
-              <tr key={item.code} className="stc-row">
-                <Td mono>{item.code}</Td>
-                <Td>{item.name}</Td>
+              <tr key={item.notificationId} className="stc-row">
+                <Td mono>{item.notificationCode}</Td>
+                <Td>{item.notificationTitle}</Td>
                 <Td>{item.channel}</Td>
+                <Td>{item.isActive ? "Active" : "Inactive"}</Td>
                 <Td align="right">
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
                     <button onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
@@ -118,7 +126,7 @@ export function NotificationTemplates({ data: propData, onAdd, onUpdate, onDelet
             ))}
             {data.length === 0 && (
               <tr>
-                <Td colSpan={4}>No records yet — use Add template to create one.</Td>
+                <Td colSpan={5}>No records yet — use Add template to create one.</Td>
               </tr>
             )}
           </tbody>
@@ -138,28 +146,48 @@ export function NotificationTemplates({ data: propData, onAdd, onUpdate, onDelet
             }
           >
             <div className="stc-form-grid">
+              {modal.mode == "edit" && (
+                <div className="stc-field">
+                  <label className="stc-field-label">Code</label>
+                  <input
+                    disabled={modal.mode === "edit"}
+                    value={formData.notificationCode || ""}
+                    onChange={(e) => setFormData((s) => ({ ...s, notificationCode: e.target.value }))}
+                />
+              </div>)}
               <div className="stc-field">
-                <label className="stc-field-label">Code</label>
+                <label className="stc-field-label">Title</label>
                 <input
-                  disabled={modal.mode === "edit"}
-                  value={formData.code || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, code: e.target.value }))}
+                  value={formData.notificationTitle || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, notificationTitle: e.target.value }))}
                 />
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Name</label>
-                <input
-                  value={formData.name || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, name: e.target.value }))}
-                />
-              </div>
-              <div className="stc-field" style={{ gridColumn: "1 / -1" }}>
                 <label className="stc-field-label">Channel</label>
                 <input
                   value={formData.channel || ""}
                   onChange={(e) => setFormData((s) => ({ ...s, channel: e.target.value }))}
                 />
               </div>
+              <div className="stc-field" style={{ gridColumn: "1 / -1" }}>
+                <label className="stc-field-label">Description</label>
+                <input
+                  value={formData.description || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, description: e.target.value }))}
+                />
+              </div>
+              {modal.mode === "edit" && (
+                <div className="stc-field">
+                  <label className="stc-field-label">Status</label>
+                  <select
+                    value={formData.isActive ? "Active" : "Inactive"}
+                    onChange={(e) => setFormData((s) => ({ ...s, isActive: e.target.value === "Active" }))}
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              )}
             </div>
           </Modal>
         )}
@@ -172,7 +200,7 @@ export function NotificationTemplates({ data: propData, onAdd, onUpdate, onDelet
             </>
           }>
             <p style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.7, margin: 0 }}>
-              This will permanently remove {toDelete.code} from the list. This can't be undone.
+              This will permanently remove {toDelete.notificationCode} from the list. This can't be undone.
             </p>
           </Modal>
         )}
