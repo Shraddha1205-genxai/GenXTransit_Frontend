@@ -4,39 +4,48 @@ import { T } from "../../../constants/theme";
 import { Card, RouteChip, StatusBadge, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface Workshop {
-  code: string;
-  name: string;
+  workShopId: string;
+  workShopCode: string;
+  workShopName: string;
+  regionId: string;
   regionCode: string;
+  regionName: string;
+  divisionId: string;
   divisionCode: string;
+  divisionName: string;
+  depotId: string;
   depotCode: string;
+  depotName: string;
   workBays: number;
   activeRepairJobs: number;
   isActive: boolean;
 }
-
+export interface WorkshopPayload {
+  workShopId: string;
+  workShopCode: string;
+  workShopName: string;
+  regionId: string;
+  divisionId: string;
+  depotId: string;
+  workBays: number;
+  activeRepairJobs: number;
+  isActive: boolean;
+}
 export interface WorkshopPageProps {
   data?: Workshop[];
-  regionOptions?: string[];
-  divisionOptions?: string[];
-  depotOptions?: string[];
-  onAdd?: (item: Workshop) => void;
-  onUpdate?: (code: string, item: Workshop) => void;
-  onDelete?: (code: string) => void;
+  regionOptions?: {regionId: string, regionName: string, regionCode: string}[];
+  divisionOptions?: {divisionId: string, divisionName: string, divisionCode: string}[];
+  depotOptions?: {depotId: string, depotName: string, depotCode: string}[];
+  onAdd?: (item: WorkshopPayload) => void;
+  onUpdate?: (item: WorkshopPayload) => void;
+  onDelete?: (workShopId: string) => void;
 }
 
 const initialDefaultWorkshops: Workshop[] = [
-  { code: "WS-0001", name: "Swargate Central Workshop", regionCode: "REG-0001", divisionCode: "DIV-0001", depotCode: "MSRTC-PUN-01", workBays: 12, activeRepairJobs: 7, isActive: true },
-  { code: "WS-0002", name: "Wadala Repair Workshop", regionCode: "REG-0002", divisionCode: "DIV-0003", depotCode: "BEST-MUM-04", workBays: 8, activeRepairJobs: 5, isActive: true },
-  { code: "WS-0003", name: "PMPML Swargate Workshop", regionCode: "REG-0001", divisionCode: "DIV-0001", depotCode: "PMPML-PUN-02", workBays: 6, activeRepairJobs: 2, isActive: true },
+  { workShopId: "WS-0001", workShopCode: "WS-0001", workShopName: "Swargate Central Workshop", regionId: "REG-0001", regionCode: "REG-0001", regionName: "Region 1", divisionId: "DIV-0001", divisionCode: "DIV-0001", divisionName: "Division 1", depotId: "MSRTC-PUN-01", depotCode: "MSRTC-PUN-01", depotName: "Depot 1", workBays: 12, activeRepairJobs: 7, isActive: true },
+  { workShopId: "WS-0002", workShopCode: "WS-0002", workShopName: "Wadala Repair Workshop", regionId: "REG-0002", regionCode: "REG-0002", regionName: "Region 2", divisionId: "DIV-0003", divisionCode: "DIV-0003", divisionName: "Division 3", depotId: "BEST-MUM-04", depotCode: "BEST-MUM-04", depotName: "Depot 4", workBays: 8, activeRepairJobs: 5, isActive: true },
+  { workShopId: "WS-0003", workShopCode: "WS-0003", workShopName: "PMPML Swargate Workshop", regionId: "REG-0001", regionCode: "REG-0001", regionName: "Region 1", divisionId: "DIV-₀₀₀₁", divisionCode: "DIV-₀₀₀₁", divisionName: "Division 1", depotId: "PMPML-PUN-₀₂", depotCode: "PMPML-PUN-₀₂", depotName: "Depot 2", workBays: 6, activeRepairJobs: 2, isActive: true },
 ];
-
-const generateWorkshopCode = (existing: Workshop[]) => {
-  const numbers = existing
-    .map((item) => Number((item.code.match(/(\d+)$/) ?? ["0", "0"])[1]))
-    .filter((n) => Number.isFinite(n));
-  const next = (Math.max(0, ...numbers) + 1).toString().padStart(4, "0");
-  return `WS-${next}`;
-};
 
 export function Workshops({ data: propData, regionOptions = [], divisionOptions = [], depotOptions = [], onAdd, onUpdate, onDelete }: WorkshopPageProps) {
   const [internalData, setInternalData] = useState<Workshop[]>(initialDefaultWorkshops);
@@ -47,7 +56,7 @@ export function Workshops({ data: propData, regionOptions = [], divisionOptions 
   const [formData, setFormData] = useState<Partial<Workshop>>({});
 
   const handleOpenAdd = () => {
-    setFormData({ code: generateWorkshopCode(data), name: "", regionCode: regionOptions[0] || "", divisionCode: divisionOptions[0] || "", depotCode: depotOptions[0] || "", workBays: 0, activeRepairJobs: 0, isActive: true });
+    setFormData({ workShopName: "", regionId: regionOptions[0]?.regionId || "", divisionId: divisionOptions[0]?.divisionId || "", depotId: depotOptions[0]?.depotId || "", workBays: 0, activeRepairJobs: 0, isActive: true });
     setModal({ mode: "add" });
   };
 
@@ -57,13 +66,14 @@ export function Workshops({ data: propData, regionOptions = [], divisionOptions 
   };
 
   const handleSave = () => {
-    if (!formData.name) return;
-    const newRecord: Workshop = {
-      code: modal?.mode === "edit" && modal.record ? modal.record.code : generateWorkshopCode(data),
-      name: formData.name,
-      regionCode: formData.regionCode || regionOptions[0] || "",
-      divisionCode: formData.divisionCode || divisionOptions[0] || "",
-      depotCode: formData.depotCode || depotOptions[0] || "",
+    if (!formData.workShopName) return;
+    const newRecord: WorkshopPayload = {
+      workShopId: modal?.mode === "edit" && modal.record ? modal.record.workShopId : "",
+      workShopCode: modal?.mode === "edit" && modal.record ? modal.record.workShopCode : "",
+      workShopName: formData.workShopName.trim(),
+      regionId: formData.regionId || regionOptions[0]?.regionId || "",
+      divisionId: formData.divisionId || divisionOptions[0]?.divisionId || "",
+      depotId: formData.depotId || depotOptions[0]?.depotId || "",
       workBays: Number(formData.workBays) || 0,
       activeRepairJobs: Number(formData.activeRepairJobs) || 0,
       isActive: modal?.mode === "edit" ? (formData.isActive ?? true) : true,
@@ -71,18 +81,18 @@ export function Workshops({ data: propData, regionOptions = [], divisionOptions 
 
     if (modal?.mode === "add") {
       if (onAdd) onAdd(newRecord);
-      else setInternalData((prev) => [...prev, newRecord]);
+      else setInternalData((prev) => [...prev]);
     } else if (modal?.mode === "edit" && modal.record) {
-      if (onUpdate) onUpdate(modal.record.code, newRecord);
-      else setInternalData((prev) => prev.map((item) => (item.code === modal.record!.code ? newRecord : item)));
+      if (onUpdate) onUpdate(newRecord);
+      else setInternalData((prev) => prev.map((item) => (item)));
     }
     setModal(null);
   };
 
   const handleConfirmDelete = () => {
     if (!toDelete) return;
-    if (onDelete) onDelete(toDelete.code);
-    else setInternalData((prev) => prev.filter((item) => item.code !== toDelete.code));
+    if (onDelete) onDelete(toDelete.workShopId);
+    else setInternalData((prev) => prev.filter((item) => item.workShopId !== toDelete.workShopId));
     setToDelete(null);
   };
 
@@ -115,9 +125,9 @@ export function Workshops({ data: propData, regionOptions = [], divisionOptions 
           </thead>
           <tbody>
             {data.map((w: Workshop) => (
-              <tr key={w.code} className="stc-row">
-                <Td mono><RouteChip>{w.code}</RouteChip></Td>
-                <Td>{w.name}</Td>
+              <tr key={w.workShopCode} className="stc-row">
+                <Td mono><RouteChip>{w.workShopCode}</RouteChip></Td>
+                <Td>{w.workShopName}</Td>
                 <Td mono>{w.regionCode}</Td>
                 <Td mono>{w.divisionCode}</Td>
                 <Td mono>{w.depotCode}</Td>
@@ -159,32 +169,32 @@ export function Workshops({ data: propData, regionOptions = [], divisionOptions 
               {modal.mode === "edit" && (
                 <div className="stc-field">
                   <label className="stc-field-label">WorkShop Code</label>
-                  <input value={formData.code || ""} readOnly />
+                  <input value={formData.workShopCode || ""} readOnly />
                 </div>
               )}
               <div className="stc-field">
                 <label className="stc-field-label">WorkShop Name</label>
                 <input
-                  value={formData.name || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, name: e.target.value }))}
+                  value={formData.workShopName || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, workShopName: e.target.value }))}
                 />
               </div>
               <div className="stc-field">
                 <label className="stc-field-label">Region Code</label>
                 <select value={formData.regionCode || ""} onChange={(e) => setFormData((s) => ({ ...s, regionCode: e.target.value }))}>
-                  {regionOptions.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                  {regionOptions.map((opt) => <option key={opt.regionId} value={opt.regionId}>{opt.regionName}</option>)}
                 </select>
               </div>
               <div className="stc-field">
                 <label className="stc-field-label">Division Code</label>
                 <select value={formData.divisionCode || ""} onChange={(e) => setFormData((s) => ({ ...s, divisionCode: e.target.value }))}>
-                  {divisionOptions.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                  {divisionOptions.map((opt) => <option key={opt.divisionId} value={opt.divisionId}>{opt.divisionName}</option>)}
                 </select>
               </div>
               <div className="stc-field">
                 <label className="stc-field-label">Depot Code</label>
                 <select value={formData.depotCode || ""} onChange={(e) => setFormData((s) => ({ ...s, depotCode: e.target.value }))}>
-                  {depotOptions.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                  {depotOptions.map((opt) => <option key={opt.depotId} value={opt.depotId}>{opt.depotName}</option>)}
                 </select>
               </div>
               <div className="stc-field">
@@ -224,7 +234,7 @@ export function Workshops({ data: propData, regionOptions = [], divisionOptions 
             </>
           }>
             <p style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.7, margin: 0 }}>
-              This will permanently remove {toDelete.code} from the list. This can't be undone.
+              This will permanently remove {toDelete.workShopName} from the list. This can't be undone.
             </p>
           </Modal>
         )}

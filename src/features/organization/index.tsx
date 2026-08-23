@@ -5,11 +5,11 @@ export * from "./organizationManagement/Depots";
 export * from "./organizationManagement/BusStation";
 export * from "./organizationManagement/Workshops";
 export * from "./organizationManagement/ParkingYards";
+export * from "./organizationManagement/Zones";
 
 export * from "./masters/Route";
 export * from "./masters/Stop";
 export * from "./masters/Stages";
-export * from "./masters/zones";
 export * from "./masters/FarePolicies";
 export * from "./masters/TicketTypes";
 export * from "./masters/PaymentModes";

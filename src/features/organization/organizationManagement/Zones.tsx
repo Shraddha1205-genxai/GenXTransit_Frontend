@@ -1,40 +1,46 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { T } from "../../../constants/theme";
-import { Card, Th, Td, Modal, Table } from "../../../components/common";
+import { Card, Th, Td, Modal, Table, StatusBadge } from "../../../components/common";
 
 export interface Zone {
-  id: string;
+  zoneId: string;
   zoneCode: string;
   zoneName: string;
+  regionId: string;
+  regionCode: string;
   regionName: string;
   districts: string[];
   isActive: boolean;
 }
-
+export interface ZonePayload {
+  zoneId: string;
+  zoneCode: string;
+  zoneName: string;
+  regionId: string;
+  districts: string[];
+  isActive: boolean;
+}
+export interface RegionOption {
+  regionId: string;
+  regionCode: string;
+  regionName?: string;
+}
 export interface ZonesProps {
   data?: Zone[];
-  regionOptions?: string[];
-  onAdd?: (item: Zone) => void;
-  onUpdate?: (id: string, item: Zone) => void;
+  regionOptions?: RegionOption[];
+  onAdd?: (item: ZonePayload) => void;
+  onUpdate?: (item: ZonePayload) => void;
   onDelete?: (id: string) => void;
 }
 
 const initialDefaultZones: Zone[] = [
-  { id: "ZN-ID-1001", zoneCode: "ZN-0001", zoneName: "Pune Metropolitan Zone", regionName: "REG-0001", districts: ["Pune", "Pimpri-Chinchwad"], isActive: true },
-  { id: "ZN-ID-1002", zoneCode: "ZN-0002", zoneName: "Mumbai Zone", regionName: "REG-0002", districts: ["Mumbai", "Thane"], isActive: true },
-  { id: "ZN-ID-1003", zoneCode: "ZN-0003", zoneName: "Nashik Zone", regionName: "REG-0003", districts: ["Nashik", "Ahmednagar"], isActive: true },
+  { zoneId: "ZN-ID-1001", zoneCode: "ZN-0001", zoneName: "Pune Metropolitan Zone", regionId: "0001", regionCode: "REG-0001", regionName: "Pune Region", districts: ["Pune", "Pimpri-Chinchwad"], isActive: true },
+  { zoneId: "ZN-ID-1002", zoneCode: "ZN-0002", zoneName: "Mumbai Zone", regionId: "0002", regionCode: "REG-0002", regionName: "Mumbai Region", districts: ["Mumbai", "Thane"], isActive: true },
+  { zoneId: "ZN-ID-1003", zoneCode: "ZN-0003", zoneName: "Nashik Zone", regionId: "0003", regionCode: "REG-0003", regionName: "Nashik Region", districts: ["Nashik", "Ahmednagar"], isActive: true },
 ];
 
-const generateZoneCode = (existing: Zone[]) => {
-  const numbers = existing
-    .map((item) => Number((item.zoneCode.match(/(\d+)$/) ?? ["0", "0"])[1]))
-    .filter((n) => Number.isFinite(n));
-  const next = (Math.max(0, ...numbers) + 1).toString().padStart(4, "0");
-  return `ZN-${next}`;
-};
-
-export function Zones({ data: propData, regionOptions = ["REG-0001", "REG-0002", "REG-0003"], onAdd, onUpdate, onDelete }: ZonesProps) {
+export function Zones({ data: propData, regionOptions = [], onAdd, onUpdate, onDelete }: ZonesProps) {
   const [internalData, setInternalData] = useState<Zone[]>(initialDefaultZones);
   const data = propData ?? internalData;
 
@@ -43,7 +49,7 @@ export function Zones({ data: propData, regionOptions = ["REG-0001", "REG-0002",
   const [formData, setFormData] = useState<Partial<Zone>>({});
 
   const handleOpenAdd = () => {
-    setFormData({ id: `ZN-ID-${Date.now()}`, zoneCode: generateZoneCode(data), zoneName: "", regionName: regionOptions[0] || "", districts: [], isActive: true });
+    setFormData({ zoneName: "", regionId: regionOptions?.[0]?.regionId || "", districts: [] });
     setModal({ mode: "add" });
   };
 
@@ -53,28 +59,54 @@ export function Zones({ data: propData, regionOptions = ["REG-0001", "REG-0002",
   };
 
   const handleSave = () => {
-    if (!formData.zoneName || !formData.regionName) return;
+    if (!formData.zoneName || !formData.regionId) return;
 
-    const newRecord: Zone = {
-      id: modal?.mode === "edit" && modal.record ? modal.record.id : `ZN-ID-${Date.now()}`,
-      zoneCode: modal?.mode === "edit" && modal.record ? modal.record.zoneCode : generateZoneCode(data),
+    const isEdit = modal?.mode === "edit" && modal.record;
+
+    const newRecord: ZonePayload = {
+      zoneId: isEdit ? modal!.record!.zoneId : `ZN-ID-${Date.now()}`,
+      zoneCode: isEdit ? modal!.record!.zoneCode : `ZN-${String(data.length + 1).padStart(4, "0")}`,
       zoneName: formData.zoneName.trim(),
-      regionName: formData.regionName || regionOptions[0] || "",
-      districts: Array.isArray(formData.districts) ? formData.districts : (formData.districts ? String(formData.districts).split(",").map((v) => v.trim()).filter(Boolean) : []),
+      regionId: formData.regionId || regionOptions?.[0]?.regionId || "",
+      districts: Array.isArray(formData.districts)
+        ? formData.districts
+        : formData.districts
+        ? String(formData.districts).split(",").map((v) => v.trim()).filter(Boolean)
+        : [],
       isActive: formData.isActive ?? true,
     };
+
+    const selectedRegion = regionOptions?.find((r) => r.regionId === newRecord.regionId);
 
     if (modal?.mode === "add") {
       if (onAdd) {
         onAdd(newRecord);
       } else {
-        setInternalData((prev) => [...prev, newRecord]);
+        setInternalData((prev) => [
+          ...prev,
+          {
+            ...newRecord,
+            regionCode: selectedRegion?.regionCode || "",
+            regionName: selectedRegion?.regionName || "",
+          },
+        ]);
       }
     } else if (modal?.mode === "edit" && modal.record) {
       if (onUpdate) {
-        onUpdate(modal.record.id, newRecord);
+        onUpdate(newRecord);
       } else {
-        setInternalData((prev) => prev.map((item: Zone) => (item.id === modal.record!.id ? newRecord : item)));
+        setInternalData((prev) =>
+          prev.map((item) =>
+            item.zoneId === newRecord.zoneId
+              ? {
+                  ...item,
+                  ...newRecord,
+                  regionCode: selectedRegion?.regionCode || item.regionCode,
+                  regionName: selectedRegion?.regionName || item.regionName,
+                }
+              : item
+          )
+        );
       }
     }
 
@@ -84,9 +116,9 @@ export function Zones({ data: propData, regionOptions = ["REG-0001", "REG-0002",
   const handleConfirmDelete = () => {
     if (!toDelete) return;
     if (onDelete) {
-      onDelete(toDelete.id);
+      onDelete(toDelete.zoneId);
     } else {
-      setInternalData((prev) => prev.filter((item: Zone) => item.id !== toDelete.id));
+      setInternalData((prev) => prev.filter((item: Zone) => item.zoneId !== toDelete.zoneId));
     }
     setToDelete(null);
   };
@@ -117,11 +149,11 @@ export function Zones({ data: propData, regionOptions = ["REG-0001", "REG-0002",
           </thead>
           <tbody>
             {data.map((item: Zone) => (
-              <tr key={item.id} className="stc-row">
+              <tr key={item.zoneId} className="stc-row">
                 <Td mono>{item.zoneCode}</Td>
                 <Td>{item.zoneName}</Td>
                 <Td mono>{item.regionName}</Td>
-                <Td>{item.districts.join(", ")}</Td>
+                <Td>{item.districts?.join(", ")}</Td>
                 <Td><StatusBadge status={item.isActive ? "Active" : "Inactive"} /></Td>
                 <Td align="right">
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
@@ -173,14 +205,14 @@ export function Zones({ data: propData, regionOptions = ["REG-0001", "REG-0002",
               </div>
 
               <div className="stc-field">
-                <label className="stc-field-label">Region Name</label>
-                <select
-                  value={formData.regionName || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, regionName: e.target.value }))}
-                >
-                  {regionOptions.map((opt) => (
-                    <option key={opt} value={opt}>{opt}</option>
-                  ))}
+                <label className="stc-field-label">Region Code</label>
+                <select value={formData.regionId || ""} onChange={(e) => setFormData((s) => ({ ...s, regionId: e.target.value }))}>
+                  {regionOptions && regionOptions.length > 0 &&
+                    regionOptions.map((opt) => (
+                      <option key={opt.regionId} value={opt.regionId}>
+                        {opt.regionCode}
+                      </option>
+                    ))}
                 </select>
               </div>
 

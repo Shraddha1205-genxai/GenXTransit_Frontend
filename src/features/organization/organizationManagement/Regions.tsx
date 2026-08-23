@@ -1,10 +1,21 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { T } from "../../../constants/theme";
-import { Card, RouteChip, Th, Td, Modal, Table } from "../../../components/common";
+import { Card, RouteChip, Th, Td, Modal, Table, StatusBadge } from "../../../components/common";
 
 export interface Region {
-  id: string;
+  regionId: string;
+  regionCode: string;
+  regionName: string;
+  isActive: boolean;
+  divisions: number;
+  depots: number;
+  stations: number;
+  workshops: number;
+}
+
+export interface RegionPayload {
+  regionId: string;
   regionCode: string;
   regionName: string;
   isActive: boolean;
@@ -12,24 +23,16 @@ export interface Region {
 
 export interface RegionPageProps {
   data?: Region[];
-  onAdd?: (item: Region) => void;
-  onUpdate?: (id: string, item: Region) => void;
-  onDelete?: (id: string) => void;
+  onAdd?: (item: RegionPayload) => void;
+  onUpdate?: (item: RegionPayload) => void;
+  onDelete?: (regionId: string) => void;
 }
 
 const initialDefaultRegions: Region[] = [
-  { id: "REG-ID-1001", regionCode: "REG-0001", regionName: "Pune Region", isActive: true },
-  { id: "REG-ID-1002", regionCode: "REG-0002", regionName: "Mumbai Region", isActive: true },
-  { id: "REG-ID-1003", regionCode: "REG-0003", regionName: "Nashik Region", isActive: true },
+  { regionId: "REG-ID-1001", regionCode: "REG-0001", divisions: 2, depots: 2, stations: 2, workshops: 3, regionName: "Pune Region", isActive: true },
+  { regionId: "REG-ID-1002", regionCode: "REG-0002", divisions: 1, depots: 1, stations: 1, workshops: 2, regionName: "Mumbai Region", isActive: true },
+  { regionId: "REG-ID-1003", regionCode: "REG-0003", divisions: 0, depots: 0, stations: 0, workshops: 0, regionName: "Nashik Region", isActive: true },
 ];
-
-const generateRegionCode = (existing: Region[]) => {
-  const numbers = existing
-    .map((item) => Number((item.regionCode.match(/(\d+)$/) ?? ["0", "0"])[1]))
-    .filter((n) => Number.isFinite(n));
-  const next = (Math.max(0, ...numbers) + 1).toString().padStart(4, "0");
-  return `REG-${next}`;
-};
 
 export function Regions({ data: propData, onAdd, onUpdate, onDelete }: RegionPageProps) {
   const [internalData, setInternalData] = useState<Region[]>(initialDefaultRegions);
@@ -41,7 +44,7 @@ export function Regions({ data: propData, onAdd, onUpdate, onDelete }: RegionPag
   const [formData, setFormData] = useState<Partial<Region>>({});
 
   const handleOpenAdd = () => {
-    setFormData({ id: `REG-ID-${Date.now()}`, regionCode: generateRegionCode(data), regionName: "", isActive: true });
+    setFormData({ regionId: "", regionCode: "", regionName: "", isActive: true });
     setModal({ mode: "add" });
   };
 
@@ -52,9 +55,9 @@ export function Regions({ data: propData, onAdd, onUpdate, onDelete }: RegionPag
 
   const handleSave = () => {
     if (!formData.regionName) return;
-    const newRecord: Region = {
-      id: modal?.mode === "edit" && modal.record ? modal.record.id : `REG-ID-${Date.now()}`,
-      regionCode: modal?.mode === "edit" && modal.record ? modal.record.regionCode : generateRegionCode(data),
+    const newRecord: RegionPayload = {
+      regionId: modal?.mode === "edit" && modal.record ? modal.record.regionId : "",
+      regionCode: modal?.mode === "edit" && modal.record ? modal.record.regionCode : "",
       regionName: formData.regionName.trim(),
       isActive: formData.isActive ?? true,
     };
@@ -63,13 +66,13 @@ export function Regions({ data: propData, onAdd, onUpdate, onDelete }: RegionPag
       if (onAdd) {
         onAdd(newRecord);
       } else {
-        setInternalData((prev) => [...prev, newRecord]);
+        setInternalData((prev) => [...prev]);
       }
     } else if (modal?.mode === "edit" && modal.record) {
       if (onUpdate) {
-        onUpdate(modal.record.id, newRecord);
+        onUpdate(newRecord);
       } else {
-        setInternalData((prev) => prev.map((item) => (item.id === modal.record!.id ? newRecord : item)));
+        setInternalData((prev) => prev.map((item) => (item)));
       }
     }
     setModal(null);
@@ -78,9 +81,9 @@ export function Regions({ data: propData, onAdd, onUpdate, onDelete }: RegionPag
   const handleConfirmDelete = () => {
     if (!toDelete) return;
     if (onDelete) {
-      onDelete(toDelete.id);
+      onDelete(toDelete.regionId);
     } else {
-      setInternalData((prev) => prev.filter((item) => item.id !== toDelete.id));
+      setInternalData((prev) => prev.filter((item) => item.regionId !== toDelete.regionId));
     }
     setToDelete(null);
   };
@@ -101,19 +104,25 @@ export function Regions({ data: propData, onAdd, onUpdate, onDelete }: RegionPag
         <Table>
           <thead>
             <tr>
-              <Th>Region ID</Th>
               <Th>Region code</Th>
               <Th>Region Name</Th>
+              <Th>Divisions</Th>
+              <Th>Depots</Th>
+              <Th>Stations</Th>
+              <Th>Workshops</Th>
               <Th>Status</Th>
               <Th align="right">Actions</Th>
             </tr>
           </thead>
           <tbody>
             {data.map((r: Region) => (
-              <tr key={r.id} className="stc-row">
-                <Td mono>{r.id}</Td>
+              <tr key={r.regionId} className="stc-row">
                 <Td mono>{r.regionCode}</Td>
                 <Td>{r.regionName}</Td>
+                <Td><RouteChip>{r.divisions}</RouteChip></Td>
+                <Td><RouteChip>{r.depots}</RouteChip></Td>
+                <Td><RouteChip>{r.stations}</RouteChip></Td>
+                <Td><RouteChip>{r.workshops}</RouteChip></Td>
                 <Td><StatusBadge status={r.isActive ? "Active" : "Inactive"} /></Td>
                 <Td align="right">
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
@@ -128,7 +137,7 @@ export function Regions({ data: propData, onAdd, onUpdate, onDelete }: RegionPag
               </tr>
             ))}
             {data.length === 0 && (
-              <tr><Td colSpan={5}>No records yet — use Add region to create one.</Td></tr>
+              <tr><Td colSpan={8}>No records yet — use Add region to create one.</Td></tr>
             )}
           </tbody>
         </Table>
@@ -150,23 +159,12 @@ export function Regions({ data: propData, onAdd, onUpdate, onDelete }: RegionPag
               {modal.mode === "edit" && (
                 <>
                   <div className="stc-field">
-                    <label className="stc-field-label">Region ID</label>
-                    <input value={formData.id || ""} readOnly />
-                  </div>
-                  <div className="stc-field">
                     <label className="stc-field-label">Region code</label>
                     <input value={formData.regionCode || ""} readOnly />
                   </div>
                 </>
               )}
 
-              {modal.mode === "add" && (
-                <div className="stc-field" style={{ gridColumn: "1 / -1" }}>
-                  <div style={{ fontSize: 12, color: T.textSoft, padding: "8px 10px", borderRadius: 6, background: T.grayFill }}>
-                    Auto-generated region code: <strong>{formData.regionCode || "REG-0001"}</strong>
-                  </div>
-                </div>
-              )}
 
               <div className="stc-field" style={{ gridColumn: "1 / -1" }}>
                 <label className="stc-field-label">Region Name</label>

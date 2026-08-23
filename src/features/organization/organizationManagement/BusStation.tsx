@@ -4,39 +4,47 @@ import { T } from "../../../constants/theme";
 import { Card, RouteChip, StatusBadge, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface BusStation {
-  code: string;
-  name: string;
+  stationId: string;
+  stationCode: string;
+  stationName: string;
+  regionId: string;
   regionCode: string;
+  regionName: string;
+  divisionId: string;
   divisionCode: string;
+  divisionName: string;
+  depotId: string;
   depotCode: string;
+  depotName: string;
   platforms: number;
   dailyFootfall: number;
   isActive: boolean;
 }
-
+export interface BusStationPayload {
+  stationId: string;
+  stationCode: string;
+  stationName: string;
+  regionId: string;
+  divisionId: string;
+  depotId: string;
+  platforms: number;
+  isActive: boolean;
+}
 export interface BusStationPageProps {
   data?: BusStation[];
-  regionOptions?: string[];
-  divisionOptions?: string[];
-  depotOptions?: string[];
-  onAdd?: (item: BusStation) => void;
-  onUpdate?: (code: string, item: BusStation) => void;
-  onDelete?: (code: string) => void;
+  regionOptions?: { regionId: string; regionCode: string; regionName: string }[];
+  divisionOptions?: { divisionId: string; divisionCode: string; divisionName: string }[];
+  depotOptions?: { depotId: string; depotCode: string; depotName: string }[];
+  onAdd?: (item: BusStationPayload) => void;
+  onUpdate?: (item: BusStationPayload) => void;
+  onDelete?: (stationId: string) => void;
 }
 
 const initialDefaultBusStations: BusStation[] = [
-  { code: "STN-0001", name: "Swargate Bus Station", regionCode: "REG-0001", divisionCode: "DIV-0001", depotCode: "MSRTC-PUN-01", platforms: 14, dailyFootfall: 38000, isActive: true },
-  { code: "STN-0002", name: "Mumbai Central Bus Terminus", regionCode: "REG-0002", divisionCode: "DIV-0003", depotCode: "MSRTC-MUM-03", platforms: 10, dailyFootfall: 22500, isActive: true },
-  { code: "STN-0003", name: "Colaba Bus Depot Stand", regionCode: "REG-0002", divisionCode: "DIV-0003", depotCode: "BEST-MUM-07", platforms: 6, dailyFootfall: 9200, isActive: true },
+  { stationId: "001", stationCode: "STN-0001", stationName: "Swargate Bus Station",regionId: "0001", regionName: "Mumbai", regionCode: "REG-0001", divisionId: "0001", divisionCode: "DIV-0001", divisionName: "Mumbai Division", depotId: "0001", depotName: "Mumbai Depot", depotCode: "MSRTC-PUN-01", platforms: 14, dailyFootfall: 38000, isActive: true },
+  { stationId: "002", stationCode: "STN-0002", stationName: "Mumbai Central Bus Terminus",regionId: "0002", regionName: "Pune", regionCode: "REG-0002", divisionId: "0001", divisionCode: "DIV-0001", divisionName: "Mumbai Division", depotId: "0003", depotName: "Pune Depot", depotCode: "MSRTC-MUM-03", platforms: 10, dailyFootfall: 22500, isActive: true },
+  { stationId: "003", stationCode: "STN-0003", stationName: "Colaba Bus Depot Stand",regionId: "0002", regionName: "Pune", regionCode: "REG-0002", divisionId: "0001", divisionCode: "DIV-0001", divisionName: "Mumbai Division", depotId: "0003", depotName: "Pune Depot", depotCode: "BEST-MUM-07", platforms: 6, dailyFootfall: 9200, isActive: true },
 ];
-
-const generateStationCode = (existing: BusStation[]) => {
-  const numbers = existing
-    .map((item) => Number((item.code.match(/(\d+)$/) ?? ["0", "0"])[1]))
-    .filter((n) => Number.isFinite(n));
-  const next = (Math.max(0, ...numbers) + 1).toString().padStart(4, "0");
-  return `STN-${next}`;
-};
 
 export function BusStation({ data: propData, regionOptions = [], divisionOptions = [], depotOptions = [], onAdd, onUpdate, onDelete }: BusStationPageProps) {
   const [internalData, setInternalData] = useState<BusStation[]>(initialDefaultBusStations);
@@ -47,7 +55,7 @@ export function BusStation({ data: propData, regionOptions = [], divisionOptions
   const [formData, setFormData] = useState<Partial<BusStation>>({});
 
   const handleOpenAdd = () => {
-    setFormData({ code: generateStationCode(data), name: "", regionCode: regionOptions[0] || "", divisionCode: divisionOptions[0] || "", depotCode: depotOptions[0] || "", platforms: 0, dailyFootfall: 0, isActive: true });
+    setFormData({ stationCode: "", stationName: "", regionId: regionOptions[0].regionId || "", divisionId: divisionOptions[0].divisionId || "", depotId: depotOptions[0].depotId || "", platforms: 0, isActive: true });
     setModal({ mode: "add" });
   };
 
@@ -57,32 +65,33 @@ export function BusStation({ data: propData, regionOptions = [], divisionOptions
   };
 
   const handleSave = () => {
-    if (!formData.name) return;
-    const newRecord: BusStation = {
-      code: modal?.mode === "edit" && modal.record ? modal.record.code : generateStationCode(data),
-      name: formData.name,
-      regionCode: formData.regionCode || regionOptions[0] || "",
-      divisionCode: formData.divisionCode || divisionOptions[0] || "",
-      depotCode: formData.depotCode || depotOptions[0] || "",
+    if (!formData.stationName) return;
+    const newRecord: BusStationPayload = {
+      stationId: modal?.mode === "edit" && modal.record ? modal.record.stationId : "",
+      stationCode: modal?.mode === "edit" && modal.record ? modal.record.stationCode : "",
+      stationName: formData.stationName.trim(),
+      regionId: formData.regionId || regionOptions[0].regionId || "",
+      divisionId: formData.divisionId || divisionOptions[0].divisionId || "",
+      depotId: formData.depotId || depotOptions[0].depotId || "",
       platforms: Number(formData.platforms) || 0,
-      dailyFootfall: Number(formData.dailyFootfall) || 0,
+      // dailyFootfall: Number(formData.dailyFootfall) || 0,
       isActive: modal?.mode === "edit" ? (formData.isActive ?? true) : true,
     };
 
     if (modal?.mode === "add") {
       if (onAdd) onAdd(newRecord);
-      else setInternalData((prev) => [...prev, newRecord]);
+      else setInternalData((prev) => [...prev]);
     } else if (modal?.mode === "edit" && modal.record) {
-      if (onUpdate) onUpdate(modal.record.code, newRecord);
-      else setInternalData((prev) => prev.map((item) => (item.code === modal.record!.code ? newRecord : item)));
+      if (onUpdate) onUpdate(newRecord);
+      else setInternalData((prev) => prev.map((item) => (item)));
     }
     setModal(null);
   };
 
   const handleConfirmDelete = () => {
     if (!toDelete) return;
-    if (onDelete) onDelete(toDelete.code);
-    else setInternalData((prev) => prev.filter((item) => item.code !== toDelete.code));
+    if (onDelete) onDelete(toDelete.stationId);
+    else setInternalData((prev) => prev.filter((item) => item.stationId !== toDelete.stationId));
     setToDelete(null);
   };
 
@@ -115,9 +124,9 @@ export function BusStation({ data: propData, regionOptions = [], divisionOptions
           </thead>
           <tbody>
             {data.map((b: BusStation) => (
-              <tr key={b.code} className="stc-row">
-                <Td mono><RouteChip>{b.code}</RouteChip></Td>
-                <Td>{b.name}</Td>
+              <tr key={b.stationId} className="stc-row">
+                <Td mono><RouteChip>{b.stationCode}</RouteChip></Td>
+                <Td>{b.stationName}</Td>
                 <Td mono>{b.regionCode}</Td>
                 <Td mono>{b.divisionCode}</Td>
                 <Td mono>{b.depotCode}</Td>
@@ -159,32 +168,32 @@ export function BusStation({ data: propData, regionOptions = [], divisionOptions
               {modal.mode === "edit" && (
                 <div className="stc-field">
                   <label className="stc-field-label">Station Code</label>
-                  <input value={formData.code || ""} readOnly />
+                  <input value={formData.stationCode || ""} readOnly />
                 </div>
               )}
               <div className="stc-field">
                 <label className="stc-field-label">Station Name</label>
                 <input
-                  value={formData.name || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, name: e.target.value }))}
+                  value={formData.stationName || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, stationName: e.target.value }))}
                 />
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Region Code</label>
-                <select value={formData.regionCode || ""} onChange={(e) => setFormData((s) => ({ ...s, regionCode: e.target.value }))}>
-                  {regionOptions.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                <label className="stc-field-label">Region</label>
+                <select value={formData.regionId || "MSRTC"} onChange={(e) => setFormData((s) => ({ ...s, regionId: e.target.value }))}>
+                  {regionOptions.map((c) => <option key={c.regionId} value={c.regionId}>{c.regionName}</option>)}
                 </select>
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Division Code</label>
-                <select value={formData.divisionCode || ""} onChange={(e) => setFormData((s) => ({ ...s, divisionCode: e.target.value }))}>
-                  {divisionOptions.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                <label className="stc-field-label">Divisions</label>
+                <select value={formData.divisionId || "MSRTC"} onChange={(e) => setFormData((s) => ({ ...s, divisionId: e.target.value }))}>
+                  {divisionOptions.map((c) => <option key={c.divisionId} value={c.divisionId}>{c.divisionName}</option>)}
                 </select>
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Depot Code</label>
-                <select value={formData.depotCode || ""} onChange={(e) => setFormData((s) => ({ ...s, depotCode: e.target.value }))}>
-                  {depotOptions.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                <label className="stc-field-label">Depot</label>
+                <select value={formData.depotId || "MSRTC"} onChange={(e) => setFormData((s) => ({ ...s, depotId: e.target.value }))}>
+                  {depotOptions.map((c) => <option key={c.depotId} value={c.depotId}>{c.depotName}</option>)}
                 </select>
               </div>
               <div className="stc-field">
@@ -195,14 +204,14 @@ export function BusStation({ data: propData, regionOptions = [], divisionOptions
                   onChange={(e) => setFormData((s) => ({ ...s, platforms: Number(e.target.value) }))}
                 />
               </div>
-              <div className="stc-field">
+              {/* <div className="stc-field">
                 <label className="stc-field-label">Daily Footfall</label>
                 <input
                   type="number"
                   value={formData.dailyFootfall ?? 0}
                   onChange={(e) => setFormData((s) => ({ ...s, dailyFootfall: Number(e.target.value) }))}
                 />
-              </div>
+              </div> */}
               {modal.mode === "edit" && (
                 <div className="stc-field">
                   <label className="stc-field-label">Status</label>
@@ -224,7 +233,7 @@ export function BusStation({ data: propData, regionOptions = [], divisionOptions
             </>
           }>
             <p style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.7, margin: 0 }}>
-              This will permanently remove {toDelete.name} from the list. This can't be undone.
+              This will permanently remove {toDelete.stationName} from the list. This can't be undone.
             </p>
           </Modal>
         )}

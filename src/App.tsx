@@ -16,6 +16,7 @@ import { Sidebar, Header, SubTabs, SectionHeader, KpiCard } from "./components/c
 const DashboardTab = lazy(() => import("./features/dashboard"));
 const Regions = lazy(() => import("./features/organization/organizationManagement/Regions"));
 const Divisions = lazy(() => import("./features/organization/organizationManagement/Divisions"));
+const Zones = lazy(() => import("./features/organization/organizationManagement/Zones"));
 const Corporations = lazy(() => import("./features/organization/organizationManagement/Corporations"));
 const Depots = lazy(() => import("./features/organization/organizationManagement/Depots"));
 const BusStation = lazy(() => import("./features/organization/organizationManagement/BusStation"));
@@ -25,7 +26,6 @@ const ParkingYards = lazy(() => import("./features/organization/organizationMana
 const RouteMaster = lazy(() => import("./features/organization/masters/Route"));
 const Stop = lazy(() => import("./features/organization/masters/Stop"));
 const Stages = lazy(() => import("./features/organization/masters/Stages"));
-const Zones = lazy(() => import("./features/organization/masters/zones"));
 const FarePolicies = lazy(() => import("./features/organization/masters/FarePolicies"));
 const TicketTypes = lazy(() => import("./features/organization/masters/TicketTypes"));
 const PaymentModes = lazy(() => import("./features/organization/masters/PaymentModes"));
@@ -70,11 +70,10 @@ const CHART_COLORS = {
    MOCK DATA — Maharashtra: MSRTC (State Transport / ST) + BEST & PMPML
 --------------------------------------------------------------------- */
 const depots = [
-  { code: "MSRTC-PUN-01", name: "Pune (Swargate) ST Depot", corp: "MSRTC", service: "ST", zone: "Pune Division", fleet: 96, onRoad: 74, tripsToday: 268, revenueToday: 612400 },
-  { code: "BEST-MUM-04", name: "BEST Wadala Depot", corp: "BEST", service: "Local", zone: "Mumbai (Island City)", fleet: 72, onRoad: 58, tripsToday: 341, revenueToday: 398600 },
-  { code: "PMPML-PUN-02", name: "PMPML Swargate Depot", corp: "PMPML", service: "Local", zone: "Pune Metropolitan Region", fleet: 60, onRoad: 47, tripsToday: 219, revenueToday: 271500 },
-  { code: "MSRTC-MUM-03", name: "Mumbai Central (MSRTC) Depot", corp: "MSRTC", service: "ST", zone: "Mumbai Division", fleet: 54, onRoad: 41, tripsToday: 132, revenueToday: 349800 },
-  { code: "BEST-MUM-07", name: "BEST Colaba Depot", corp: "BEST", service: "Local", zone: "Mumbai (Island City)", fleet: 45, onRoad: 36, tripsToday: 208, revenueToday: 226100 },
+  { depotId: "001", depotCode: "MSRTC-PUN-01", depotName: "Pune (Swargate) ST Depot", corpId: "CORP-ID-1001", corpCode: "CORP-0001", corporationName: "Maharashtra State Road Transport Corporation", service: "ST", zoneName: "Pune Division", zoneId: "0001", zoneCode: "z-001",regionId: "01", regionCode: "r-01", regionName: "Pune Region", divisionId: "DIV-01", divisionCode: "DIV-01", divisionName: "Pune Division", fleet: 96, onRoad: 74, tripsToday: 268, revenueToday: 612400, status: "Active" },
+  { depotId: "002", depotCode: "BEST-MUM-04", depotName: "BEST Wadala Depot", corpId: "CORP-ID-1002", corpCode: "CORP-0002", corporationName: "BEST", service: "Local", zoneName: "Mumbai (Island City)", zoneId: "0002", zoneCode: "z-002",regionId: "02", regionCode: "r-02", regionName: "Mumbai Region", divisionId: "DIV-02", divisionCode: "DIV-02", divisionName: "Mumbai Division", fleet: 72, onRoad: 58, tripsToday: 341, revenueToday: 398600, status: "Active" },
+  { depotId: "003", depotCode: "PMPML-PUN-02", depotName: "PMPML Swargate Depot", corpId: "CORP-ID-1003", corpCode: "CORP-0003", corporationName: "PMPML", service: "Local", zoneName: "Pune Metropolitan Region", zoneId: "0003", zoneCode: "z-003",regionId: "03", regionCode: "r-03", regionName: "Pune Region", divisionId: "DIV-03", divisionCode: "DIV-03", divisionName: "Pune Division", fleet: 60, onRoad: 47, tripsToday: 219, revenueToday: 271500, status: "Active" },
+  { depotId: "004", depotCode: "MSRTC-MUM-03", depotName: "Mumbai Central (MSRTC) Depot", corpId: "CORP-ID-1001", corpCode: "CORP-001", corporationName: "Maharashtra State Road Transport Corporation", service: "ST", zoneName: "Mumbai Division", zoneId: "0004", zoneCode: "z-004",regionId: "04", regionCode: "r-04", regionName: "Mumbai Region", divisionId: "DIV-04", divisionCode: "DIV-04", divisionName: "Mumbai Division", fleet: 54, onRoad: 41, tripsToday: 132, revenueToday: 349800, status: "Active" },
 ];
 
 const vehicles = [
@@ -165,7 +164,7 @@ const fleetStatus = [
   { name: "Retired", value: 7, color: CHART_COLORS.gray },
 ];
 
-const depotRevenue = depots.map((d) => ({ name: d.code.split("-").slice(0, 2).join("-"), revenue: Math.round(d.revenueToday / 1000) }));
+const depotRevenue = depots.map((d) => ({ name: d.depotCode.split("-").slice(0, 2).join("-"), revenue: Math.round(d.revenueToday / 1000) }));
 
 const collections = [
   { depot: "MSRTC-PUN-01", declared: 612400, deposited: 612400, discrepancy: 0 },
@@ -209,39 +208,39 @@ const users = [
 ];
 
 const regions = [
-  { id: "REG-ID-1001", regionCode: "REG-0001", regionName: "Pune Region", isActive: true },
-  { id: "REG-ID-1002", regionCode: "REG-0002", regionName: "Mumbai Region", isActive: true },
-  { id: "REG-ID-1003", regionCode: "REG-0003", regionName: "Nashik Region", isActive: true },
+  { regionId: "1001", regionCode: "REG-0001", divisions: 2, depots: 2, stations: 2, workshops: 3, regionName: "Pune Region", isActive: true },
+  { regionId: "1002", regionCode: "REG-0002", divisions: 1, depots: 1, stations: 1, workshops: 2, regionName: "Mumbai Region", isActive: true },
+  { regionId: "1003", regionCode: "REG-0003", divisions: 0, depots: 0, stations: 0, workshops: 0, regionName: "Nashik Region", isActive: true },
 ];
 
 const corporations = [
-  { id: "CORP-ID-1001", corpCode: "CORP-0001", corporationName: "Maharashtra State Road Transport Corporation", stateName: "Maharashtra", districtName: "Pune", cityName: "Pune", status: "Active" },
-  { id: "CORP-ID-1002", corpCode: "CORP-0002", corporationName: "Brihanmumbai Electric Supply and Transport", stateName: "Maharashtra", districtName: "Mumbai", cityName: "Mumbai", status: "Active" },
-  { id: "CORP-ID-1003", corpCode: "CORP-0003", corporationName: "Pune Mahanagar Parivahan Mahamandal Limited", stateName: "Maharashtra", districtName: "Pune", cityName: "Pune", status: "Active" },
+  { corpId: "CORP-ID-1001", corpCode: "CORP-0001", corporationName: "Maharashtra State Road Transport Corporation", stateName: "Maharashtra", districtName: "Pune", cityName: "Pune", status: "Active" },
+  { corpId: "CORP-ID-1002", corpCode: "CORP-0002", corporationName: "Brihanmumbai Electric Supply and Transport", stateName: "Maharashtra", districtName: "Mumbai", cityName: "Mumbai", status: "Active" },
+  { corpId: "CORP-ID-1003", corpCode: "CORP-0003", corporationName: "Pune Mahanagar Parivahan Mahamandal Limited", stateName: "Maharashtra", districtName: "Pune", cityName: "Pune", status: "Active" },
 ];
 
 const divisions = [
-  { id: "DIV-ID-1001", divisionCode: "DIV-0001", divisionName: "Pune Division", region: "REG-0001", isActive: true },
-  { id: "DIV-ID-1002", divisionCode: "DIV-0002", divisionName: "Solapur Division", region: "REG-0001", isActive: true },
-  { id: "DIV-ID-1003", divisionCode: "DIV-0003", divisionName: "Mumbai Division", region: "REG-0002", isActive: true },
+  { divisionId: "DIV-ID-1001", divisionCode: "DIV-0001", depots: 2, workshops: 1, stations: 3, parkingYards: 1, divisionName: "Pune Division", regionId: "1001", regionName: "Pune Region", regionCode: "REG-0001", isActive: true },
+  { divisionId: "DIV-ID-1002", divisionCode: "DIV-0002", depots: 1, workshops: 1, stations: 2, parkingYards: 1, divisionName: "Solapur Division", regionId: "1001", regionName: "Pune Region", regionCode: "REG-0001", isActive: true },
+  { divisionId: "DIV-ID-1003", divisionCode: "DIV-0003", depots: 1, workshops: 1, stations: 2, parkingYards: 1, divisionName: "Mumbai Division", regionId: "1002", regionName: "Mumbai Region", regionCode: "REG-0002", isActive: true },
 ];
 
 const busStations = [
-  { code: "STN-0001", name: "Swargate Bus Station", regionCode: "REG-0001", divisionCode: "DIV-0001", depotCode: "MSRTC-PUN-01", platforms: 14, dailyFootfall: 38000, isActive: true },
-  { code: "STN-0002", name: "Mumbai Central Bus Terminus", regionCode: "REG-0002", divisionCode: "DIV-0003", depotCode: "MSRTC-MUM-03", platforms: 10, dailyFootfall: 22500, isActive: true },
-  { code: "STN-0003", name: "Colaba Bus Depot Stand", regionCode: "REG-0002", divisionCode: "DIV-0003", depotCode: "BEST-MUM-07", platforms: 6, dailyFootfall: 9200, isActive: true },
-];
+  { stationId: "001", stationCode: "STN-0001", stationName: "Swargate Bus Station",regionId: "0001", regionName: "Mumbai", regionCode: "REG-0001", divisionId: "0001", divisionCode: "DIV-0001", divisionName: "Mumbai Division", depotId: "0001", depotName: "Mumbai Depot", depotCode: "MSRTC-PUN-01", platforms: 14, dailyFootfall: 38000, isActive: true },
+  { stationId: "002", stationCode: "STN-0002", stationName: "Mumbai Central Bus Terminus",regionId: "0002", regionName: "Pune", regionCode: "REG-0002", divisionId: "0001", divisionCode: "DIV-0001", divisionName: "Mumbai Division", depotId: "0003", depotName: "Pune Depot", depotCode: "MSRTC-MUM-03", platforms: 10, dailyFootfall: 22500, isActive: true },
+  { stationId: "003", stationCode: "STN-0003", stationName: "Colaba Bus Depot Stand",regionId: "0002", regionName: "Pune", regionCode: "REG-0002", divisionId: "0001", divisionCode: "DIV-0001", divisionName: "Mumbai Division", depotId: "0003", depotName: "Pune Depot", depotCode: "BEST-MUM-07", platforms: 6, dailyFootfall: 9200, isActive: true },
+];;
 
 const workshops = [
-  { code: "WS-0001", name: "Swargate Central Workshop", regionCode: "REG-0001", divisionCode: "DIV-0001", depotCode: "MSRTC-PUN-01", workBays: 12, activeRepairJobs: 7, isActive: true },
-  { code: "WS-0002", name: "Wadala Repair Workshop", regionCode: "REG-0002", divisionCode: "DIV-0003", depotCode: "BEST-MUM-04", workBays: 8, activeRepairJobs: 5, isActive: true },
-  { code: "WS-0003", name: "PMPML Swargate Workshop", regionCode: "REG-0001", divisionCode: "DIV-0001", depotCode: "PMPML-PUN-02", workBays: 6, activeRepairJobs: 2, isActive: true },
+  { workShopId: "WS-0001", workShopCode: "WS-0001", workShopName: "Swargate Central Workshop", regionId: "REG-0001", regionCode: "REG-0001", regionName: "Region 1", divisionId: "DIV-0001", divisionCode: "DIV-0001", divisionName: "Division 1", depotId: "MSRTC-PUN-01", depotCode: "MSRTC-PUN-01", depotName: "Depot 1", workBays: 12, activeRepairJobs: 7, isActive: true },
+  { workShopId: "WS-0002", workShopCode: "WS-0002", workShopName: "Wadala Repair Workshop", regionId: "REG-0002", regionCode: "REG-0002", regionName: "Region 2", divisionId: "DIV-0003", divisionCode: "DIV-0003", divisionName: "Division 3", depotId: "BEST-MUM-04", depotCode: "BEST-MUM-04", depotName: "Depot 4", workBays: 8, activeRepairJobs: 5, isActive: true },
+  { workShopId: "WS-0003", workShopCode: "WS-0003", workShopName: "PMPML Swargate Workshop", regionId: "REG-0001", regionCode: "REG-0001", regionName: "Region 1", divisionId: "DIV-₀₀₀₁", divisionCode: "DIV-₀₀₀₁", divisionName: "Division 1", depotId: "PMPML-PUN-₀₂", depotCode: "PMPML-PUN-₀₂", depotName: "Depot 2", workBays: 6, activeRepairJobs: 2, isActive: true },
 ];
 
 const parkingYards = [
-  { code: "PY-PUN-01", name: "Swargate Overnight Yard", depot: "MSRTC-PUN-01", capacity: 110, occupied: 88 },
-  { code: "PY-MUM-04", name: "Wadala Parking Yard", depot: "BEST-MUM-04", capacity: 85, occupied: 74 },
-  { code: "PY-MUM-07", name: "Colaba Parking Yard", depot: "BEST-MUM-07", capacity: 52, occupied: 40 },
+  { yardId: "01", yardCode: "PY-PUN-01", yardName: "Swargate Overnight Yard",regionId: "001", regionCode: "REG-PUN", regionName: "Pune", divisionId: "001", divisionCode: "DIV-PUN", divisionName: "Pune Division", depotId: "MSRTC-PUN-01", depotCode: "DEP-PUN-01", depotName: "MSRTC-PUN-01", capacity: 110, occupied: 88, isActive: true },
+  { yardId: "02", yardCode: "PY-MUM-04", yardName: "Wadala Parking Yard",regionId: "002", regionCode: "REG-MUM", regionName: "Mumbai", divisionId: "002", divisionCode: "DIV-MUM", divisionName: "Mumbai Division", depotId: "BEST-MUM-04", depotCode: "DEP-MUM-04", depotName: "BEST-MUM-04", capacity: 85, occupied: 74, isActive: true },
+  { yardId: "03", yardCode: "PY-MUM-07", yardName: "Colaba Parking Yard",regionId: "002", regionCode: "REG-MUM", regionName: "Mumbai", divisionId: "002", divisionCode: "DIV-MUM", divisionName: "Mumbai Division", depotId: "BEST-MUM-07", depotCode: "DEP-MUM-07", depotName: "BEST-MUM-07", capacity: 52, occupied: 40, isActive: true },
 ];
 
 const stops = [
@@ -259,9 +258,9 @@ const stages = [
 ];
 
 const zones = [
-  { code: "ZN-01", name: "Zone A · City core", districts: "Colaba, Fort, Marine Lines" },
-  { code: "ZN-02", name: "Zone B · Western suburbs", districts: "Bandra, Andheri, Borivali" },
-  { code: "ZN-03", name: "Zone C · Pune metro", districts: "Swargate, Hinjawadi, Wakad" },
+  { zoneId: "ZN-ID-1001", zoneCode: "ZN-0001", zoneName: "Pune Metropolitan Zone", regionName: "REG-0001", districts: ["Pune", "Pimpri-Chinchwad"], isActive: true },
+  { zoneId: "ZN-ID-1002", zoneCode: "ZN-0002", zoneName: "Mumbai Zone", regionName: "REG-0002", districts: ["Mumbai", "Thane"], isActive: true },
+  { zoneId: "ZN-ID-1003", zoneCode: "ZN-0003", zoneName: "Nashik Zone", regionName: "REG-0003", districts: ["Nashik", "Ahmednagar"], isActive: true },
 ];
 
 const ticketTypes = [
@@ -400,14 +399,14 @@ function DataProvider({ children }: { children: React.ReactNode }) {
   return <DataContext.Provider value={{ state, dispatch }}>{children}</DataContext.Provider>;
 }
 
-function useCrud(col: string, idKey: string): [any[], { add: (item: any) => void, update: (matchId: any, item: any) => void, remove: (id: any) => void }] {
+function useCrud(col: string, idKey: string): [any[], { add: (item: any) => void, update: (item: any) => void, remove: (id: any) => void }] {
   const { state, dispatch } = useContext(DataContext);
   const data = state[col];
   return [
     data,
     {
       add: (item) => dispatch({ type: "add", col, item }),
-      update: (matchId, item) => dispatch({ type: "update", col, idKey, matchId, item }),
+      update: (item) => dispatch({ type: "update", col, idKey, item }),
       remove: (id) => dispatch({ type: "remove", col, idKey, id }),
     },
   ];
@@ -477,7 +476,6 @@ function MasterDataLayout() {
     "/Organization/masters/Route": "Routes",
     "/Organization/masters/Stop": "Stops",
     "/Organization/masters/Stages": "Stages",
-    "/Organization/masters/zones": "Zones",
     "/Organization/masters/FarePolicies": "Fare Policies",
     "/Organization/masters/TicketTypes": "Ticket Types",
     "/Organization/masters/PaymentModes": "Payment Modes",
@@ -496,7 +494,6 @@ function MasterDataLayout() {
       "Routes": "/Organization/masters/Route",
       "Stops": "/Organization/masters/Stop",
       "Stages": "/Organization/masters/Stages",
-      "Zones": "/Organization/masters/zones",
       "Fare Policies": "/Organization/masters/FarePolicies",
       "Ticket Types": "/Organization/masters/TicketTypes",
       "Payment Modes": "/Organization/masters/PaymentModes",
@@ -534,7 +531,12 @@ function RegionsTab() {
 function DivisionsTab() {
   const [regionsData] = useCrud("regions", "id");
   const [divisionsData, divisionsCrud] = useCrud("divisions", "id");
-  return <Divisions data={divisionsData} regionOptions={regionsData.map((r) => r.regionCode)} onAdd={divisionsCrud.add} onUpdate={divisionsCrud.update} onDelete={divisionsCrud.remove} />;
+  return <Divisions data={divisionsData} regionOptions={regionsData} onAdd={divisionsCrud.add} onUpdate={divisionsCrud.update} onDelete={divisionsCrud.remove} />;
+}
+function ZonesTab() {
+  const [regionsData] = useCrud("regions", "code");
+  const [zonesData, zonesCrud] = useCrud("zones", "code");
+  return <Zones data={zonesData} regionOptions={regionsData} onAdd={zonesCrud.add} onUpdate={zonesCrud.update} onDelete={zonesCrud.remove} />;
 }
 function CorporationsTab() {
   const [corporationsData, corporationsCrud] = useCrud("corporations", "id");
@@ -543,19 +545,23 @@ function CorporationsTab() {
 function DepotsTab() {
   const [depotsData, depotsCrud] = useCrud("depots", "code");
   const [vehiclesData] = useCrud("vehicles", "reg");
-  return <Depots depotsData={depotsData} vehiclesData={vehiclesData} onAddDepot={depotsCrud.add} onUpdateDepot={depotsCrud.update} onDeleteDepot={depotsCrud.remove} />;
+  const [corporationsData] = useCrud("corporations", "id");
+  const [regionsData] = useCrud("regions", "id");
+  const [divisionsData] = useCrud("divisions", "id");
+  const [zonesData] = useCrud("zones", "id");
+  return <Depots depotsData={depotsData} vehiclesData={vehiclesData} corporationOptions={corporationsData} regionOptions={regionsData} divisionOptions={divisionsData} zoneOptions={zonesData} onAddDepot={depotsCrud.add} onUpdateDepot={depotsCrud.update} onDeleteDepot={depotsCrud.remove} />;
 }
 function BusStationTab() {
   const [regionsData] = useCrud("regions", "id");
   const [divisionsData] = useCrud("divisions", "id");
-  const [depotsData] = useCrud("depots", "code");
-  const [busStationsData, busStationsCrud] = useCrud("busStations", "code");
+  const [depotsData] = useCrud("depots", "id");
+  const [busStationsData, busStationsCrud] = useCrud("busStations", "depotId");
   return (
     <BusStation
       data={busStationsData}
-      regionOptions={regionsData.map((r) => r.regionCode)}
-      divisionOptions={divisionsData.map((d) => d.divisionCode)}
-      depotOptions={depotsData.map((d) => d.code)}
+      regionOptions={regionsData}
+      divisionOptions={divisionsData}
+      depotOptions={depotsData}
       onAdd={busStationsCrud.add}
       onUpdate={busStationsCrud.update}
       onDelete={busStationsCrud.remove}
@@ -563,16 +569,16 @@ function BusStationTab() {
   );
 }
 function WorkshopsTab() {
-  const [regionsData] = useCrud("regions", "id");
-  const [divisionsData] = useCrud("divisions", "id");
-  const [depotsData] = useCrud("depots", "code");
-  const [workshopsData, workshopsCrud] = useCrud("workshops", "code");
+  const [regionsData] = useCrud("regions", "regionId");
+  const [divisionsData] = useCrud("divisions", "divisionId");
+  const [depotsData] = useCrud("depots", "depotId");
+  const [workshopsData, workshopsCrud] = useCrud("workshops", "workShopId");
   return (
     <Workshops
       data={workshopsData}
-      regionOptions={regionsData.map((r) => r.regionCode)}
-      divisionOptions={divisionsData.map((d) => d.divisionCode)}
-      depotOptions={depotsData.map((d) => d.code)}
+      regionOptions={regionsData}
+      divisionOptions={divisionsData}
+      depotOptions={depotsData}
       onAdd={workshopsCrud.add}
       onUpdate={workshopsCrud.update}
       onDelete={workshopsCrud.remove}
@@ -580,9 +586,11 @@ function WorkshopsTab() {
   );
 }
 function ParkingYardsTab() {
-  const [depotsData] = useCrud("depots", "code");
-  const [parkingYardsData, parkingYardsCrud] = useCrud("parkingYards", "code");
-  return <ParkingYards data={parkingYardsData} depotOptions={depotsData.map((d) => d.code)} onAdd={parkingYardsCrud.add} onUpdate={parkingYardsCrud.update} onDelete={parkingYardsCrud.remove} />;
+  const [depotsData] = useCrud("depots", "depotId");
+  const [regionsData] = useCrud("regions", "regionId");
+  const [divisionsData] = useCrud("divisions", "divisionId");
+  const [parkingYardsData, parkingYardsCrud] = useCrud("parkingYards", "parkingYardId");
+  return <ParkingYards data={parkingYardsData} depotOptions={depotsData} regionOptions={regionsData} divisionOptions={divisionsData} onAdd={parkingYardsCrud.add} onUpdate={parkingYardsCrud.update} onDelete={parkingYardsCrud.remove} />;
 }
 
 function RouteTab() {
@@ -598,11 +606,6 @@ function StagesTab() {
   const [routesData] = useCrud("routes", "code");
   const [stagesData, stagesCrud] = useCrud("stages", "code");
   return <Stages data={stagesData} routeOptions={routesData.map((r) => r.code)} onAdd={stagesCrud.add} onUpdate={stagesCrud.update} onDelete={stagesCrud.remove} />;
-}
-function ZonesTab() {
-  const [regionsData] = useCrud("regions", "code");
-  const [zonesData, zonesCrud] = useCrud("zones", "code");
-  return <Zones data={zonesData} regionOptions={regionsData.map((r) => r.code)} onAdd={zonesCrud.add} onUpdate={zonesCrud.update} onDelete={zonesCrud.remove} />;
 }
 function FarePoliciesTab() {
   const [routesData] = useCrud("routes", "code");

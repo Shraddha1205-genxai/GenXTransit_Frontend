@@ -4,8 +4,8 @@ import { T } from "../../../constants/theme";
 import { Card, StatusBadge, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface Corporation {
-  id: string;
-  corpCode: string;
+  corpId: string | false | undefined;
+  corpCode: string | undefined;
   corporationName: string;
   stateName: string;
   districtName: string;
@@ -16,13 +16,13 @@ export interface Corporation {
 export interface CorporationPageProps {
   data?: Corporation[];
   onAdd?: (item: Corporation) => void;
-  onUpdate?: (id: string, item: Corporation) => void;
-  onDelete?: (id: string) => void;
+  onUpdate?: (item: Corporation) => void;
+  onDelete?: (corpId: string) => void;
 }
 
 const initialDefaultCorporations: Corporation[] = [
   {
-    id: "CORP-ID-1001",
+    corpId: "CORP-ID-1001",
     corpCode: "CORP-0001",
     corporationName: "Maharashtra State Road Transport Corporation",
     stateName: "Maharashtra",
@@ -31,7 +31,7 @@ const initialDefaultCorporations: Corporation[] = [
     status: "Active",
   },
   {
-    id: "CORP-ID-1002",
+    corpId: "CORP-ID-1002",
     corpCode: "CORP-0002",
     corporationName: "Brihanmumbai Electric Supply and Transport",
     stateName: "Maharashtra",
@@ -40,7 +40,7 @@ const initialDefaultCorporations: Corporation[] = [
     status: "Active",
   },
   {
-    id: "CORP-ID-1003",
+    corpId: "CORP-ID-1003",
     corpCode: "CORP-0003",
     corporationName: "Pune Mahanagar Parivahan Mahamandal Limited",
     stateName: "Maharashtra",
@@ -50,13 +50,6 @@ const initialDefaultCorporations: Corporation[] = [
   },
 ];
 
-const generateCorpCode = (existing: Corporation[]) => {
-  const numbers = existing
-    .map((item) => Number((item.corpCode.match(/(\d+)$/) ?? ["0", "0"])[1]))
-    .filter((n) => Number.isFinite(n));
-  const next = (Math.max(0, ...numbers) + 1).toString().padStart(4, "0");
-  return `CORP-${next}`;
-};
 
 export function Corporations({ data: propData, onAdd, onUpdate, onDelete }: CorporationPageProps) {
   const [internalData, setInternalData] = useState<Corporation[]>(initialDefaultCorporations);
@@ -68,8 +61,6 @@ export function Corporations({ data: propData, onAdd, onUpdate, onDelete }: Corp
 
   const handleOpenAdd = () => {
     setFormData({
-      id: `CORP-ID-${Date.now()}`,
-      corpCode: generateCorpCode(data),
       corporationName: "",
       stateName: "",
       districtName: "",
@@ -88,8 +79,8 @@ export function Corporations({ data: propData, onAdd, onUpdate, onDelete }: Corp
     if (!formData.corporationName || !formData.stateName || !formData.districtName || !formData.cityName) return;
 
     const newRecord: Corporation = {
-      id: modal?.mode === "edit" && modal.record ? modal.record.id : `CORP-ID-${Date.now()}`,
-      corpCode: modal?.mode === "edit" && modal.record ? modal.record.corpCode : generateCorpCode(data),
+      corpId: modal?.mode === "edit" && modal.record && modal.record.corpId,
+      corpCode: modal?.mode === "edit" && modal.record && modal.record.corpCode || "",
       corporationName: formData.corporationName.trim(),
       stateName: formData.stateName.trim(),
       districtName: formData.districtName.trim(),
@@ -105,9 +96,9 @@ export function Corporations({ data: propData, onAdd, onUpdate, onDelete }: Corp
       }
     } else if (modal?.mode === "edit" && modal.record) {
       if (onUpdate) {
-        onUpdate(modal.record.id, newRecord);
+        onUpdate(newRecord);
       } else {
-        setInternalData((prev) => prev.map((item) => (item.id === modal.record!.id ? newRecord : item)));
+        setInternalData((prev) => prev.map((item) => (item)));
       }
     }
 
@@ -117,9 +108,9 @@ export function Corporations({ data: propData, onAdd, onUpdate, onDelete }: Corp
   const handleConfirmDelete = () => {
     if (!toDelete) return;
     if (onDelete) {
-      onDelete(toDelete.id);
+      onDelete(toDelete?.corpId || '0');
     } else {
-      setInternalData((prev) => prev.filter((item) => item.id !== toDelete.id));
+      setInternalData((prev) => prev.filter((item) => item.corpId !== toDelete.corpId));
     }
     setToDelete(null);
   };
@@ -151,7 +142,7 @@ export function Corporations({ data: propData, onAdd, onUpdate, onDelete }: Corp
           </thead>
           <tbody>
             {data.map((item: Corporation) => (
-              <tr key={item.id} className="stc-row">
+              <tr key={item?.corpId || Math.random()} className="stc-row">
                 <Td mono>{item.corpCode}</Td>
                 <Td>{item.corporationName}</Td>
                 <Td>{item.stateName}</Td>

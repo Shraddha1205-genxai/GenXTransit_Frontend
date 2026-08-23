@@ -1,43 +1,46 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { T } from "../../../constants/theme";
-import { Card, RouteChip, Th, Td, Modal, Table } from "../../../components/common";
+import { Card, RouteChip, Th, Td, Modal, Table, StatusBadge } from "../../../components/common";
 
 export interface Division {
-  id: string;
+  divisionId: string;
   divisionCode: string;
   divisionName: string;
-  region: string;
+  regionId: string;
+  regionCode: string;
+  regionName: string;
+  depots: number;
+  workshops: number;
+  stations: number;
+  parkingYards: number;
   isActive: boolean;
 }
 
+export interface DivisionPayload {
+  divisionId: string;
+  divisionCode: string;
+  divisionName: string;
+  regionId: string;
+  isActive: boolean;
+}
 export interface DivisionPageProps {
   data?: Division[];
-  regionOptions?: string[];
-  onAdd?: (item: Division) => void;
-  onUpdate?: (id: string, item: Division) => void;
-  onDelete?: (id: string) => void;
+  regionOptions?: {regionId: string; regionCode: string; regionName?: string}[];
+  onAdd?: (item: DivisionPayload) => void;
+  onUpdate?: (item: DivisionPayload) => void;
+  onDelete?: (divisionId: string) => void;
 }
 
 const initialDefaultDivisions: Division[] = [
-  { id: "DIV-ID-1001", divisionCode: "DIV-0001", divisionName: "Pune Division", region: "REG-0001", isActive: true },
-  { id: "DIV-ID-1002", divisionCode: "DIV-0002", divisionName: "Solapur Division", region: "REG-0001", isActive: true },
-  { id: "DIV-ID-1003", divisionCode: "DIV-0003", divisionName: "Mumbai Division", region: "REG-0002", isActive: true },
+  { divisionId: "DIV-ID-1001", divisionCode: "DIV-0001",  depots: 2, workshops: 1, stations: 3, parkingYards: 1, divisionName: "Pune Division", regionId: "0001", regionCode: "REG-0001", regionName: "Pune Region", isActive: true },
+  { divisionId: "DIV-ID-1002", divisionCode: "DIV-0002", depots: 1, workshops: 1, stations: 2, parkingYards: 1, divisionName: "Solapur Division", regionId: "0001", regionCode: "REG-0001", regionName: "Pune Region", isActive: true },
+  { divisionId: "DIV-ID-1003", divisionCode: "DIV-0003", depots: 1, workshops: 1, stations: 2, parkingYards: 1, divisionName: "Mumbai Division", regionId: "0002", regionCode: "REG-0002", regionName: "Mumbai Region", isActive: true },
 ];
-
-const generateDivisionCode = (existing: Division[]) => {
-  const numbers = existing
-    .map((item) => Number((item.divisionCode.match(/(\d+)$/) ?? ["0", "0"])[1]))
-    .filter((n) => Number.isFinite(n));
-  const next = (Math.max(0, ...numbers) + 1).toString().padStart(4, "0");
-  return `DIV-${next}`;
-};
-
-const defaultRegionOptions = ["REG-0001", "REG-0002", "REG-0003"];
 
 export function Divisions({
   data: propData,
-  regionOptions = defaultRegionOptions,
+  regionOptions = [],
   onAdd,
   onUpdate,
   onDelete,
@@ -45,27 +48,27 @@ export function Divisions({
   const [internalData, setInternalData] = useState<Division[]>(initialDefaultDivisions);
   const data = propData || internalData;
 
-  const [modal, setModal] = useState<{ mode: "add" | "edit"; record?: Division } | null>(null);
-  const [toDelete, setToDelete] = useState<Division | null>(null);
-  const [formData, setFormData] = useState<Partial<Division>>({});
+  const [modal, setModal] = useState<{ mode: "add" | "edit"; record?: DivisionPayload } | null>(null);
+  const [toDelete, setToDelete] = useState<DivisionPayload | null>(null);
+  const [formData, setFormData] = useState<Partial<DivisionPayload>>({});
 
   const handleOpenAdd = () => {
-    setFormData({ id: `DIV-ID-${Date.now()}`, divisionCode: generateDivisionCode(data), divisionName: "", region: regionOptions[0] || "", isActive: true });
+    setFormData({ divisionId: "", divisionCode: "", divisionName: "", regionId: regionOptions[0]?.regionId || "", isActive: true });
     setModal({ mode: "add" });
   };
 
-  const handleOpenEdit = (record: Division) => {
+  const handleOpenEdit = (record: DivisionPayload) => {
     setFormData(record);
     setModal({ mode: "edit", record });
   };
 
   const handleSave = () => {
     if (!formData.divisionName) return;
-    const newRecord: Division = {
-      id: modal?.mode === "edit" && modal.record ? modal.record.id : `DIV-ID-${Date.now()}`,
-      divisionCode: modal?.mode === "edit" && modal.record ? modal.record.divisionCode : generateDivisionCode(data),
+    const newRecord: DivisionPayload = {
+      divisionId: modal?.mode === "edit" && modal.record ? modal.record.divisionId : "",
+      divisionCode: modal?.mode === "edit" && modal.record ? modal.record.divisionCode : "",
       divisionName: formData.divisionName.trim(),
-      region: formData.region || regionOptions[0] || "",
+      regionId: formData.regionId || regionOptions[0]?.regionId || "",
       isActive: formData.isActive ?? true,
     };
 
@@ -73,13 +76,13 @@ export function Divisions({
       if (onAdd) {
         onAdd(newRecord);
       } else {
-        setInternalData((prev) => [...prev, newRecord]);
+        setInternalData((prev) => [...prev]);
       }
     } else if (modal?.mode === "edit" && modal.record) {
       if (onUpdate) {
-        onUpdate(modal.record.id, newRecord);
+        onUpdate(newRecord);
       } else {
-        setInternalData((prev) => prev.map((item) => (item.id === modal.record!.id ? newRecord : item)));
+        setInternalData((prev) => prev.map((item) => (item)));
       }
     }
     setModal(null);
@@ -88,9 +91,9 @@ export function Divisions({
   const handleConfirmDelete = () => {
     if (!toDelete) return;
     if (onDelete) {
-      onDelete(toDelete.id);
+      onDelete(toDelete.divisionId);
     } else {
-      setInternalData((prev) => prev.filter((item) => item.id !== toDelete.id));
+      setInternalData((prev) => prev.filter((item) => item.divisionId !== toDelete.divisionId));
     }
     setToDelete(null);
   };
@@ -114,16 +117,24 @@ export function Divisions({
               <Th>Division Code</Th>
               <Th>Division Name</Th>
               <Th>Region</Th>
+              <Th>Depots</Th>
+              <Th>Workshops</Th>
+              <Th>Stations</Th>
+              <Th>Parking Yards</Th>
               <Th>Status</Th>
               <Th align="right">Actions</Th>
             </tr>
           </thead>
           <tbody>
             {data.map((d: Division) => (
-              <tr key={d.id} className="stc-row">
+              <tr key={d.divisionId} className="stc-row">
                 <Td mono>{d.divisionCode}</Td>
                 <Td>{d.divisionName}</Td>
-                <Td mono>{d.region}</Td>
+                <Td mono><RouteChip> {d.regionName} </RouteChip></Td>
+                <Td mono>{d.depots}</Td>
+                <Td mono>{d.workshops}</Td>
+                <Td mono>{d.stations}</Td>
+                <Td mono>{d.parkingYards}</Td>
                 <Td><StatusBadge status={d.isActive ? "Active" : "Inactive"} /></Td>
                 <Td align="right">
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
@@ -138,7 +149,7 @@ export function Divisions({
               </tr>
             ))}
             {data.length === 0 && (
-              <tr><Td colSpan={5}>No records yet — use Add division to create one.</Td></tr>
+              <tr><Td colSpan={9}>No records yet — use Add division to create one.</Td></tr>
             )}
           </tbody>
         </Table>
@@ -175,11 +186,11 @@ export function Divisions({
               <div className="stc-field">
                 <label className="stc-field-label">Region</label>
                 <select
-                  value={formData.region || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, region: e.target.value }))}
+                  value={formData.regionId || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, regionId: e.target.value }))}
                 >
-                  {regionOptions.map((opt) => (
-                    <option key={opt} value={opt}>{opt}</option>
+                  {regionOptions.length > 0 && regionOptions.map((opt) => (
+                    <option key={opt.regionId} value={opt.regionId}>{opt.regionName}</option>
                   ))}
                 </select>
               </div>
