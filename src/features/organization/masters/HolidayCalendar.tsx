@@ -4,23 +4,27 @@ import { T } from "../../../constants/theme";
 import { Card, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface HolidayItem {
-  id: string;
+  holidayId: string;
+  holidayCode: string;
+  holidayName: string;
+  occasion: string;
   date: string;
-  name: string;
+  description: string;
   type: string;
+  isActive: boolean;
 }
 
 export interface HolidayCalendarProps {
   data?: HolidayItem[];
-  onAdd?: (item: Omit<HolidayItem, "id">) => void;
-  onUpdate?: (id: string, item: HolidayItem) => void;
-  onDelete?: (id: string) => void;
+  onAdd?: (item: HolidayItem) => void;
+  onUpdate?: (item: HolidayItem) => void;
+  onDelete?: (holidayId: string) => void;
 }
 
 const initialDefaultHolidays: HolidayItem[] = [
-  { id: "HOL-001", date: "2026-01-26", name: "Republic Day", type: "National" },
-  { id: "HOL-002", date: "2026-08-15", name: "Independence Day", type: "National" },
-  { id: "HOL-003", date: "2026-10-02", name: "Gandhi Jayanti", type: "National" },
+  { holidayId: "001", holidayCode: "h-001", holidayName: "Republic Day", occasion: "Republic Day", date: "2026-01-26", description: "Republic Day", type: "National", isActive: true },
+  { holidayId: "002", holidayCode: "h-002", holidayName: "Independence Day", occasion: "Independence Day", date: "2026-08-15", description: "Independence Day", type: "National", isActive: true },
+  { holidayId: "003", holidayCode: "h-003", holidayName: "Gandhi Jayanti", occasion: "Gandhi Jayanti", date: "2026-10-02", description: "Gandhi Jayanti", type: "National", isActive: true },
 ];
 
 const typeOptions = ["National", "Regional"];
@@ -34,7 +38,7 @@ export function HolidayCalendar({ data: propData, onAdd, onUpdate, onDelete }: H
   const [formData, setFormData] = useState<Partial<HolidayItem>>({});
 
   const handleOpenAdd = () => {
-    setFormData({ date: "", name: "", type: typeOptions[0] });
+    setFormData({ holidayId: "", holidayCode: "", holidayName: "", occasion: "", date: "", description: "", type: typeOptions[0] });
     setModal({ mode: "add" });
   };
 
@@ -44,26 +48,30 @@ export function HolidayCalendar({ data: propData, onAdd, onUpdate, onDelete }: H
   };
 
   const handleSave = () => {
-    if (!formData.date || !formData.name) return;
+    if (!formData.date || !formData.description) return;
 
     const newRecord: HolidayItem = {
-      id: modal?.mode === "edit" && modal.record ? modal.record.id : `HOL-${Date.now()}`,
+      holidayId: modal?.mode === "edit" && modal.record ? modal.record.holidayId : "",
+      holidayCode: modal?.mode === "edit" && modal.record ? modal.record.holidayCode : "",
+      holidayName: modal?.mode === "edit" && modal.record ? modal.record.holidayName : "",
+      occasion: modal?.mode === "edit" && modal.record ? modal.record.occasion : "",
       date: formData.date,
-      name: formData.name,
+      description: formData.description,
       type: formData.type || typeOptions[0],
+      isActive: true,
     };
 
     if (modal?.mode === "add") {
       if (onAdd) {
-        onAdd({ date: newRecord.date, name: newRecord.name, type: newRecord.type });
+        onAdd({ holidayId: newRecord.holidayId, holidayCode: newRecord.holidayCode, holidayName: newRecord.holidayName, occasion: newRecord.occasion, date: newRecord.date, description: newRecord.description, type: newRecord.type, isActive: newRecord.isActive });
       } else {
         setInternalData((prev) => [...prev, newRecord]);
       }
     } else if (modal?.mode === "edit" && modal.record) {
       if (onUpdate) {
-        onUpdate(modal.record.id, newRecord);
+        onUpdate(newRecord);
       } else {
-        setInternalData((prev) => prev.map((item: HolidayItem) => (item.id === modal.record!.id ? newRecord : item)));
+        setInternalData((prev) => prev.map((item: HolidayItem) => (item.holidayId === modal.record!.holidayId ? newRecord : item)));
       }
     }
 
@@ -73,9 +81,9 @@ export function HolidayCalendar({ data: propData, onAdd, onUpdate, onDelete }: H
   const handleConfirmDelete = () => {
     if (!toDelete) return;
     if (onDelete) {
-      onDelete(toDelete.id);
+      onDelete(toDelete.holidayId);
     } else {
-      setInternalData((prev) => prev.filter((item: HolidayItem) => item.id !== toDelete.id));
+      setInternalData((prev) => prev.filter((item: HolidayItem) => item.holidayId !== toDelete.holidayId));
     }
     setToDelete(null);
   };
@@ -96,6 +104,8 @@ export function HolidayCalendar({ data: propData, onAdd, onUpdate, onDelete }: H
         <Table>
           <thead>
             <tr>
+              <Th>Code</Th>
+              <Th>Name</Th>
               <Th>Date</Th>
               <Th>Occasion</Th>
               <Th>Type</Th>
@@ -104,9 +114,11 @@ export function HolidayCalendar({ data: propData, onAdd, onUpdate, onDelete }: H
           </thead>
           <tbody>
             {data.map((item: HolidayItem) => (
-              <tr key={item.id} className="stc-row">
+              <tr key={item.holidayId} className="stc-row">
+                <Td>{item.holidayCode}</Td>
+                <Td>{item.holidayName}</Td>
                 <Td mono>{item.date}</Td>
-                <Td>{item.name}</Td>
+                <Td>{item.occasion}</Td>
                 <Td>{item.type}</Td>
                 <Td align="right">
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
@@ -142,6 +154,27 @@ export function HolidayCalendar({ data: propData, onAdd, onUpdate, onDelete }: H
             }
           >
             <div className="stc-form-grid">
+              {modal.mode == "edit" && (<div className="stc-field">
+                <label className="stc-field-label">Code</label>
+                <input
+                  value={formData.holidayCode || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, holidayCode: e.target.value }))}
+                />
+              </div>)}
+              <div className="stc-field">
+                <label className="stc-field-label">Holiday Name</label>
+                <input
+                  value={formData.holidayName || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, holidayName: e.target.value }))}
+                />
+              </div>
+              <div className="stc-field">
+                <label className="stc-field-label">Occasion</label>
+                <input
+                  value={formData.occasion || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, occasion: e.target.value }))}
+                />
+              </div>
               <div className="stc-field">
                 <label className="stc-field-label">Date</label>
                 <input
@@ -150,10 +183,10 @@ export function HolidayCalendar({ data: propData, onAdd, onUpdate, onDelete }: H
                 />
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Occasion</label>
+                <label className="stc-field-label">description</label>
                 <input
-                  value={formData.name || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, name: e.target.value }))}
+                  value={formData.description || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, description: e.target.value }))}
                 />
               </div>
               <div className="stc-field">
@@ -165,6 +198,18 @@ export function HolidayCalendar({ data: propData, onAdd, onUpdate, onDelete }: H
                   {typeOptions.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
               </div>
+              {modal.mode === "edit" && (
+                <div className="stc-field">
+                  <label className="stc-field-label">Status</label>
+                  <select
+                    value={formData.isActive ? "Active" : "Inactive"}
+                    onChange={(e) => setFormData((s) => ({ ...s, isActive: e.target.value === "Active" }))}
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              )}
             </div>
           </Modal>
         )}
@@ -177,7 +222,7 @@ export function HolidayCalendar({ data: propData, onAdd, onUpdate, onDelete }: H
             </>
           }>
             <p style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.7, margin: 0 }}>
-              This will permanently remove {toDelete.name} from the list. This can't be undone.
+              This will permanently remove {toDelete.description} from the list. This can't be undone.
             </p>
           </Modal>
         )}

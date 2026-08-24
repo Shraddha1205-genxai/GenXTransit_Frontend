@@ -283,9 +283,9 @@ const seatLayouts = [
 ];
 
 const holidays = [
-  { date: "15 Aug 2026", name: "Independence Day", type: "National" },
-  { date: "27 Aug 2026", name: "Ganesh Chaturthi", type: "Regional" },
-  { date: "02 Oct 2026", name: "Gandhi Jayanti", type: "National" },
+  { holidayId: "001", holidayCode: "h-001", holidayName: "Republic Day", occasion: "Republic Day", date: "2026-01-26", description: "Republic Day", type: "National", isActive: true },
+  { holidayId: "002", holidayCode: "h-002", holidayName: "Independence Day", occasion: "Independence Day", date: "2026-08-15", description: "Independence Day", type: "National", isActive: true },
+  { holidayId: "003", holidayCode: "h-003", holidayName: "Gandhi Jayanti", occasion: "Gandhi Jayanti", date: "2026-10-02", description: "Gandhi Jayanti", type: "National", isActive: true },
 ];
 
 const notificationTemplates = [
