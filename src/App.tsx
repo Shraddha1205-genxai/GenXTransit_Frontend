@@ -86,10 +86,10 @@ const vehicles = [
 ];
 
 const routes = [
-  { routeId: "R-9502", routeCode: "MSRTC-9502", routeName: "Pune – Mumbai Shivneri (Expressway)", fromLocation: "Pune", toLocation: "Mumbai", service: "ST", type: "Luxury", distance: "150 km", fareModel: "Fixed", duration: "3h 10m", isActive: true },
-  { routeId: "R-7714", routeCode: "MSRTC-7714", routeName: "Pune – Nashik ST Express", fromLocation: "Pune", toLocation: "Nashik", service: "ST", type: "Express", distance: "210 km", fareModel: "Distance", duration: "4h 30m", isActive: true },
-  { routeId: "R-BEST-A-1", routeCode: "BEST-A-1", routeName: "Colaba – Bandra (via Worli Sea Face)", fromLocation: "Colaba", toLocation: "Bandra", service: "Local", type: "City", distance: "18 km", fareModel: "Distance", duration: "1h 05m", isActive: true },
-];
+  { routeId: "R-9502", routeCode: "MSRTC-9502", routeName: "Pune – Mumbai Shivneri (Expressway)", regionId: "001", regionCode: "REG-001", regionName: "MSR-0001", fromStationId: "01", fromStationCode: "PUNE-001", fromStationName: "Pune", toStationId: "02", toStationCode: "MUM-001", toStationName: "Mumbai", service: "ST", type: "Luxury", distance: "150 km", fareModel: "Fixed", duration: "3h 10m", isActive: true },
+  { routeId: "R-7714", routeCode: "MSRTC-7714", routeName: "Pune – Nashik ST Express", regionId: "001", regionCode: "REG-001", regionName: "MSR-0001", fromStationId: "01", fromStationCode: "PUNE-001", fromStationName: "Pune", toStationId: "03", toStationCode: "NASH-001", toStationName: "Nashik", service: "ST", type: "Express", distance: "210 km", fareModel: "Distance", duration: "4h 30m", isActive: true },
+  { routeId: "R-BEST-A-1", routeCode: "BEST-A-1", routeName: "Colaba – Bandra (via Worli Sea Face)", regionId: "002", regionCode: "REG-002", regionName: "MSR-0002", fromStationId: "04", fromStationCode: "COLABA-001", fromStationName: "Colaba", toStationId: "05", toStationCode: "BANDRA-001", toStationName: "Bandra", service: "Local", type: "City", distance: "18 km", fareModel: "Distance", duration: "1h 05m", isActive: true }
+]
 
 const trips = [
   { id: "TRP-90213", route: "MSRTC-9502", vehicle: "MH-12-AB-4421", driver: "S. Jadhav", conductor: "R. Kulkarni", sched: "14:30", actual: "14:33", status: "Delayed" },
@@ -545,7 +545,7 @@ function BusStationTab() {
   const [regionsData] = useCrud("regions", "id");
   const [divisionsData] = useCrud("divisions", "id");
   const [depotsData] = useCrud("depots", "id");
-  const [busStationsData, busStationsCrud] = useCrud("busStations", "depotId");
+  const [busStationsData, busStationsCrud] = useCrud("busStations", "stationId");
   return (
     <BusStation
       data={busStationsData}
@@ -585,7 +585,9 @@ function ParkingYardsTab() {
 
 function RouteTab() {
   const [routesData, routesCrud] = useCrud("routes", "code");
-  return <RouteMaster data={routesData} onAdd={routesCrud.add} onUpdate={routesCrud.update} onDelete={routesCrud.remove} />;
+  const [stationData] = useCrud("busStations", "stationId");
+  const [regionData] = useCrud("regions", "regionId");
+  return <RouteMaster data={routesData} stationOptions={stationData} regionOptions={regionData} onAdd={routesCrud.add} onUpdate={routesCrud.update} onDelete={routesCrud.remove} />;
 }
 function StopTab() {
   const [routesData] = useCrud("routes", "code");

@@ -8,8 +8,30 @@ export interface Route {
   routeCode: string;
   routeName: string;
   service: string;
-  fromLocation: string;
-  toLocation: string;
+  regionId: string;
+  regionCode: string;
+  regionName: string;
+  fromStationId: string;
+  fromStationCode: string;
+  fromStationName: string;
+  toStationId: string;
+  toStationCode: string;
+  toStationName: string;
+  type: string;
+  distance: string;
+  fareModel: string;
+  duration: string;
+  isActive: boolean;
+}
+
+export interface RoutePayload {
+  routeId: string;
+  routeCode: string;
+  routeName: string;
+  service: string;
+  regionId: string;
+  fromStationId: string;
+  toStationId: string;
   type: string;
   distance: string;
   fareModel: string;
@@ -19,24 +41,25 @@ export interface Route {
 
 export interface RoutesPageProps {
   data?: Route[];
-  onAdd?: (item: Route) => void;
-  onUpdate?: (item: Route) => void;
+  stationOptions: { stationId: string; stationCode: string; stationName: string }[];
+  regionOptions: { regionId: string; regionCode: string; regionName?: string }[];
+  onAdd?: (item: RoutePayload) => void;
+  onUpdate?: (item: RoutePayload) => void;
   onDelete?: (routeId: string) => void;
 }
 
 const initialDefaultRoutes: Route[] = [
-  { routeId: "R-9502", routeCode: "MSRTC-9502", routeName: "Pune – Mumbai Shivneri (Expressway)", fromLocation: "Pune", toLocation: "Mumbai", service: "ST", type: "Luxury", distance: "150 km", fareModel: "Fixed", duration: "3h 10m", isActive: true },
-  { routeId: "R-7714", routeCode: "MSRTC-7714", routeName: "Pune – Nashik ST Express", fromLocation: "Pune", toLocation: "Nashik", service: "ST", type: "Express", distance: "210 km", fareModel: "Distance", duration: "4h 30m", isActive: true },
-  { routeId: "R-BEST-A-1", routeCode: "BEST-A-1", routeName: "Colaba – Bandra (via Worli Sea Face)", fromLocation: "Colaba", toLocation: "Bandra", service: "Local", type: "City", distance: "18 km", fareModel: "Distance", duration: "1h 05m", isActive: true },
+  { routeId: "R-9502", routeCode: "MSRTC-9502", routeName: "Pune – Mumbai Shivneri (Expressway)", regionId: "001", regionCode: "REG-001", regionName: "MSR-0001", fromStationId: "01", fromStationCode: "PUNE-001", fromStationName: "Pune", toStationId: "02", toStationCode: "MUM-001", toStationName: "Mumbai", service: "ST", type: "Luxury", distance: "150 km", fareModel: "Fixed", duration: "3h 10m", isActive: true },
+  { routeId: "R-7714", routeCode: "MSRTC-7714", routeName: "Pune – Nashik ST Express", regionId: "001", regionCode: "REG-001", regionName: "MSR-0001", fromStationId: "01", fromStationCode: "PUNE-001", fromStationName: "Pune", toStationId: "03", toStationCode: "NASH-001", toStationName: "Nashik", service: "ST", type: "Express", distance: "210 km", fareModel: "Distance", duration: "4h 30m", isActive: true },
+  { routeId: "R-BEST-A-1", routeCode: "BEST-A-1", routeName: "Colaba – Bandra (via Worli Sea Face)", regionId: "002", regionCode: "REG-002", regionName: "MSR-0002", fromStationId: "04", fromStationCode: "COLABA-001", fromStationName: "Colaba", toStationId: "05", toStationCode: "BANDRA-001", toStationName: "Bandra", service: "Local", type: "City", distance: "18 km", fareModel: "Distance", duration: "1h 05m", isActive: true }
 ];
-
 const serviceOptions = ["ST", "Local"];
 const typeOptions = ["Luxury", "Express", "Ordinary", "City"];
 const fareModelOptions = ["Fixed", "Distance", "Zone"];
 const fromLocationOptions = ["Pune", "Mumbai", "Nashik", "Colaba", "Bandra"];
 const toLocationOptions = ["Pune", "Mumbai", "Nashik", "Colaba", "Bandra"];
 
-export function Route({ data: propData, onAdd, onUpdate, onDelete }: RoutesPageProps) {
+export function Route({ data: propData, stationOptions, regionOptions, onAdd, onUpdate, onDelete }: RoutesPageProps) {
   const [internalData, setInternalData] = useState<Route[]>(initialDefaultRoutes);
   const data = propData || internalData;
 
@@ -45,7 +68,7 @@ export function Route({ data: propData, onAdd, onUpdate, onDelete }: RoutesPageP
   const [formData, setFormData] = useState<Partial<Route>>({});
 
   const handleOpenAdd = () => {
-    setFormData({ routeCode: "", routeName: "", fromLocation: "", toLocation: "", service: serviceOptions[0], type: typeOptions[0], distance: "", fareModel: fareModelOptions[0], duration: "" });
+    setFormData({ routeCode: "", routeName: "", regionId: "", fromStationId: "", toStationId: "", service: serviceOptions[0], type: typeOptions[0], distance: "", fareModel: fareModelOptions[0], duration: "" });
     setModal({ mode: "add" });
   };
 
@@ -57,12 +80,13 @@ export function Route({ data: propData, onAdd, onUpdate, onDelete }: RoutesPageP
   const handleSave = () => {
     if (!formData.routeCode || !formData.routeName) return;
 
-    const newRecord: Route = {
+    const newRecord: RoutePayload = {
       routeId: formData.routeId || "",
       routeCode: formData.routeCode || "",
       routeName: formData.routeName || "",
-      fromLocation: formData.fromLocation || "",
-      toLocation: formData.toLocation || "",
+      regionId: formData.regionId || "",
+      fromStationId: formData.fromStationId || "",
+      toStationId: formData.toStationId || "",
       service: formData.service || serviceOptions[0],
       type: formData.type || typeOptions[0],
       distance: formData.distance || "",
@@ -116,8 +140,9 @@ export function Route({ data: propData, onAdd, onUpdate, onDelete }: RoutesPageP
             <tr>
               <Th>Route</Th>
               <Th>Service</Th>
-              <Th>From Location</Th>
-              <Th>To Location</Th>
+              <Th>Region</Th>
+              <Th>From Station</Th>
+              <Th>To Station</Th>
               <Th>Type</Th>
               <Th>Distance</Th>
               <Th>Fare model</Th>
@@ -134,8 +159,9 @@ export function Route({ data: propData, onAdd, onUpdate, onDelete }: RoutesPageP
                   </div>
                 </Td>
                 <Td>{item.service}</Td>
-                <Td>{item.fromLocation}</Td>
-                <Td>{item.toLocation}</Td>
+                <Td>{item.regionName}</Td>
+                <Td>{item.fromStationName}</Td>
+                <Td>{item.toStationName}</Td>
                 <Td>{item.type}</Td>
                 <Td>{item.distance}</Td>
                 <Td>{item.fareModel}</Td>
@@ -200,24 +226,35 @@ export function Route({ data: propData, onAdd, onUpdate, onDelete }: RoutesPageP
                 </select>
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">From Location</label>
+                <label className="stc-field-label">Region</label>
                 <select
-                  value={formData.fromLocation || fromLocationOptions[0]}
-                  onChange={(e) => setFormData((s) => ({ ...s, fromLocation: e.target.value }))}
+                  value={formData.regionId}
+                  onChange={(e) => setFormData((s) => ({ ...s, regionId: e.target.value }))}
                 >
-                  {fromLocationOptions.map((opt) => (
-                    <option key={opt} value={opt}>{opt}</option>
+                  {regionOptions.map((opt) => (
+                    <option key={opt.regionId} value={opt.regionId}>{opt.regionName}</option>
                   ))}
                 </select>
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">To Location</label>
+                <label className="stc-field-label">From Station</label>
                 <select
-                  value={formData.toLocation || toLocationOptions[0]}
-                  onChange={(e) => setFormData((s) => ({ ...s, toLocation: e.target.value }))}
+                  value={formData.fromStationId}
+                  onChange={(e) => setFormData((s) => ({ ...s, fromStationId: e.target.value }))}
                 >
-                  {toLocationOptions.map((opt) => (
-                    <option key={opt} value={opt}>{opt}</option>
+                  {stationOptions.map((opt) => (
+                    <option key={opt.stationId} value={opt.stationId}>{opt.stationName}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="stc-field">
+                <label className="stc-field-label">To Station</label>
+                <select
+                  value={formData.toStationId}
+                  onChange={(e) => setFormData((s) => ({ ...s, toStationId: e.target.value }))}
+                >
+                  {stationOptions.map((opt) => (
+                    <option key={opt.stationId} value={opt.stationId}>{opt.stationName}</option>
                   ))}
                 </select>
               </div>
