@@ -277,9 +277,9 @@ const vehicleCategories = [
 ];
 
 const seatLayouts = [
-  { code: "SL-2X2-42", name: "2x2 pushback, 42 seat", category: "VC-SHIV" },
-  { code: "SL-3X2-52", name: "3x2 seating, 52 seat", category: "VC-EXP" },
-  { code: "SL-3X2-58", name: "3x2 seating, 58 seat", category: "VC-ORD" },
+  { layoutId: "SL-01", layoutCode: "SL-01", description: "2+2 Front Facing", categoryCode: "VC-STD", categoryId: "VC-STD", isActive: true },
+  { layoutId: "SL-02", layoutCode: "SL-02", description: "3+2 Recliner", categoryCode: "VC-LUX", categoryId: "VC-LUX", isActive: true },
+  { layoutId: "SL-03", layoutCode: "SL-03", description: "City Bus Single Row", categoryCode: "VC-CITY", categoryId: "VC-CITY", isActive: true },
 ];
 
 const holidays = [
@@ -621,7 +621,7 @@ function VehicleCategoriesTab() {
 function SeatLayoutsTab() {
   const [vehicleCategoriesData] = useCrud("vehicleCategories", "code");
   const [seatLayoutsData, seatLayoutsCrud] = useCrud("seatLayouts", "code");
-  return <SeatLayouts data={seatLayoutsData} categoryOptions={vehicleCategoriesData.map((c) => c.code)} onAdd={seatLayoutsCrud.add} onUpdate={seatLayoutsCrud.update} onDelete={seatLayoutsCrud.remove} />;
+  return <SeatLayouts data={seatLayoutsData} categoryOptions={vehicleCategoriesData} onAdd={seatLayoutsCrud.add} onUpdate={seatLayoutsCrud.update} onDelete={seatLayoutsCrud.remove} />;
 }
 function HolidayCalendarTab() {
   const [holidaysData, holidaysCrud] = useCrud("holidays", "id");

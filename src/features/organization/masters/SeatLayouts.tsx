@@ -4,23 +4,32 @@ import { T } from "../../../constants/theme";
 import { Card, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface SeatLayout {
-  code: string;
-  name: string;
-  category: string;
+  layoutId: string;
+  layoutCode: string;
+  categoryCode: string;
+  categoryId: string;
+  description?: string;
+  isActive: boolean
 }
-
+export interface SeatLayoutPayload {
+  layoutId: string;
+  layoutCode: string;
+  categoryId: string;
+  description?: string;
+  isActive: boolean;
+}
 export interface SeatLayoutsProps {
   data?: SeatLayout[];
-  categoryOptions?: string[];
-  onAdd?: (item: SeatLayout) => void;
-  onUpdate?: (code: string, item: SeatLayout) => void;
-  onDelete?: (code: string) => void;
+  categoryOptions?: {categoryId: string; categoryCode: string}[];
+  onAdd?: (item: SeatLayoutPayload) => void;
+  onUpdate?: (item: SeatLayoutPayload) => void;
+  onDelete?: (layoutId: string) => void;
 }
 
 const initialDefaultSeatLayouts: SeatLayout[] = [
-  { code: "SL-01", name: "2+2 Front Facing", category: "VC-STD" },
-  { code: "SL-02", name: "3+2 Recliner", category: "VC-LUX" },
-  { code: "SL-03", name: "City Bus Single Row", category: "VC-CITY" },
+  { layoutId: "SL-01", layoutCode: "SL-01", description: "2+2 Front Facing", categoryCode: "VC-STD", categoryId: "VC-STD", isActive: true },
+  { layoutId: "SL-02", layoutCode: "SL-02", description: "3+2 Recliner", categoryCode: "VC-LUX", categoryId: "VC-LUX", isActive: true },
+  { layoutId: "SL-03", layoutCode: "SL-03", description: "City Bus Single Row", categoryCode: "VC-CITY", categoryId: "VC-CITY", isActive: true },
 ];
 
 export function SeatLayouts({ data: propData, categoryOptions = [], onAdd, onUpdate, onDelete }: SeatLayoutsProps) {
@@ -32,7 +41,7 @@ export function SeatLayouts({ data: propData, categoryOptions = [], onAdd, onUpd
   const [formData, setFormData] = useState<Partial<SeatLayout>>({});
 
   const handleOpenAdd = () => {
-    setFormData({ code: "", name: "", category: categoryOptions[0] || "" });
+    setFormData({ layoutId: "", layoutCode: "", categoryId: categoryOptions[0].categoryId || "", description: "", isActive: true });
     setModal({ mode: "add" });
   };
 
@@ -42,25 +51,27 @@ export function SeatLayouts({ data: propData, categoryOptions = [], onAdd, onUpd
   };
 
   const handleSave = () => {
-    if (!formData.code || !formData.name) return;
+    if (!formData.layoutCode || !formData.description) return;
 
-    const newRecord: SeatLayout = {
-      code: formData.code,
-      name: formData.name,
-      category: formData.category || categoryOptions[0] || "",
+    const newRecord: SeatLayoutPayload = {
+      layoutId: formData.layoutId || "",
+      layoutCode: formData.layoutCode || "",
+      categoryId: formData.categoryId || categoryOptions[0].categoryId || "",
+      description: formData.description,
+      isActive: formData.isActive ?? true
     };
 
     if (modal?.mode === "add") {
       if (onAdd) {
         onAdd(newRecord);
       } else {
-        setInternalData((prev) => [...prev, newRecord]);
+        setInternalData((prev) => [...prev]);
       }
     } else if (modal?.mode === "edit" && modal.record) {
       if (onUpdate) {
-        onUpdate(modal.record.code, newRecord);
+        onUpdate(newRecord);
       } else {
-        setInternalData((prev) => prev.map((item: SeatLayout) => (item.code === modal.record!.code ? newRecord : item)));
+        setInternalData((prev) => prev.map((item: SeatLayout) => (item)));
       }
     }
 
@@ -70,9 +81,9 @@ export function SeatLayouts({ data: propData, categoryOptions = [], onAdd, onUpd
   const handleConfirmDelete = () => {
     if (!toDelete) return;
     if (onDelete) {
-      onDelete(toDelete.code);
+      onDelete(toDelete.categoryId);
     } else {
-      setInternalData((prev) => prev.filter((item: SeatLayout) => item.code !== toDelete.code));
+      setInternalData((prev) => prev.filter((item: SeatLayout) => item.categoryId !== toDelete.categoryId));
     }
     setToDelete(null);
   };
@@ -96,15 +107,17 @@ export function SeatLayouts({ data: propData, categoryOptions = [], onAdd, onUpd
               <Th>Code</Th>
               <Th>Layout</Th>
               <Th>Vehicle category</Th>
+              <Th>Status</Th>
               <Th align="right">Actions</Th>
             </tr>
           </thead>
           <tbody>
             {data.map((item: SeatLayout) => (
-              <tr key={item.code} className="stc-row">
-                <Td mono>{item.code}</Td>
-                <Td>{item.name}</Td>
-                <Td mono>{item.category}</Td>
+              <tr key={item.layoutId} className="stc-row">
+                <Td mono>{item.layoutCode}</Td>
+                <Td>{item.description}</Td>
+                <Td mono>{item.categoryCode}</Td>
+                <Td>{item.isActive ? "Active" : "Inactive"}</Td>
                 <Td align="right">
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
                     <button onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
@@ -119,7 +132,7 @@ export function SeatLayouts({ data: propData, categoryOptions = [], onAdd, onUpd
             ))}
             {data.length === 0 && (
               <tr>
-                <Td colSpan={4}>No records yet — use Add layout to create one.</Td>
+                <Td colSpan={5}>No records yet — use Add layout to create one.</Td>
               </tr>
             )}
           </tbody>
@@ -139,30 +152,42 @@ export function SeatLayouts({ data: propData, categoryOptions = [], onAdd, onUpd
             }
           >
             <div className="stc-form-grid">
-              <div className="stc-field">
+              {modal.mode == "edit" && (<div className="stc-field">
                 <label className="stc-field-label">Code</label>
                 <input
                   disabled={modal.mode === "edit"}
-                  value={formData.code || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, code: e.target.value }))}
+                  value={formData.layoutCode || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, layoutCode: e.target.value }))}
                 />
-              </div>
-              <div className="stc-field">
-                <label className="stc-field-label">Layout description</label>
-                <input
-                  value={formData.name || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, name: e.target.value }))}
-                />
-              </div>
+              </div>)}
               <div className="stc-field" style={{ gridColumn: "1 / -1" }}>
                 <label className="stc-field-label">Vehicle category</label>
                 <select
-                  value={formData.category || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, category: e.target.value }))}
+                  value={formData.categoryId || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, categoryId: e.target.value }))}
                 >
-                  {categoryOptions.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
+                  {categoryOptions.map((opt) => <option key={opt.categoryId} value={opt.categoryId}>{opt.categoryCode}</option>)}
                 </select>
               </div>
+              <div className="stc-field" style={{ gridColumn: "1 / -1" }}>
+                <label className="stc-field-label">Layout Description</label>
+                <input
+                  value={formData.description || ""}
+                  onChange={(e) => setFormData((s) => ({ ...s, description: e.target.value }))}
+                />
+              </div>
+              {modal.mode === "edit" && (
+                <div className="stc-field">
+                  <label className="stc-field-label">Status</label>
+                  <select
+                    value={formData.isActive ? "Active" : "Inactive"}
+                    onChange={(e) => setFormData((s) => ({ ...s, isActive: e.target.value === "Active" }))}
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              )}
             </div>
           </Modal>
         )}
@@ -175,7 +200,7 @@ export function SeatLayouts({ data: propData, categoryOptions = [], onAdd, onUpd
             </>
           }>
             <p style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.7, margin: 0 }}>
-              This will permanently remove {toDelete.code} from the list. This can't be undone.
+              This will permanently remove {toDelete.layoutCode} from the list. This can't be undone.
             </p>
           </Modal>
         )}
