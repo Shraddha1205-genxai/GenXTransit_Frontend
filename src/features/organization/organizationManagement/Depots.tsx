@@ -19,7 +19,7 @@ export interface Depot {
   corpId: string;
   corpCode: string;
   corporationName: string;
-  status: "Active" | "Inactive";
+  isActive: boolean;
   service: string;
   fleet: number;
   onRoad: number;
@@ -35,7 +35,7 @@ export interface DepotPayload {
   divisionId: string;
   zoneId: string;
   corpId: string;
-  status: "Active" | "Inactive";
+  isActive: boolean;
   service: string;
 }
 
@@ -61,10 +61,10 @@ export interface DepotPageProps {
 }
 
 const initialDefaultDepots: Depot[] = [
-  { depotId: "001", depotCode: "MSRTC-PUN-01", depotName: "Pune (Swargate) ST Depot", corpId: "CORP-ID-1001", corpCode: "CORP-0001", corporationName: "Maharashtra State Road Transport Corporation", service: "ST", zoneName: "Pune Division", zoneId: "0001", zoneCode: "z-001",regionId: "01", regionCode: "r-01", regionName: "Pune Region", divisionId: "DIV-01", divisionCode: "DIV-01", divisionName: "Pune Division", fleet: 96, onRoad: 74, tripsToday: 268, revenueToday: 612400, status: "Active" },
-  { depotId: "002", depotCode: "BEST-MUM-04", depotName: "BEST Wadala Depot", corpId: "CORP-ID-1002", corpCode: "CORP-0002", corporationName: "BEST", service: "Local", zoneName: "Mumbai (Island City)", zoneId: "0002", zoneCode: "z-002",regionId: "02", regionCode: "r-02", regionName: "Mumbai Region", divisionId: "DIV-02", divisionCode: "DIV-02", divisionName: "Mumbai Division", fleet: 72, onRoad: 58, tripsToday: 341, revenueToday: 398600, status: "Active" },
-  { depotId: "003", depotCode: "PMPML-PUN-02", depotName: "PMPML Swargate Depot", corpId: "CORP-ID-1003", corpCode: "CORP-0003", corporationName: "PMPML", service: "Local", zoneName: "Pune Metropolitan Region", zoneId: "0003", zoneCode: "z-003",regionId: "03", regionCode: "r-03", regionName: "Pune Region", divisionId: "DIV-03", divisionCode: "DIV-03", divisionName: "Pune Division", fleet: 60, onRoad: 47, tripsToday: 219, revenueToday: 271500, status: "Active" },
-  { depotId: "004", depotCode: "MSRTC-MUM-03", depotName: "Mumbai Central (MSRTC) Depot", corpId: "CORP-ID-1001", corpCode: "CORP-001", corporationName: "Maharashtra State Road Transport Corporation", service: "ST", zoneName: "Mumbai Division", zoneId: "0004", zoneCode: "z-004",regionId: "04", regionCode: "r-04", regionName: "Mumbai Region", divisionId: "DIV-04", divisionCode: "DIV-04", divisionName: "Mumbai Division", fleet: 54, onRoad: 41, tripsToday: 132, revenueToday: 349800, status: "Active" },
+  { depotId: "001", depotCode: "MSRTC-PUN-01", depotName: "Pune (Swargate) ST Depot", corpId: "CORP-ID-1001", corpCode: "CORP-0001", corporationName: "Maharashtra State Road Transport Corporation", service: "ST", zoneName: "Pune Division", zoneId: "0001", zoneCode: "z-001",regionId: "01", regionCode: "r-01", regionName: "Pune Region", divisionId: "DIV-01", divisionCode: "DIV-01", divisionName: "Pune Division", fleet: 96, onRoad: 74, tripsToday: 268, revenueToday: 612400, isActive: true },
+  { depotId: "002", depotCode: "BEST-MUM-04", depotName: "BEST Wadala Depot", corpId: "CORP-ID-1002", corpCode: "CORP-0002", corporationName: "BEST", service: "Local", zoneName: "Mumbai (Island City)", zoneId: "0002", zoneCode: "z-002",regionId: "02", regionCode: "r-02", regionName: "Mumbai Region", divisionId: "DIV-02", divisionCode: "DIV-02", divisionName: "Mumbai Division", fleet: 72, onRoad: 58, tripsToday: 341, revenueToday: 398600, isActive: true },
+  { depotId: "003", depotCode: "PMPML-PUN-02", depotName: "PMPML Swargate Depot", corpId: "CORP-ID-1003", corpCode: "CORP-0003", corporationName: "PMPML", service: "Local", zoneName: "Pune Metropolitan Region", zoneId: "0003", zoneCode: "z-003",regionId: "03", regionCode: "r-03", regionName: "Pune Region", divisionId: "DIV-03", divisionCode: "DIV-03", divisionName: "Pune Division", fleet: 60, onRoad: 47, tripsToday: 219, revenueToday: 271500, isActive: true },
+  { depotId: "004", depotCode: "MSRTC-MUM-03", depotName: "Mumbai Central (MSRTC) Depot", corpId: "CORP-ID-1001", corpCode: "CORP-001", corporationName: "Maharashtra State Road Transport Corporation", service: "ST", zoneName: "Mumbai Division", zoneId: "0004", zoneCode: "z-004",regionId: "04", regionCode: "r-04", regionName: "Mumbai Region", divisionId: "DIV-04", divisionCode: "DIV-04", divisionName: "Mumbai Division", fleet: 54, onRoad: 41, tripsToday: 132, revenueToday: 349800, isActive: true },
 ];
 
 const initialDefaultVehicles: Vehicle[] = [
@@ -118,7 +118,7 @@ export function Depots({
       zoneId: formData.zoneId || "",
       regionId: formData.regionId || "",
       divisionId: formData.divisionId || "",
-      status: formData.status || "Active",
+      isActive: formData.isActive || true,
     };
 
     if (modal?.mode === "add") {
@@ -279,8 +279,8 @@ export function Depots({
                 <div className="stc-field">
                   <label className="stc-field-label">Status</label>
                   <select
-                    value={formData.status || "Active"}
-                    onChange={(e) => setFormData((s) => ({ ...s, status: e.target.value as "Active" | "Inactive" }))}
+                    value={formData.isActive !== undefined ? (formData.isActive ? "Active" : "Inactive") : "Active"}
+                    onChange={(e) => setFormData((s) => ({ ...s, isActive: e.target.value === "Active" }))}
                   >
                     <option value="Active">Active</option>
                     <option value="Inactive">Inactive</option>

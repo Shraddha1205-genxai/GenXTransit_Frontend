@@ -10,7 +10,7 @@ export interface Corporation {
   stateName: string;
   districtName: string;
   cityName: string;
-  status: "Active" | "Inactive";
+  isActive: boolean;
 }
 
 export interface CorporationPageProps {
@@ -28,7 +28,7 @@ const initialDefaultCorporations: Corporation[] = [
     stateName: "Maharashtra",
     districtName: "Pune",
     cityName: "Pune",
-    status: "Active",
+    isActive: true,
   },
   {
     corpId: "CORP-ID-1002",
@@ -37,7 +37,7 @@ const initialDefaultCorporations: Corporation[] = [
     stateName: "Maharashtra",
     districtName: "Mumbai",
     cityName: "Mumbai",
-    status: "Active",
+    isActive: true,
   },
   {
     corpId: "CORP-ID-1003",
@@ -46,7 +46,7 @@ const initialDefaultCorporations: Corporation[] = [
     stateName: "Maharashtra",
     districtName: "Pune",
     cityName: "Pune",
-    status: "Active",
+    isActive: true,
   },
 ];
 
@@ -65,7 +65,7 @@ export function Corporations({ data: propData, onAdd, onUpdate, onDelete }: Corp
       stateName: "",
       districtName: "",
       cityName: "",
-      status: "Active",
+      isActive: true,
     });
     setModal({ mode: "add" });
   };
@@ -85,7 +85,7 @@ export function Corporations({ data: propData, onAdd, onUpdate, onDelete }: Corp
       stateName: formData.stateName.trim(),
       districtName: formData.districtName.trim(),
       cityName: formData.cityName.trim(),
-      status: modal?.mode === "edit" ? (formData.status || "Active") : "Active",
+      isActive: modal?.mode === "edit" ? (formData.isActive !== undefined ? formData.isActive : true) : true,
     };
 
     if (modal?.mode === "add") {
@@ -148,7 +148,7 @@ export function Corporations({ data: propData, onAdd, onUpdate, onDelete }: Corp
                 <Td>{item.stateName}</Td>
                 <Td>{item.districtName}</Td>
                 <Td>{item.cityName}</Td>
-                <Td><StatusBadge status={item.status} /></Td>
+                <Td><StatusBadge status={item.isActive ? "Active" : "Inactive"} /></Td>
                 <Td align="right">
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
                     <button onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
@@ -234,8 +234,8 @@ export function Corporations({ data: propData, onAdd, onUpdate, onDelete }: Corp
                 <div className="stc-field">
                   <label className="stc-field-label">Status</label>
                   <select
-                    value={formData.status || "Active"}
-                    onChange={(e) => setFormData((s) => ({ ...s, status: e.target.value as "Active" | "Inactive" }))}
+                    value={formData.isActive !== undefined ? (formData.isActive ? "Active" : "Inactive") : "Active"}
+                    onChange={(e) => setFormData((s) => ({ ...s, isActive: e.target.value === "Active" }))}
                   >
                     <option value="Active">Active</option>
                     <option value="Inactive">Inactive</option>
