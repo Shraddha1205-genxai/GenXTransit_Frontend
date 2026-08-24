@@ -307,12 +307,12 @@ const taxConfig = [
 ];
 
 const employees = [
-  { id: "EMP-2201", name: "S. Jadhav", role: "Driver", depot: "MSRTC-PUN-01", shift: "Morning (06:00–14:00)", status: "On duty" },
-  { id: "EMP-2202", name: "R. Kulkarni", role: "Conductor", depot: "MSRTC-PUN-01", shift: "Morning (06:00–14:00)", status: "On duty" },
-  { id: "EMP-2203", name: "V. Pawar", role: "Driver", depot: "BEST-MUM-04", shift: "Evening (14:00–22:00)", status: "On leave" },
-  { id: "EMP-2204", name: "N. Gaikwad", role: "Inspector", depot: "PMPML-PUN-02", shift: "General (09:00–18:00)", status: "On duty" },
-  { id: "EMP-2205", name: "M. Chavan", role: "Conductor", depot: "BEST-MUM-07", shift: "Evening (14:00–22:00)", status: "On duty" },
-  { id: "EMP-2206", name: "P. Joshi", role: "Admin staff", depot: "MSRTC-MUM-03", shift: "General (09:00–18:00)", status: "Absent" },
+  { empId: "2201", empCode: "EMP-2201", empName: "S. Jadhav", role: "Driver", depotId: "01", depotCode: "MSRTC-PUN-01", shift: "Morning (06:00–14:00)", attendanceStatus: "On duty", isActive: true },
+  { empId: "2202", empCode: "EMP-2202", empName: "R. Kulkarni", role: "Conductor", depotId: "01", depotCode: "MSRTC-PUN-01", shift: "Morning (06:00–14:00)", attendanceStatus: "On duty", isActive: true  },
+  { empId: "2203", empCode: "EMP-2203", empName: "V. Pawar", role: "Driver", depotId: "03", depotCode: "BEST-MUM-04", shift: "Evening (14:00–22:00)", attendanceStatus: "On leave", isActive: true },
+  { empId: "2204", empCode: "EMP-2204", empName: "N. Gaikwad", role: "Inspector", depotId: "04", depotCode: "PMPML-PUN-02", shift: "General (09:00–18:00)", attendanceStatus: "On duty", isActive: true },
+  { empId: "2205", empCode: "EMP-2205", empName: "M. Chavan", role: "Conductor", depotId: "03", depotCode: "BEST-MUM-07", shift: "Evening (14:00–22:00)", attendanceStatus: "On duty", isActive: true },
+  { empId: "2206", empCode: "EMP-2206", empName: "P. Joshi", role: "Admin staff", depotId: "05", depotCode: "MSRTC-MUM-03", shift: "General (09:00–18:00)", attendanceStatus: "Absent", isActive: true },
 ];
 
 const attendanceSummary = [
@@ -701,8 +701,17 @@ function EmployeesLayout() {
 }
 
 function RosterTab() {
-  const [employeesData] = useCrud("employees", "id");
-  return <Roster data={employeesData} />;
+  const [employeesData, employeesCrud] = useCrud("employees", "id");
+  const [depotsData] = useCrud("depots", "code");
+  return (
+    <Roster
+      data={employeesData}
+      depotOptions={depotsData}
+      onAdd={employeesCrud.add}
+      onUpdate={employeesCrud.update}
+      onDelete={employeesCrud.remove}
+    />
+  );
 }
 function AttendanceTab() {
   return <Attendance data={attendanceSummary} />;
@@ -710,8 +719,16 @@ function AttendanceTab() {
 
 function RoutesScheduleTab() {
   const [routesData] = useCrud("routes", "code");
-  const [tripsData] = useCrud("trips", "id");
-  return <RoutesAndSchedule routes={routesData} trips={tripsData} />;
+  const [tripsData, tripsCrud] = useCrud("trips", "id");
+  return (
+    <RoutesAndSchedule
+      routes={routesData}
+      trips={tripsData}
+      onAdd={tripsCrud.add}
+      onUpdate={tripsCrud.update}
+      onDelete={tripsCrud.remove}
+    />
+  );
 }
 function LiveTrackingTab() {
   return <LiveTracking liveBuses={liveBuses} />;
