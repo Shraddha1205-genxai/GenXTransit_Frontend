@@ -77,12 +77,9 @@ const depots = [
 ];
 
 const vehicles = [
-  { reg: "MH-12-AB-4421", category: "AC Shivneri", depot: "MSRTC-PUN-01", status: "Active", nextService: "12 Aug 2026", docExpiry: "Fitness · 18 Aug 2026" },
-  { reg: "MH-12-CD-1187", category: "Express (ST)", depot: "MSRTC-PUN-01", status: "Active", nextService: "22 Aug 2026", docExpiry: "Insurance · 02 Sep 2026" },
-  { reg: "MH-01-EF-7702", category: "AC Local (BEST)", depot: "BEST-MUM-04", status: "Under maintenance", nextService: "In progress", docExpiry: "PUC · 09 Aug 2026" },
-  { reg: "MH-14-GH-2290", category: "Ordinary Local (PMPML)", depot: "PMPML-PUN-02", status: "Breakdown", nextService: "Awaiting spare", docExpiry: "Permit · 30 Nov 2026" },
-  { reg: "MH-02-JK-5561", category: "AC Shivneri", depot: "MSRTC-MUM-03", status: "Active", nextService: "05 Sep 2026", docExpiry: "Fitness · 14 Aug 2026" },
-  { reg: "MH-01-LM-9034", category: "Double-decker (BEST)", depot: "BEST-MUM-07", status: "Active", nextService: "19 Aug 2026", docExpiry: "Road tax · 01 Oct 2026" },
+  {fleetId: "001", vehicleNumber: "MH-12-AB-4421", categoryId: "001", categoryName: "AC Shivneri", seriesType: "BH", depotId: "01", depotCode: "MSRTC-PUN-01", fleetStatus: "Active", nextService: "12 Aug 2026", docExpiry: "Fitness · 18 Aug 2026", isActive: true },
+  {fleetId: "002", vehicleNumber: "MH-12-CD-1187", categoryId: "002", categoryName: "Express (ST)", seriesType: "BH", depotId: "01", depotCode: "MSRTC-PUN-01", fleetStatus: "Active", nextService: "22 Aug 2026", docExpiry: "Insurance · 02 Sep 2026", isActive: true },
+  {fleetId: "003", vehicleNumber: "MH-01-EF-7702", categoryId: "003", categoryName: "AC Local (BEST)", seriesType: "State", depotId: "04", depotCode: "BEST-MUM-04", fleetStatus: "Under maintenance", nextService: "In progress", docExpiry: "PUC · 09 Aug 2026", isActive: true },
 ];
 
 const routes = [
@@ -92,11 +89,11 @@ const routes = [
 ]
 
 const trips = [
-  { id: "TRP-90213", route: "MSRTC-9502", vehicle: "MH-12-AB-4421", driver: "S. Jadhav", conductor: "R. Kulkarni", sched: "14:30", actual: "14:33", status: "Delayed" },
-  { id: "TRP-90214", route: "BEST-A-1", vehicle: "MH-01-EF-7702", driver: "V. Pawar", conductor: "A. Shinde", sched: "14:45", actual: "—", status: "Cancelled" },
-  { id: "TRP-90215", route: "MSRTC-8801", vehicle: "MH-02-JK-5561", driver: "D. More", conductor: "P. Bhosale", sched: "15:00", actual: "15:00", status: "On time" },
-  { id: "TRP-90216", route: "PMPML-56", vehicle: "MH-14-GH-2290", driver: "N. Gaikwad", conductor: "S. Kadam", sched: "15:10", actual: "15:09", status: "On time" },
-  { id: "TRP-90217", route: "BEST-AC-84", vehicle: "MH-01-LM-9034", driver: "R. Sawant", conductor: "M. Chavan", sched: "15:20", actual: "Ongoing", status: "Ongoing" },
+  { tripId: "90213", tripCode: "TRP-90213", routeId: "9502", routeName: "Mumbai", routeCode: "MSRTC-9502", fleetId: "01", vehicleNumber: "MH-12-AB-4421", driverId: "01", driverCode: "EMP-001", driverName: "S. Jadhav", conductorId: "06", conductorCode: "EMP-006", conductorName: "R. Kulkarni", sched: "14:30", actual: "14:33", fleetStatus: "Delayed", isActive: true },
+  { tripId: "90214", tripCode: "TRP-90214", routeId: "1", routeName: "BEST", routeCode: "BEST-A-1", fleetId: "02", vehicleNumber: "MH-01-EF-7702", driverId: "02", driverCode: "EMP-002", driverName: "V. Pawar", conductorId: "07", conductorCode: "EMP-007", conductorName: "A. Shinde", sched: "14:45", actual: "—", fleetStatus: "Cancelled", isActive: true  },
+  { tripId: "90215", tripCode: "TRP-90215", routeId: "8801", routeName: "Mumbai MSRTC", routeCode: "MSRTC-8801", fleetId: "03", vehicleNumber: "MH-02-JK-5561", driverId: "03", driverCode: "EMP-003", driverName: "D. More", conductorId: "08", conductorCode: "EMP-008", conductorName: "P. Bhosale", sched: "15:00", actual: "15:00", fleetStatus: "On time", isActive: true  },
+  { tripId: "90216", tripCode: "TRP-90216", routeId: "56", routeName: "PMPML Pune", routeCode: "PMPML-56", fleetId: "04", vehicleNumber: "MH-14-GH-2290", driverId: "04", driverCode: "EMP-004", driverName: "N. Gaikwad", conductorId: "09", conductorCode: "EMP-009", conductorName: "S. Kadam", sched: "15:10", actual: "15:09", fleetStatus: "On time", isActive: true  },
+  { tripId: "90217", tripCode: "TRP-90217", routeId: "84", routeName: "Best AC", routeCode: "BEST-AC-84", fleetId: "05", vehicleNumber: "MH-01-LM-9034", driverId: "05", driverCode: "EMP-005", driverName: "R. Sawant", conductorId: "10", conductorCode: "EMP-010", conductorName: "M. Chavan", sched: "15:20", actual: "Ongoing", fleetStatus: "Ongoing", isActive: true  },
 ];
 
 const liveBuses = [
@@ -644,6 +641,7 @@ function TaxConfigurationTab() {
 function FleetTab() {
   const [vehiclesData, vehiclesCrud] = useCrud("vehicles", "reg");
   const [depotsData] = useCrud("depots", "code");
+  const [vehicleCategoriesData] = useCrud("vehicleCategories", "categoryId");
   const underMaint = vehiclesData.filter((v) => v.status === "Under maintenance").length;
   const breakdowns = vehiclesData.filter((v) => v.status === "Breakdown").length;
   return (
@@ -657,7 +655,8 @@ function FleetTab() {
       </div>
       <VehicleRegister
         data={vehiclesData}
-        depotOptions={depotsData.map((d) => d.code)}
+        depotOptions={depotsData}
+        categoryOptions={vehicleCategoriesData}
         onAdd={vehiclesCrud.add}
         onUpdate={vehiclesCrud.update}
         onDelete={vehiclesCrud.remove}
@@ -719,10 +718,15 @@ function AttendanceTab() {
 
 function RoutesScheduleTab() {
   const [routesData] = useCrud("routes", "code");
+  const [employeeData] = useCrud("employees", "empId");
+  const [vehiclesData] = useCrud("vehicles", "reg");
   const [tripsData, tripsCrud] = useCrud("trips", "id");
   return (
     <RoutesAndSchedule
       routes={routesData}
+      fleetOptions={vehiclesData}
+      driverOptions={employeeData.filter(x => x.role.toLowerCase() === "driver")}
+      conductorOptions={employeeData.filter(x => x.role.toLowerCase() === "conductor")}
       trips={tripsData}
       onAdd={tripsCrud.add}
       onUpdate={tripsCrud.update}

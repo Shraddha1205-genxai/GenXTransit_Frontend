@@ -3,49 +3,65 @@ import { Plus, Pencil, Trash2 } from "lucide-react";
 import { T } from "../../../constants/theme";
 import { Card, RouteChip, StatusBadge, Th, Td, SectionHeader, Table, Modal } from "../../../components/common";
 
-export interface RouteRecord {
-  code: string;
-  name: string;
-  service: string;
-  type: string;
-  distance: string;
-  fareModel: string;
-}
-
 export interface TripRecord {
-  id: string;
-  route: string;
-  driver: string;
-  conductor: string;
+  tripId: string;
+  tripCode: string;
+  routeId: string;
+  routeName: string;
+  routeCode: string;
+  fleetId: string;
+  vehicleNumber: string;
+  driverId: string;
+  driverName: string;
+  conductorId: string;
+  conductorName: string;
   sched: string;
   actual: string;
-  status: string;
+  fleetStatus: string;
+  isActive: boolean;
 }
-
+export interface TripRecordPayload {
+  tripId: string;
+  tripName: string;
+  routeId: string;
+  fleetId: string;
+  driverId: string;
+  conductorId: string;
+  sched: string;
+  actual: string;
+  fleetStatus: string;
+  isActive: boolean;
+}
 interface RoutesAndScheduleProps {
-  routes: RouteRecord[];
+  routes: {routeId: string; routeName: string; routeCode: string;}[];
+  fleetOptions: {fleetId: string; vehicleNumber: string;}[];
+  driverOptions: {empId: string; empName: string; empCode: string; role: string;}[];
+  conductorOptions: {empId: string; empName: string; empCode: string}[];
   trips: TripRecord[];
-  onAdd?: (item: TripRecord) => void;
-  onUpdate?: (item: TripRecord) => void;
+  onAdd?: (item: TripRecordPayload) => void;
+  onUpdate?: (item: TripRecordPayload) => void;
   onDelete?: (id: string) => void;
 }
 
-const STATUSES = ["On time", "Delayed", "Cancelled", "Ongoing"];
+const FLEET_STATUSES = ["On time", "Delayed", "Cancelled", "Ongoing"];
 
-export function RoutesAndSchedule({ routes = [], trips = [], onAdd, onUpdate, onDelete }: RoutesAndScheduleProps) {
+export function RoutesAndSchedule({ routes = [], fleetOptions = [], driverOptions = [], conductorOptions = [], trips = [], onAdd, onUpdate, onDelete }: RoutesAndScheduleProps) {
   const [modal, setModal] = useState<{ mode: "add" | "edit"; record?: TripRecord } | null>(null);
   const [toDelete, setToDelete] = useState<TripRecord | null>(null);
   const [formData, setFormData] = useState<Partial<TripRecord>>({});
 
   const handleOpenAdd = () => {
     setFormData({
-      id: `TRP-${Math.floor(90000 + Math.random() * 10000)}`,
-      route: routes[0]?.code || "MSRTC-9502",
-      driver: "",
-      conductor: "",
+      tripId: "",
+      tripCode: "",
+      routeId: routes[0]?.routeId || "MSRTC-9502",
+      fleetId: fleetOptions[0]?.fleetId || "",
+      driverId: driverOptions[0]?.empId || "",
+      conductorId: conductorOptions[0]?.empId || "",
       sched: "12:00",
-      actual: "—",
-      status: STATUSES[0],
+      actual: "",
+      fleetStatus: FLEET_STATUSES[0],
+      isActive: true
     });
     setModal({ mode: "add" });
   };
@@ -56,8 +72,8 @@ export function RoutesAndSchedule({ routes = [], trips = [], onAdd, onUpdate, on
   };
 
   const handleSave = () => {
-    if (!formData.route) return;
-    const record = formData as TripRecord;
+    if (!formData.routeId) return;
+    const record = formData as TripRecordPayload;
     if (modal?.mode === "add") {
       if (onAdd) onAdd(record);
     } else if (modal?.mode === "edit") {
@@ -68,7 +84,7 @@ export function RoutesAndSchedule({ routes = [], trips = [], onAdd, onUpdate, on
 
   const handleConfirmDelete = () => {
     if (toDelete && onDelete) {
-      onDelete(toDelete.id);
+      onDelete(toDelete.tripId);
     }
     setToDelete(null);
   };
@@ -93,20 +109,24 @@ export function RoutesAndSchedule({ routes = [], trips = [], onAdd, onUpdate, on
             <tr>
               <Th>Trip</Th>
               <Th>Route</Th>
+              <Th>Vehicle Number</Th>
               <Th>Crew</Th>
               <Th>Sched.</Th>
+              <Th>Fleet Status</Th>
               <Th>Status</Th>
               <Th align="right">Actions</Th>
             </tr>
           </thead>
           <tbody>
             {trips.map((t: TripRecord) => (
-              <tr key={t.id} className="stc-row">
-                <Td mono><RouteChip>{t.id}</RouteChip></Td>
-                <Td mono>{t.route}</Td>
-                <Td>{t.driver}<div style={{ fontSize: 11, color: T.textSoft }}>{t.conductor}</div></Td>
+              <tr key={t.tripId} className="stc-row">
+                <Td mono><RouteChip>{t.tripCode}</RouteChip></Td>
+                <Td mono>{t.routeName}</Td>
+                <Td>{t.vehicleNumber}</Td>
+                <Td>{t.driverName}<div style={{ fontSize: 11, color: T.textSoft }}>{t.conductorName}</div></Td>
                 <Td>{t.sched}<div style={{ fontSize: 11, color: T.textSoft }}>Actual {t.actual}</div></Td>
-                <Td><StatusBadge status={t.status} /></Td>
+                <Td><StatusBadge status={t.fleetStatus} /></Td>
+                <Td><StatusBadge status={t.isActive ? "Active" : "InActive"} /></Td>
                 <Td align="right">
                   <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
                     <button onClick={() => handleOpenEdit(t)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
@@ -135,42 +155,48 @@ export function RoutesAndSchedule({ routes = [], trips = [], onAdd, onUpdate, on
           }
         >
           <div className="stc-form-grid">
-            <div className="stc-field mb-6">
-              <label className="stc-field-label">Trip ID</label>
+            {modal.mode == "edit" && (<div className="stc-field">
+              <label className="stc-field-label">Trip Code</label>
               <input
                 disabled={modal.mode === "edit"}
-                value={formData.id || ""}
-                onChange={(e) => setFormData((s) => ({ ...s, id: e.target.value }))}
+                value={formData.tripCode || ""}
+                onChange={(e) => setFormData((s) => ({ ...s, tripCode: e.target.value }))}
               />
-            </div>
-            <div className="stc-field mb-6">
+            </div>)}
+            <div className="stc-field">
               <label className="stc-field-label">Route</label>
               <select
-                value={formData.route || ""}
+                value={formData.routeId || ""}
                 onChange={(e) => setFormData((s) => ({ ...s, route: e.target.value }))}
               >
-                {routes.map((r: RouteRecord) => (
-                  <option key={r.code} value={r.code}>{r.code} — {r.name}</option>
+                {routes.map((r) => (
+                  <option key={r.routeId} value={r.routeId}>{r.routeCode} — {r.routeName}</option>
                 ))}
               </select>
             </div>
-            <div className="stc-field mb-6">
+            <div className="stc-field">
               <label className="stc-field-label">Driver</label>
-              <input
-                value={formData.driver || ""}
-                onChange={(e) => setFormData((s) => ({ ...s, driver: e.target.value }))}
-                placeholder="e.g. S. Jadhav"
-              />
+              <select
+                value={formData.driverId || ""}
+                onChange={(e) => setFormData((s) => ({ ...s, driverId: e.target.value }))}
+              >
+                {driverOptions.map((r) => (
+                  <option key={r.empId} value={r.empId}>{r.empCode} — {r.empName}</option>
+                ))}
+              </select>
             </div>
-            <div className="stc-field mb-6">
+            <div className="stc-field">
               <label className="stc-field-label">Conductor</label>
-              <input
-                value={formData.conductor || ""}
-                onChange={(e) => setFormData((s) => ({ ...s, conductor: e.target.value }))}
-                placeholder="e.g. R. Kulkarni"
-              />
+              <select
+                value={formData.conductorId || ""}
+                onChange={(e) => setFormData((s) => ({ ...s, conductorId: e.target.value }))}
+              >
+                {conductorOptions.map((r) => (
+                  <option key={r.empId} value={r.empId}>{r.empCode} — {r.empName}</option>
+                ))}
+              </select>
             </div>
-            <div className="stc-field mb-6">
+            <div className="stc-field">
               <label className="stc-field-label">Scheduled Time</label>
               <input
                 value={formData.sched || ""}
@@ -178,7 +204,7 @@ export function RoutesAndSchedule({ routes = [], trips = [], onAdd, onUpdate, on
                 placeholder="e.g. 14:30"
               />
             </div>
-            <div className="stc-field mb-6">
+            <div className="stc-field">
               <label className="stc-field-label">Actual Time</label>
               <input
                 value={formData.actual || ""}
@@ -186,17 +212,29 @@ export function RoutesAndSchedule({ routes = [], trips = [], onAdd, onUpdate, on
                 placeholder="e.g. 14:33 or —"
               />
             </div>
-            <div className="stc-field mb-6">
-              <label className="stc-field-label">Status</label>
+            <div className="stc-field">
+              <label className="stc-field-label">Fleet Status</label>
               <select
-                value={formData.status || ""}
-                onChange={(e) => setFormData((s) => ({ ...s, status: e.target.value }))}
+                value={formData.fleetStatus || ""}
+                onChange={(e) => setFormData((s) => ({ ...s, fleetStatus: e.target.value }))}
               >
-                {STATUSES.map((st) => (
+                {FLEET_STATUSES.map((st) => (
                   <option key={st} value={st}>{st}</option>
                 ))}
               </select>
             </div>
+            {modal.mode === "edit" && (
+                <div className="stc-field">
+                  <label className="stc-field-label">Status</label>
+                  <select
+                    value={formData.isActive ? "Active" : "Inactive"}
+                    onChange={(e) => setFormData((s) => ({ ...s, isActive: e.target.value === "Active" }))}
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              )}
           </div>
         </Modal>
       )}
@@ -217,7 +255,7 @@ export function RoutesAndSchedule({ routes = [], trips = [], onAdd, onUpdate, on
           }
         >
           <p style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.7, margin: 0 }}>
-            This will permanently remove trip <strong>{toDelete.id}</strong> from the schedule. This can't be undone.
+            This will permanently remove trip <strong>{toDelete.tripCode}</strong> from the schedule. This can't be undone.
           </p>
         </Modal>
       )}
