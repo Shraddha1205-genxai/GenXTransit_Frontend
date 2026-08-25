@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { T } from "../../../constants/theme";
-import { Card, Th, Td, Modal, Table, StatusBadge } from "../../../components/common";
+import { Card, TableToolbar, Th, Td, Modal, Table, StatusBadge } from "../../../components/common";
 
 export interface Zone {
   zoneId: string;
@@ -47,6 +47,13 @@ export function Zones({ data: propData, regionOptions = [], onAdd, onUpdate, onD
   const [modal, setModal] = useState<{ mode: "add" | "edit"; record?: Zone } | null>(null);
   const [toDelete, setToDelete] = useState<Zone | null>(null);
   const [formData, setFormData] = useState<Partial<Zone>>({});
+  const [search, setSearch] = useState("");
+  const [regionFilter, setRegionFilter] = useState("");
+
+  const filteredData = data.filter((zone) => {
+    const query = search.toLowerCase();
+    return (!query || [zone.zoneCode, zone.zoneName, zone.regionName, zone.districts.join(" ")].some((value) => String(value).toLowerCase().includes(query))) && (!regionFilter || zone.regionId === regionFilter);
+  });
 
   const handleOpenAdd = () => {
     setFormData({ zoneName: "", regionId: regionOptions?.[0]?.regionId || "", districts: [] });
@@ -136,6 +143,12 @@ export function Zones({ data: propData, regionOptions = [], onAdd, onUpdate, onD
           </button>
         }
       >
+        <TableToolbar
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search zones..."
+          filters={[{ key: "region", label: "All regions", value: regionFilter, onChange: setRegionFilter, options: regionOptions.map((region) => ({ value: region.regionId, label: region.regionName || region.regionCode })) }]}
+        />
         <Table>
           <thead>
             <tr>
@@ -148,7 +161,7 @@ export function Zones({ data: propData, regionOptions = [], onAdd, onUpdate, onD
             </tr>
           </thead>
           <tbody>
-            {data.map((item: Zone) => (
+            {filteredData.map((item: Zone) => (
               <tr key={item.zoneId} className="stc-row">
                 <Td mono>{item.zoneCode}</Td>
                 <Td>{item.zoneName}</Td>
@@ -167,9 +180,9 @@ export function Zones({ data: propData, regionOptions = [], onAdd, onUpdate, onD
                 </Td>
               </tr>
             ))}
-            {data.length === 0 && (
+            {filteredData.length === 0 && (
               <tr>
-                <Td colSpan={6}>No records yet — use Add zone to create one.</Td>
+                <Td colSpan={6}>{data.length === 0 ? "No records yet — use Add zone to create one." : "No zones match the selected filters."}</Td>
               </tr>
             )}
           </tbody>

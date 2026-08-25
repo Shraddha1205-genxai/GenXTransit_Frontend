@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { T } from "../../../constants/theme";
-import { Card, RouteChip, Th, Td, Modal, Table, StatusBadge } from "../../../components/common";
+import { Card, RouteChip, TableToolbar, Th, Td, Modal, Table, StatusBadge } from "../../../components/common";
 
 export interface Division {
   divisionId: string;
@@ -51,6 +51,13 @@ export function Divisions({
   const [modal, setModal] = useState<{ mode: "add" | "edit"; record?: DivisionPayload } | null>(null);
   const [toDelete, setToDelete] = useState<DivisionPayload | null>(null);
   const [formData, setFormData] = useState<Partial<DivisionPayload>>({});
+  const [search, setSearch] = useState("");
+  const [regionFilter, setRegionFilter] = useState("");
+
+  const filteredData = data.filter((division) => {
+    const query = search.toLowerCase();
+    return (!query || [division.divisionCode, division.divisionName, division.regionName].some((value) => String(value).toLowerCase().includes(query))) && (!regionFilter || division.regionId === regionFilter);
+  });
 
   const handleOpenAdd = () => {
     setFormData({ divisionId: "", divisionCode: "", divisionName: "", regionId: regionOptions[0]?.regionId || "", isActive: true });
@@ -111,6 +118,12 @@ export function Divisions({
           </button>
         }
       >
+        <TableToolbar
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search divisions..."
+          filters={[{ key: "region", label: "All regions", value: regionFilter, onChange: setRegionFilter, options: regionOptions.map((region) => ({ value: region.regionId, label: region.regionName || region.regionCode })) }]}
+        />
         <Table>
           <thead>
             <tr>
@@ -126,7 +139,7 @@ export function Divisions({
             </tr>
           </thead>
           <tbody>
-            {data.map((d: Division) => (
+            {filteredData.map((d: Division) => (
               <tr key={d.divisionId} className="stc-row">
                 <Td mono>{d.divisionCode}</Td>
                 <Td>{d.divisionName}</Td>
@@ -148,8 +161,8 @@ export function Divisions({
                 </Td>
               </tr>
             ))}
-            {data.length === 0 && (
-              <tr><Td colSpan={9}>No records yet — use Add division to create one.</Td></tr>
+            {filteredData.length === 0 && (
+              <tr><Td colSpan={9}>{data.length === 0 ? "No records yet — use Add division to create one." : "No divisions match the selected filters."}</Td></tr>
             )}
           </tbody>
         </Table>

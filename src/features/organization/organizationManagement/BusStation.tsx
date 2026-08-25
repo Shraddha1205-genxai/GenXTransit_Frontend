@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { T } from "../../../constants/theme";
-import { Card, RouteChip, StatusBadge, Th, Td, Modal, Table } from "../../../components/common";
+import { Card, RouteChip, StatusBadge, TableToolbar, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface BusStation {
   stationId: string;
@@ -53,6 +53,13 @@ export function BusStation({ data: propData, regionOptions = [], divisionOptions
   const [modal, setModal] = useState<{ mode: "add" | "edit"; record?: BusStation } | null>(null);
   const [toDelete, setToDelete] = useState<BusStation | null>(null);
   const [formData, setFormData] = useState<Partial<BusStation>>({});
+  const [search, setSearch] = useState("");
+  const [stationFilter, setStationFilter] = useState("");
+
+  const filteredData = data.filter((station) => {
+    const query = search.toLowerCase();
+    return (!query || [station.stationCode, station.stationName, station.regionCode, station.divisionCode, station.depotCode].some((value) => String(value).toLowerCase().includes(query))) && (!stationFilter || station.stationName === stationFilter);
+  });
 
   const handleOpenAdd = () => {
     setFormData({ stationCode: "", stationName: "", regionId: regionOptions[0].regionId || "", divisionId: divisionOptions[0].divisionId || "", depotId: depotOptions[0].depotId || "", platforms: 0, isActive: true });
@@ -108,6 +115,12 @@ export function BusStation({ data: propData, regionOptions = [], divisionOptions
           </button>
         }
       >
+        <TableToolbar
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search bus stations..."
+          filters={[{ key: "station", label: "All station names", value: stationFilter, onChange: setStationFilter, options: Array.from(new Set(data.map((station) => station.stationName))).sort().map((name) => ({ value: name, label: name })) }]}
+        />
         <Table>
           <thead>
             <tr>
@@ -123,7 +136,7 @@ export function BusStation({ data: propData, regionOptions = [], divisionOptions
             </tr>
           </thead>
           <tbody>
-            {data.map((b: BusStation) => (
+            {filteredData.map((b: BusStation) => (
               <tr key={b.stationId} className="stc-row">
                 <Td mono><RouteChip>{b.stationCode}</RouteChip></Td>
                 <Td>{b.stationName}</Td>
@@ -145,8 +158,8 @@ export function BusStation({ data: propData, regionOptions = [], divisionOptions
                 </Td>
               </tr>
             ))}
-            {data.length === 0 && (
-              <tr><Td colSpan={9}>No records yet — use Add bus station to create one.</Td></tr>
+            {filteredData.length === 0 && (
+              <tr><Td colSpan={9}>{data.length === 0 ? "No records yet — use Add bus station to create one." : "No bus stations match the selected filters."}</Td></tr>
             )}
           </tbody>
         </Table>

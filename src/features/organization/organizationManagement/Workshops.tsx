@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { T } from "../../../constants/theme";
-import { Card, RouteChip, StatusBadge, Th, Td, Modal, Table } from "../../../components/common";
+import { Card, RouteChip, StatusBadge, TableToolbar, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface Workshop {
   workShopId: string;
@@ -54,6 +54,13 @@ export function Workshops({ data: propData, regionOptions = [], divisionOptions 
   const [modal, setModal] = useState<{ mode: "add" | "edit"; record?: Workshop } | null>(null);
   const [toDelete, setToDelete] = useState<Workshop | null>(null);
   const [formData, setFormData] = useState<Partial<Workshop>>({});
+  const [search, setSearch] = useState("");
+  const [depotFilter, setDepotFilter] = useState("");
+
+  const filteredData = data.filter((workshop) => {
+    const query = search.toLowerCase();
+    return (!query || [workshop.workShopCode, workshop.workShopName, workshop.regionCode, workshop.divisionCode, workshop.depotCode].some((value) => String(value).toLowerCase().includes(query))) && (!depotFilter || workshop.depotCode === depotFilter);
+  });
 
   const handleOpenAdd = () => {
     setFormData({ workShopName: "", regionId: regionOptions[0]?.regionId || "", divisionId: divisionOptions[0]?.divisionId || "", depotId: depotOptions[0]?.depotId || "", workBays: 0, activeRepairJobs: 0, isActive: true });
@@ -109,6 +116,12 @@ export function Workshops({ data: propData, regionOptions = [], divisionOptions 
           </button>
         }
       >
+        <TableToolbar
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search workshops..."
+          filters={[{ key: "depot", label: "All depot codes", value: depotFilter, onChange: setDepotFilter, options: Array.from(new Set(data.map((workshop) => workshop.depotCode))).sort().map((code) => ({ value: code, label: code })) }]}
+        />
         <Table>
           <thead>
             <tr>
@@ -124,7 +137,7 @@ export function Workshops({ data: propData, regionOptions = [], divisionOptions 
             </tr>
           </thead>
           <tbody>
-            {data.map((w: Workshop) => (
+            {filteredData.map((w: Workshop) => (
               <tr key={w.workShopCode} className="stc-row">
                 <Td mono><RouteChip>{w.workShopCode}</RouteChip></Td>
                 <Td>{w.workShopName}</Td>
@@ -146,8 +159,8 @@ export function Workshops({ data: propData, regionOptions = [], divisionOptions 
                 </Td>
               </tr>
             ))}
-            {data.length === 0 && (
-              <tr><Td colSpan={9}>No records yet — use Add workshop to create one.</Td></tr>
+            {filteredData.length === 0 && (
+              <tr><Td colSpan={9}>{data.length === 0 ? "No records yet — use Add workshop to create one." : "No workshops match the selected filters."}</Td></tr>
             )}
           </tbody>
         </Table>

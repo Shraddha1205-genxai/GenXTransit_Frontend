@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { T } from "../../../constants/theme";
-import { Card, RouteChip, Th, Td, Modal, Table, StatusBadge } from "../../../components/common";
+import { Card, RouteChip, TableToolbar, Th, Td, Modal, Table, StatusBadge } from "../../../components/common";
 
 export interface Region {
   regionId: string;
@@ -42,6 +42,9 @@ export function Regions({ data: propData, onAdd, onUpdate, onDelete }: RegionPag
   const [toDelete, setToDelete] = useState<Region | null>(null);
 
   const [formData, setFormData] = useState<Partial<Region>>({});
+  const [search, setSearch] = useState("");
+
+  const filteredData = data.filter((region) => [region.regionCode, region.regionName].some((value) => String(value).toLowerCase().includes(search.toLowerCase())));
 
   const handleOpenAdd = () => {
     setFormData({ regionId: "", regionCode: "", regionName: "", isActive: true });
@@ -101,6 +104,7 @@ export function Regions({ data: propData, onAdd, onUpdate, onDelete }: RegionPag
           </button>
         }
       >
+        <TableToolbar search={search} onSearchChange={setSearch} searchPlaceholder="Search regions..." />
         <Table>
           <thead>
             <tr>
@@ -115,7 +119,7 @@ export function Regions({ data: propData, onAdd, onUpdate, onDelete }: RegionPag
             </tr>
           </thead>
           <tbody>
-            {data.map((r: Region) => (
+            {filteredData.map((r: Region) => (
               <tr key={r.regionId} className="stc-row">
                 <Td mono>{r.regionCode}</Td>
                 <Td>{r.regionName}</Td>
@@ -136,8 +140,8 @@ export function Regions({ data: propData, onAdd, onUpdate, onDelete }: RegionPag
                 </Td>
               </tr>
             ))}
-            {data.length === 0 && (
-              <tr><Td colSpan={8}>No records yet — use Add region to create one.</Td></tr>
+            {filteredData.length === 0 && (
+              <tr><Td colSpan={8}>{data.length === 0 ? "No records yet — use Add region to create one." : "No regions match the search."}</Td></tr>
             )}
           </tbody>
         </Table>

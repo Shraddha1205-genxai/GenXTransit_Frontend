@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { T } from "../../../constants/theme";
-import { Card, RouteChip, Th, Td, Modal, Table } from "../../../components/common";
+import { Card, RouteChip, TableToolbar, Th, Td, Modal, Table } from "../../../components/common";
 
 export interface ParkingYard {
   yardId: string;
@@ -54,6 +54,15 @@ export function ParkingYards({ data: propData, depotOptions = [], regionOptions 
   const [modal, setModal] = useState<{ mode: "add" | "edit"; record?: ParkingYard } | null>(null);
   const [toDelete, setToDelete] = useState<ParkingYard | null>(null);
   const [formData, setFormData] = useState<Partial<ParkingYard>>({});
+  const [search, setSearch] = useState("");
+  const [regionFilter, setRegionFilter] = useState("");
+  const [divisionFilter, setDivisionFilter] = useState("");
+  const [depotFilter, setDepotFilter] = useState("");
+
+  const filteredData = data.filter((yard) => {
+    const query = search.toLowerCase();
+    return (!query || [yard.yardCode, yard.yardName, yard.regionCode, yard.divisionCode, yard.depotCode].some((value) => String(value).toLowerCase().includes(query))) && (!regionFilter || yard.regionId === regionFilter) && (!divisionFilter || yard.divisionId === divisionFilter) && (!depotFilter || yard.depotId === depotFilter);
+  });
 
   const handleOpenAdd = () => {
     setFormData({ yardId: "", yardCode: "", yardName: "", regionId: regionOptions[0]?.regionId || "", divisionId: divisionOptions[0]?.divisionId || "", depotId: depotOptions[0]?.depotId || "", capacity: 0, occupied: 0 });
@@ -109,6 +118,16 @@ export function ParkingYards({ data: propData, depotOptions = [], regionOptions 
           </button>
         }
       >
+        <TableToolbar
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search parking yards..."
+          filters={[
+            { key: "region", label: "All regions", value: regionFilter, onChange: (value) => { setRegionFilter(value); setDivisionFilter(""); setDepotFilter(""); }, options: regionOptions.map((region) => ({ value: region.regionId, label: region.regionName })) },
+            { key: "division", label: "All divisions", value: divisionFilter, onChange: (value) => { setDivisionFilter(value); setDepotFilter(""); }, disabled: !regionFilter, options: divisionOptions.filter((division) => !regionFilter || data.some((yard) => yard.regionId === regionFilter && yard.divisionId === division.divisionId)).map((division) => ({ value: division.divisionId, label: division.divisionName })) },
+            { key: "depot", label: "All depots", value: depotFilter, onChange: setDepotFilter, disabled: !divisionFilter, options: depotOptions.filter((depot) => !divisionFilter || data.some((yard) => yard.divisionId === divisionFilter && yard.depotId === depot.depotId)).map((depot) => ({ value: depot.depotId, label: depot.depotCode })) },
+          ]}
+        />
         <Table>
           <thead>
             <tr>
@@ -123,7 +142,7 @@ export function ParkingYards({ data: propData, depotOptions = [], regionOptions 
             </tr>
           </thead>
           <tbody>
-            {data.map((p: ParkingYard) => (
+            {filteredData.map((p: ParkingYard) => (
               <tr key={p.yardId} className="stc-row">
                 <Td mono><RouteChip>{p.yardCode}</RouteChip></Td>
                 <Td>{p.yardName}</Td>
@@ -144,8 +163,8 @@ export function ParkingYards({ data: propData, depotOptions = [], regionOptions 
                 </Td>
               </tr>
             ))}
-            {data.length === 0 && (
-              <tr><Td colSpan={8}>No records yet — use Add parking yard to create one.</Td></tr>
+            {filteredData.length === 0 && (
+              <tr><Td colSpan={8}>{data.length === 0 ? "No records yet — use Add parking yard to create one." : "No parking yards match the selected filters."}</Td></tr>
             )}
           </tbody>
         </Table>
