@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { T } from "../../../constants/theme";
 import {
@@ -11,6 +11,10 @@ import {
   Table,
   StatusBadge,
 } from "../../../components/common";
+import {
+  regionService,
+  type RegionPayload as ApiRegionPayload,
+} from "../../../api";
 
 export interface Region {
   regionId: string;
@@ -70,6 +74,22 @@ const initialDefaultRegions: Region[] = [
   },
 ];
 
+const normalizeRegion = (
+  record: Partial<ApiRegionPayload> & {
+    regionName?: string;
+    isActive?: boolean;
+  },
+): Region => ({
+  regionId: String(record.regionId ?? ""),
+  regionCode: record.regionCode ?? "",
+  regionName: record.regionName ?? "",
+  isActive: Boolean(record.isActive),
+  divisions: Number(record.divisions ?? 0),
+  depots: Number(record.depots ?? 0),
+  stations: Number(record.stations ?? 0),
+  workshops: Number(record.workshops ?? 0),
+});
+
 export function Regions({
   data: propData,
   onAdd,
@@ -80,6 +100,32 @@ export function Regions({
     initialDefaultRegions,
   );
   const data = propData || internalData;
+
+  useEffect(() => {
+    if (propData) return;
+
+    let isMounted = true;
+
+    regionService
+      .getAll()
+      .then((response) => {
+        const rows = Array.isArray(response?.data) ? response.data : [];
+        if (isMounted) {
+          setInternalData(
+            rows.length > 0
+              ? rows.map((row) => normalizeRegion(row))
+              : initialDefaultRegions,
+          );
+        }
+      })
+      .catch(() => {
+        if (isMounted) setInternalData(initialDefaultRegions);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [propData]);
 
   const [modal, setModal] = useState<{
     mode: "add" | "edit";
@@ -115,8 +161,9 @@ export function Regions({
     setModal({ mode: "edit", record });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.regionName) return;
+
     const newRecord: RegionPayload = {
       regionId:
         modal?.mode === "edit" && modal.record ? modal.record.regionId : "",
@@ -126,27 +173,86 @@ export function Regions({
       isActive: formData.isActive ?? true,
     };
 
-    if (modal?.mode === "add") {
-      if (onAdd) {
-        onAdd(newRecord);
-      } else {
-        setInternalData((prev) => [...prev]);
+    try {
+      if (modal?.mode === "add") {
+        if (onAdd) {
+          onAdd(newRecord);
+        } else {
+          const response = await regionService.create({
+            regionName: newRecord.regionName,
+            isActive: newRecord.isActive,
+          });
+          const createdId = response?.data ?? Date.now().toString();
+          setInternalData((prev) => [
+            ...prev,
+            normalizeRegion({
+              regionId: String(createdId),
+              regionCode: `REG-${String(prev.length + 1).padStart(4, "0")}`,
+              regionName: newRecord.regionName,
+              isActive: newRecord.isActive,
+              divisions: 0,
+              depots: 0,
+              stations: 0,
+              workshops: 0,
+            }),
+          ]);
+        }
+      } else if (modal?.mode === "edit" && modal.record) {
+        if (onUpdate) {
+          onUpdate(newRecord);
+        } else {
+          await regionService.update({
+            regionId: newRecord.regionId,
+            regionName: newRecord.regionName,
+            isActive: newRecord.isActive,
+          });
+          setInternalData((prev) =>
+            prev.map((item) =>
+              item.regionId === newRecord.regionId
+                ? {
+                    ...item,
+                    regionName: newRecord.regionName,
+                    isActive: newRecord.isActive,
+                  }
+                : item,
+            ),
+          );
+        }
       }
-    } else if (modal?.mode === "edit" && modal.record) {
-      if (onUpdate) {
-        onUpdate(newRecord);
-      } else {
-        setInternalData((prev) => prev.map((item) => item));
+    } catch {
+      if (modal?.mode === "add") {
+        setInternalData((prev) => [
+          ...prev,
+          normalizeRegion({
+            regionId: Date.now().toString(),
+            regionCode: `REG-${String(prev.length + 1).padStart(4, "0")}`,
+            regionName: newRecord.regionName,
+            isActive: newRecord.isActive,
+            divisions: 0,
+            depots: 0,
+            stations: 0,
+            workshops: 0,
+          }),
+        ]);
       }
     }
+
     setModal(null);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!toDelete) return;
-    if (onDelete) {
-      onDelete(toDelete.regionId);
-    } else {
+
+    try {
+      if (onDelete) {
+        onDelete(toDelete.regionId);
+      } else {
+        await regionService.delete({ regionId: toDelete.regionId });
+        setInternalData((prev) =>
+          prev.filter((item) => item.regionId !== toDelete.regionId),
+        );
+      }
+    } catch {
       setInternalData((prev) =>
         prev.filter((item) => item.regionId !== toDelete.regionId),
       );
