@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { T } from "../../../constants/theme";
 import {
   Card,
@@ -11,6 +13,7 @@ import {
   Table,
   StatusBadge,
 } from "../../../components/common";
+import { regionService } from "../../../api/organization/organizationManagement/regionService";
 
 export interface Region {
   regionId: string;
@@ -30,56 +33,8 @@ export interface RegionPayload {
   isActive: boolean;
 }
 
-export interface RegionPageProps {
-  data?: Region[];
-  onAdd?: (item: RegionPayload) => void;
-  onUpdate?: (item: RegionPayload) => void;
-  onDelete?: (regionId: string) => void;
-}
-
-const initialDefaultRegions: Region[] = [
-  {
-    regionId: "REG-ID-1001",
-    regionCode: "REG-0001",
-    divisions: 2,
-    depots: 2,
-    stations: 2,
-    workshops: 3,
-    regionName: "Pune Region",
-    isActive: true,
-  },
-  {
-    regionId: "REG-ID-1002",
-    regionCode: "REG-0002",
-    divisions: 1,
-    depots: 1,
-    stations: 1,
-    workshops: 2,
-    regionName: "Mumbai Region",
-    isActive: true,
-  },
-  {
-    regionId: "REG-ID-1003",
-    regionCode: "REG-0003",
-    divisions: 0,
-    depots: 0,
-    stations: 0,
-    workshops: 0,
-    regionName: "Nashik Region",
-    isActive: true,
-  },
-];
-
-export function Regions({
-  data: propData,
-  onAdd,
-  onUpdate,
-  onDelete,
-}: RegionPageProps) {
-  const [internalData, setInternalData] = useState<Region[]>(
-    initialDefaultRegions,
-  );
-  const data = propData || internalData;
+export function Regions() {
+  const queryClient = useQueryClient();
 
   const [modal, setModal] = useState<{
     mode: "add" | "edit";
@@ -91,14 +46,55 @@ export function Regions({
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
-  const filteredData = data.filter(
-    (region) =>
-      [region.regionCode, region.regionName].some((value) =>
-        String(value).toLowerCase().includes(search.toLowerCase()),
-      ) &&
-      (!statusFilter ||
-        (statusFilter === "Active" ? region.isActive : !region.isActive)),
-  );
+  const isActiveParam = statusFilter === "" ? undefined : statusFilter === "Active";
+
+  const { data = [], isLoading, error } = useQuery({
+    queryKey: ["regions", search, statusFilter],
+    queryFn: () => regionService.getAll(search || undefined, isActiveParam),
+  });
+
+  const addMutation = useMutation({
+    mutationFn: regionService.insert,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["regions"] });
+      toast.success("Region created successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to create region");
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: regionService.update,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["regions"] });
+      toast.success("Region updated successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to update region");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: regionService.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["regions"] });
+      toast.success("Region deleted successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to delete region");
+    },
+  });
+
+  if (isLoading) {
+    return <div style={{ padding: 20, textAlign: "center", color: "var(--text-soft)" }}>Loading regions...</div>;
+  }
+
+  if (error) {
+    return <div style={{ padding: 20, textAlign: "center", color: "var(--red)" }}>Error loading regions: {(error as Error).message}</div>;
+  }
+
+  const filteredData = data;
 
   const handleOpenAdd = () => {
     setFormData({
@@ -127,30 +123,16 @@ export function Regions({
     };
 
     if (modal?.mode === "add") {
-      if (onAdd) {
-        onAdd(newRecord);
-      } else {
-        setInternalData((prev) => [...prev]);
-      }
+      addMutation.mutate({ regionName: newRecord.regionName, isActive: newRecord.isActive });
     } else if (modal?.mode === "edit" && modal.record) {
-      if (onUpdate) {
-        onUpdate(newRecord);
-      } else {
-        setInternalData((prev) => prev.map((item) => item));
-      }
+      updateMutation.mutate({ regionId: newRecord.regionId, regionName: newRecord.regionName, isActive: newRecord.isActive });
     }
     setModal(null);
   };
 
   const handleConfirmDelete = () => {
     if (!toDelete) return;
-    if (onDelete) {
-      onDelete(toDelete.regionId);
-    } else {
-      setInternalData((prev) =>
-        prev.filter((item) => item.regionId !== toDelete.regionId),
-      );
-    }
+    deleteMutation.mutate({ regionId: toDelete.regionId });
     setToDelete(null);
   };
 

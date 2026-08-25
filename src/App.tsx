@@ -1894,54 +1894,9 @@ function UserManagementLayout() {
   );
 }
 
-function RegionsTab() {
-  const [regionsData, regionsCrud] = useCrud("regions", "id");
-  return (
-    <Regions
-      data={regionsData}
-      onAdd={regionsCrud.add}
-      onUpdate={regionsCrud.update}
-      onDelete={regionsCrud.remove}
-    />
-  );
-}
-function DivisionsTab() {
-  const [regionsData] = useCrud("regions", "id");
-  const [divisionsData, divisionsCrud] = useCrud("divisions", "id");
-  return (
-    <Divisions
-      data={divisionsData}
-      regionOptions={regionsData}
-      onAdd={divisionsCrud.add}
-      onUpdate={divisionsCrud.update}
-      onDelete={divisionsCrud.remove}
-    />
-  );
-}
-function ZonesTab() {
-  const [regionsData] = useCrud("regions", "code");
-  const [zonesData, zonesCrud] = useCrud("zones", "code");
-  return (
-    <Zones
-      data={zonesData}
-      regionOptions={regionsData}
-      onAdd={zonesCrud.add}
-      onUpdate={zonesCrud.update}
-      onDelete={zonesCrud.remove}
-    />
-  );
-}
-function CorporationsTab() {
-  const [corporationsData, corporationsCrud] = useCrud("corporations", "id");
-  return (
-    <Corporations
-      data={corporationsData}
-      onAdd={corporationsCrud.add}
-      onUpdate={corporationsCrud.update}
-      onDelete={corporationsCrud.remove}
-    />
-  );
-}
+
+
+
 function DepotsTab() {
   const [depotsData, depotsCrud] = useCrud("depots", "code");
   const [vehiclesData] = useCrud("vehicles", "reg");
@@ -2667,10 +2622,10 @@ function AuthGate() {
             element={<OrganizationLayout />}
           >
             <Route index element={<Navigate to="Corporations" replace />} />
-            <Route path="Corporations" element={<CorporationsTab />} />
-            <Route path="Regions" element={<RegionsTab />} />
-            <Route path="Divisions" element={<DivisionsTab />} />
-            <Route path="Zone" element={<ZonesTab />} />
+            <Route path="Corporations" element={<Corporations />} />
+            <Route path="Regions" element={<Regions />} />
+            <Route path="Divisions" element={<Divisions />} />
+            <Route path="Zone" element={<Zones />} />
             <Route path="Depots" element={<DepotsTab />} />
             <Route path="Stations" element={<BusStationTab />} />
             <Route path="WorkShop" element={<WorkshopsTab />} />
@@ -2682,7 +2637,7 @@ function AuthGate() {
             <Route path="Route" element={<RouteTab />} />
             <Route path="Stop" element={<StopTab />} />
             <Route path="Stages" element={<StagesTab />} />
-            <Route path="zones" element={<ZonesTab />} />
+            <Route path="zones" element={<Zones />} />
             <Route path="FarePolicies" element={<FarePoliciesTab />} />
             <Route path="TicketTypes" element={<TicketTypesTab />} />
             <Route path="PaymentModes" element={<PaymentModesTab />} />

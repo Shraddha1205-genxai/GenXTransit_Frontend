@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { T } from "../../../constants/theme";
 import {
   Card,
@@ -10,6 +12,8 @@ import {
   Table,
   StatusBadge,
 } from "../../../components/common";
+import { zoneService } from "../../../api/organization/organizationManagement/zoneService";
+import { regionService } from "../../../api/organization/organizationManagement/regionService";
 
 export interface Zone {
   zoneId: string;
@@ -29,61 +33,9 @@ export interface ZonePayload {
   districts: string[];
   isActive: boolean;
 }
-export interface RegionOption {
-  regionId: string;
-  regionCode: string;
-  regionName?: string;
-}
-export interface ZonesProps {
-  data?: Zone[];
-  regionOptions?: RegionOption[];
-  onAdd?: (item: ZonePayload) => void;
-  onUpdate?: (item: ZonePayload) => void;
-  onDelete?: (id: string) => void;
-}
 
-const initialDefaultZones: Zone[] = [
-  {
-    zoneId: "ZN-ID-1001",
-    zoneCode: "ZN-0001",
-    zoneName: "Pune Metropolitan Zone",
-    regionId: "0001",
-    regionCode: "REG-0001",
-    regionName: "Pune Region",
-    districts: ["Pune", "Pimpri-Chinchwad"],
-    isActive: true,
-  },
-  {
-    zoneId: "ZN-ID-1002",
-    zoneCode: "ZN-0002",
-    zoneName: "Mumbai Zone",
-    regionId: "0002",
-    regionCode: "REG-0002",
-    regionName: "Mumbai Region",
-    districts: ["Mumbai", "Thane"],
-    isActive: true,
-  },
-  {
-    zoneId: "ZN-ID-1003",
-    zoneCode: "ZN-0003",
-    zoneName: "Nashik Zone",
-    regionId: "0003",
-    regionCode: "REG-0003",
-    regionName: "Nashik Region",
-    districts: ["Nashik", "Ahmednagar"],
-    isActive: true,
-  },
-];
-
-export function Zones({
-  data: propData,
-  regionOptions = [],
-  onAdd,
-  onUpdate,
-  onDelete,
-}: ZonesProps) {
-  const [internalData, setInternalData] = useState<Zone[]>(initialDefaultZones);
-  const data = propData ?? internalData;
+export function Zones() {
+  const queryClient = useQueryClient();
 
   const [modal, setModal] = useState<{
     mode: "add" | "edit";
@@ -95,21 +47,61 @@ export function Zones({
   const [regionFilter, setRegionFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
-  const filteredData = data.filter((zone) => {
-    const query = search.toLowerCase();
-    return (
-      (!query ||
-        [
-          zone.zoneCode,
-          zone.zoneName,
-          zone.regionName,
-          zone.districts.join(" "),
-        ].some((value) => String(value).toLowerCase().includes(query))) &&
-      (!regionFilter || zone.regionId === regionFilter) &&
-      (!statusFilter ||
-        (statusFilter === "Active" ? zone.isActive : !zone.isActive))
-    );
+  const isActiveParam = statusFilter === "" ? undefined : statusFilter === "Active";
+
+  const { data = [], isLoading: isLoadingZones, error: errorZones } = useQuery({
+    queryKey: ["zones", search, regionFilter, statusFilter],
+    queryFn: () => zoneService.getAll(search || undefined, regionFilter || undefined, isActiveParam),
   });
+
+  const { data: regionOptions = [], isLoading: isLoadingRegions, error: errorRegions } = useQuery({
+    queryKey: ["regions"],
+    queryFn: () => regionService.getAll(),
+  });
+
+  const addMutation = useMutation({
+    mutationFn: zoneService.insert,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["zones"] });
+      toast.success("Zone created successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to create zone");
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: zoneService.update,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["zones"] });
+      toast.success("Zone updated successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to update zone");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: zoneService.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["zones"] });
+      toast.success("Zone deleted successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to delete zone");
+    },
+  });
+
+  if (isLoadingZones || isLoadingRegions) {
+    return <div style={{ padding: 20, textAlign: "center", color: "var(--text-soft)" }}>Loading zones...</div>;
+  }
+
+  if (errorZones || errorRegions) {
+    const errorMsg = (errorZones as Error)?.message || (errorRegions as Error)?.message;
+    return <div style={{ padding: 20, textAlign: "center", color: "var(--red)" }}>Error loading data: {errorMsg}</div>;
+  }
+
+  const filteredData = data;
 
   const handleOpenAdd = () => {
     setFormData({
@@ -128,60 +120,30 @@ export function Zones({
   const handleSave = () => {
     if (!formData.zoneName || !formData.regionId) return;
 
-    const isEdit = modal?.mode === "edit" && modal.record;
-
-    const newRecord: ZonePayload = {
-      zoneId: isEdit ? modal!.record!.zoneId : `ZN-ID-${Date.now()}`,
-      zoneCode: isEdit
-        ? modal!.record!.zoneCode
-        : `ZN-${String(data.length + 1).padStart(4, "0")}`,
-      zoneName: formData.zoneName.trim(),
-      regionId: formData.regionId || regionOptions?.[0]?.regionId || "",
-      districts: Array.isArray(formData.districts)
-        ? formData.districts
-        : formData.districts
-          ? String(formData.districts)
-              .split(",")
-              .map((v) => v.trim())
-              .filter(Boolean)
-          : [],
-      isActive: formData.isActive ?? true,
-    };
-
-    const selectedRegion = regionOptions?.find(
-      (r) => r.regionId === newRecord.regionId,
-    );
+    const districtsArray = Array.isArray(formData.districts)
+      ? formData.districts
+      : formData.districts
+        ? String(formData.districts)
+            .split(",")
+            .map((v) => v.trim())
+            .filter(Boolean)
+        : [];
 
     if (modal?.mode === "add") {
-      if (onAdd) {
-        onAdd(newRecord);
-      } else {
-        setInternalData((prev) => [
-          ...prev,
-          {
-            ...newRecord,
-            regionCode: selectedRegion?.regionCode || "",
-            regionName: selectedRegion?.regionName || "",
-          },
-        ]);
-      }
+      addMutation.mutate({
+        zoneName: formData.zoneName.trim(),
+        regionId: formData.regionId,
+        districts: districtsArray,
+        isActive: true,
+      });
     } else if (modal?.mode === "edit" && modal.record) {
-      if (onUpdate) {
-        onUpdate(newRecord);
-      } else {
-        setInternalData((prev) =>
-          prev.map((item) =>
-            item.zoneId === newRecord.zoneId
-              ? {
-                  ...item,
-                  ...newRecord,
-                  regionCode: selectedRegion?.regionCode || item.regionCode,
-                  regionName: selectedRegion?.regionName || item.regionName,
-                }
-              : item,
-          ),
-        );
-      }
+      updateMutation.mutate({
+        zoneId: modal.record.zoneId,
+        zoneName: formData.zoneName.trim(),
+        regionId: formData.regionId,
+        districts: districtsArray,
+        isActive: formData.isActive ?? true,
+      });
     }
 
     setModal(null);
@@ -189,13 +151,7 @@ export function Zones({
 
   const handleConfirmDelete = () => {
     if (!toDelete) return;
-    if (onDelete) {
-      onDelete(toDelete.zoneId);
-    } else {
-      setInternalData((prev) =>
-        prev.filter((item: Zone) => item.zoneId !== toDelete.zoneId),
-      );
-    }
+    deleteMutation.mutate({ zoneId: toDelete.zoneId });
     setToDelete(null);
   };
 
