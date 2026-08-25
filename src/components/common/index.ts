@@ -11,3 +11,4 @@ export * from "./ConfirmModal";
 export * from "./SectionHeader";
 export * from "./Sidebar";
 export * from "./Header";
+export * from "./TableToolbar";

@@ -223,6 +223,48 @@ body { margin: 0; background: var(--canvas); color: var(--text); }
   cursor: pointer !important;
 }
 
+.stc-table-toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.5fr) repeat(3, minmax(150px, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.stc-table-search,
+.stc-table-filter {
+  height: 42px;
+  width: 100%;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.stc-table-search::placeholder { color: var(--text-faint); }
+.stc-table-filter { cursor: pointer; }
+.stc-table-search:hover,
+.stc-table-filter:hover { border-color: var(--text-soft); }
+.stc-table-search:focus,
+.stc-table-filter:focus {
+  border-color: var(--amber);
+  box-shadow: 0 0 0 3px var(--amber-fill);
+}
+.stc-table-filter:disabled { opacity: 0.45; cursor: not-allowed; background: var(--hover); }
+
+@media (max-width: 900px) {
+  .stc-table-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stc-table-search { grid-column: 1 / -1; }
+}
+
+@media (max-width: 520px) {
+  .stc-table-toolbar { grid-template-columns: 1fr; }
+}
+
 /* ─── Buttons ───────────────────────────────────────────────────────────────── */
 .stc-btn {
   display: inline-flex;
