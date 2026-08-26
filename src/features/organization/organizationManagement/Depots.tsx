@@ -1,7 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Plus, Pencil, Trash2, Bus, TrendingUp, Milestone, IndianRupee } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { T } from "../../../constants/theme";
-import { Card, RouteChip, StatusBadge, KpiCard, Th, Td, Modal, Table } from "../../../components/common";
+import { Card, RouteChip, StatusBadge, KpiCard, Th, Td, Modal, Table, TableToolbar } from "../../../components/common";
+import { depotService } from "../../../api/organization/organizationManagement/depotService";
+import { corporationService } from "../../../api/organization/organizationManagement/corporationService";
+import { regionService } from "../../../api/organization/organizationManagement/regionService";
+import { divisionService } from "../../../api/organization/organizationManagement/divisionService";
+import { zoneService } from "../../../api/organization/organizationManagement/zoneService";
 
 export interface Depot {
   depotId: string;
@@ -49,15 +56,7 @@ export interface Vehicle {
 }
 
 export interface DepotPageProps {
-  depotsData?: Depot[];
   vehiclesData?: Vehicle[];
-  corporationOptions?: { corpId: string; corpCode: string; corporationName: string }[];
-  regionOptions?: { regionId: string; regionCode: string; regionName: string }[];
-  divisionOptions?: { divisionId: string; divisionCode: string; divisionName: string }[];
-  zoneOptions?: { zoneId: string; zoneCode: string; zoneName: string }[];
-  onAddDepot?: (item: DepotPayload) => void;
-  onUpdateDepot?: (item: DepotPayload) => void;
-  onDeleteDepot?: (depotId: string) => void;
 }
 
 const initialDefaultDepots: Depot[] = [
@@ -77,21 +76,117 @@ const initialDefaultVehicles: Vehicle[] = [
 ];
 
 export function Depots({
-  depotsData: propDepots,
   vehiclesData = initialDefaultVehicles,
-  corporationOptions=[],
-  regionOptions=[],
-  divisionOptions=[],
-  zoneOptions=[],
-  onAddDepot,
-  onUpdateDepot,
-  onDeleteDepot,
 }: DepotPageProps) {
-  const [internalDepots, setInternalDepots] = useState<Depot[]>(initialDefaultDepots);
-  const depots = propDepots || internalDepots;
+  const queryClient = useQueryClient();
 
-  const [selCode, setSelCode] = useState<string>(depots[0]?.depotCode || "");
-  const selected = depots.find((d: Depot) => d.depotCode === selCode) || depots[0];
+  // Search & Filter States
+  const [search, setSearch] = useState("");
+  const [filterCorp, setFilterCorp] = useState("");
+  const [filterRegion, setFilterRegion] = useState("");
+  const [filterDivision, setFilterDivision] = useState("");
+  const [filterZone, setFilterZone] = useState("");
+  const [filterStatus, setFilterStatus] = useState("Active");
+
+  // Selection state
+  const [selCode, setSelCode] = useState<string>("");
+
+  const isActiveParam = filterStatus === "" ? undefined : filterStatus === "Active";
+
+  // Main Query
+  const { data: rawDepotsData = [], isLoading, error } = useQuery({
+    queryKey: ["depots", search, filterCorp, filterRegion, filterDivision, filterZone, filterStatus],
+    queryFn: () =>
+      depotService.getAll(
+        search || undefined,
+        filterCorp || undefined,
+        filterRegion || undefined,
+        filterDivision || undefined,
+        filterZone || undefined,
+        isActiveParam
+      ),
+    staleTime: 0,
+  });
+
+  const depots = useMemo(() => {
+    return rawDepotsData.map((d) => ({
+      ...d,
+      fleet: d.fleet ?? 45,
+      onRoad: d.onRoad ?? 38,
+      tripsToday: d.tripsToday ?? 120,
+      revenueToday: d.revenueToday ?? 245000,
+    }));
+  }, [rawDepotsData]);
+
+  // Dropdown option queries
+  const { data: corporationOptions = [] } = useQuery({
+    queryKey: ["corporations", true],
+    queryFn: () => corporationService.getAll(undefined, undefined, undefined, undefined, true),
+    staleTime: Infinity,
+  });
+
+  const { data: regionOptions = [] } = useQuery({
+    queryKey: ["regions", true],
+    queryFn: () => regionService.getAll(undefined, true),
+    staleTime: Infinity,
+  });
+
+  const { data: divisionOptions = [] } = useQuery({
+    queryKey: ["divisions", true],
+    queryFn: () => divisionService.getAll(undefined, undefined, true),
+    staleTime: Infinity,
+  });
+
+  const { data: zoneOptions = [] } = useQuery({
+    queryKey: ["zones", true],
+    queryFn: () => zoneService.getAll(undefined, undefined, true),
+    staleTime: Infinity,
+  });
+
+  const selected = useMemo(() => {
+    return depots.find((d) => d.depotCode === selCode || d.depotId === selCode) || depots[0];
+  }, [depots, selCode]);
+
+  // Set default selection when depots load
+  useEffect(() => {
+    if (depots.length > 0 && !selCode) {
+      setSelCode(depots[0].depotCode);
+    }
+  }, [depots, selCode]);
+
+  // Mutations
+  const addMutation = useMutation({
+    mutationFn: depotService.insert,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["depots"] });
+      toast.success("Depot created successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to create depot");
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: depotService.update,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["depots"] });
+      toast.success("Depot updated successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to update depot");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: depotService.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["depots"] });
+      toast.success("Depot deleted successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to delete depot");
+    },
+  });
 
   const [modal, setModal] = useState<{ mode: "add" | "edit"; record?: DepotPayload } | null>(null);
   const [toDelete, setToDelete] = useState<Depot | null>(null);
@@ -108,50 +203,123 @@ export function Depots({
   };
 
   const handleSave = () => {
-    if (!formData.depotName) return;
-    const newRecord: DepotPayload = {
-      depotId: modal?.mode === "edit" && modal.record ? modal.record.depotId : "",
-      depotCode: modal?.mode === "edit" && formData.depotCode ? formData.depotCode : "",
-      depotName: formData.depotName,
-      corpId: formData.corpId || "MSRTC",
-      service: formData.service || "ST",
-      zoneId: formData.zoneId || "",
-      regionId: formData.regionId || "",
-      divisionId: formData.divisionId || "",
-      isActive: formData.isActive || true,
-    };
+    if (!formData.depotName || !formData.corpId || !formData.regionId || !formData.divisionId || !formData.zoneId) return;
 
     if (modal?.mode === "add") {
-      if (onAddDepot) onAddDepot(newRecord);
-      else setInternalDepots((prev) => [...prev]);
-      setSelCode(newRecord.depotCode);
+      addMutation.mutate({
+        depotName: formData.depotName.trim(),
+        corpId: formData.corpId,
+        service: formData.service || "ST",
+        regionId: formData.regionId,
+        divisionId: formData.divisionId,
+        zoneId: formData.zoneId,
+        isActive: true,
+      });
     } else if (modal?.mode === "edit" && modal.record) {
-      if (onUpdateDepot) onUpdateDepot(newRecord);
-      else setInternalDepots((prev) => prev.map((d) => (d)));
+      updateMutation.mutate({
+        depotId: modal.record.depotId,
+        depotName: formData.depotName.trim(),
+        corpId: formData.corpId,
+        service: formData.service || "ST",
+        regionId: formData.regionId,
+        divisionId: formData.divisionId,
+        zoneId: formData.zoneId,
+        isActive: formData.isActive !== undefined ? formData.isActive : true,
+      });
     }
     setModal(null);
   };
 
   const handleConfirmDelete = () => {
-    if (!toDelete) return;
-    if (onDeleteDepot) onDeleteDepot(toDelete.depotId);
-    else setInternalDepots((prev) => prev.filter((d) => d.depotId !== toDelete.depotId));
-    if (selected?.depotId === toDelete.depotId) {
-      const remaining = depots.filter((d) => d.depotId !== toDelete.depotId);
-      if (remaining.length > 0) setSelCode(remaining[0].depotId);
-    }
+    if (!toDelete || !toDelete.depotId) return;
+    deleteMutation.mutate({ depotId: toDelete.depotId });
     setToDelete(null);
   };
 
+  if (isLoading) {
+    return <div style={{ padding: 20, textAlign: "center", color: "var(--text-soft)" }}>Loading depots...</div>;
+  }
+
+  if (error) {
+    return <div style={{ padding: 20, textAlign: "center", color: "var(--red)" }}>Error loading depots: {(error as Error).message}</div>;
+  }
+
   return (
     <div>
+      <TableToolbar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search depots..."
+        style={{ gridTemplateColumns: "minmax(200px, 1.5fr) repeat(5, minmax(130px, 1fr))" }}
+        filters={[
+          {
+            key: "corporation",
+            label: "All Corporations",
+            value: filterCorp,
+            onChange: (val) => {
+              setFilterCorp(val);
+              setFilterRegion("");
+              setFilterDivision("");
+              setFilterZone("");
+            },
+            options: corporationOptions.map((c) => ({ value: String(c.corpId), label: c.corporationName })),
+          },
+          {
+            key: "region",
+            label: "All Regions",
+            value: filterRegion,
+            onChange: (val) => {
+              setFilterRegion(val);
+              setFilterDivision("");
+              setFilterZone("");
+            },
+            options: regionOptions.map((r) => ({ value: String(r.regionId), label: r.regionName })),
+            disabled: !filterCorp,
+          },
+          {
+            key: "division",
+            label: "All Divisions",
+            value: filterDivision,
+            onChange: (val) => {
+              setFilterDivision(val);
+              setFilterZone("");
+            },
+            options: divisionOptions
+              .filter((d) => !filterRegion || String(d.regionId) === filterRegion)
+              .map((d) => ({ value: String(d.divisionId), label: d.divisionName })),
+            disabled: !filterRegion,
+          },
+          {
+            key: "zone",
+            label: "All Zones",
+            value: filterZone,
+            onChange: setFilterZone,
+            options: zoneOptions
+              .filter((z) => !filterRegion || String(z.regionId) === filterRegion)
+              .map((z) => ({ value: String(z.zoneId), label: z.zoneName })),
+            disabled: !filterRegion,
+          },
+          {
+            key: "status",
+            label: "All Status",
+            value: filterStatus,
+            onChange: setFilterStatus,
+            options: [
+              { value: "Active", label: "Active" },
+              { value: "Inactive", label: "Inactive" },
+            ],
+          },
+        ]}
+      />
       <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 12 }}>
         <Card
           title="Depots"
           action={
-            <button onClick={handleOpenAdd} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: T.amberDeep, background: "none", border: "none", cursor: "pointer" }}>
-              <Plus size={13} /> Add depot
-            </button>
+            filterStatus !== "Inactive" && (
+              <button onClick={handleOpenAdd} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: T.amberDeep, background: "none", border: "none", cursor: "pointer" }}>
+                <Plus size={13} /> Add depot
+              </button>
+            )
           }
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -174,16 +342,23 @@ export function Depots({
                   </div>
                   <div className="stc-mono" style={{ fontSize: 11, color: T.textSoft, marginTop: 2 }}>{d.depotCode} · {d.zoneCode}</div>
                 </div>
-                <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                  <button onClick={(e) => { e.stopPropagation(); handleOpenEdit(d); }} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                    <Pencil size={13} color={T.textSoft} />
-                  </button>
-                  <button onClick={(e) => { e.stopPropagation(); setToDelete(d); }} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                    <Trash2 size={13} color={T.red} />
-                  </button>
-                </div>
+                {filterStatus !== "Inactive" && (
+                  <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                    <button onClick={(e) => { e.stopPropagation(); handleOpenEdit(d); }} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                      <Pencil size={13} color={T.textSoft} />
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); setToDelete(d); }} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                      <Trash2 size={13} color={T.red} />
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
+            {depots.length === 0 && (
+              <div style={{ padding: "10px 12px", fontSize: 13, color: T.textSoft, textAlign: "center" }}>
+                No depots match filter.
+              </div>
+            )}
           </div>
         </Card>
 
@@ -247,46 +422,114 @@ export function Depots({
             </div>
             <div className="stc-field">
               <label className="stc-field-label">Corporation</label>
-              <select value={formData.corpId || "MSRTC"} onChange={(e) => setFormData((s) => ({ ...s, corpId: e.target.value }))}>
-                {corporationOptions.map((c) => <option key={c.corpId} value={c.corpId}>{c.corporationName}</option>)}
+              <select
+                value={formData.corpId || ""}
+                onChange={(e) =>
+                  setFormData((s) => ({
+                    ...s,
+                    corpId: e.target.value,
+                    regionId: "",
+                    divisionId: "",
+                    zoneId: "",
+                  }))
+                }
+              >
+                <option value="">Select Corporation</option>
+                {corporationOptions.map((c) => (
+                  <option key={String(c.corpId || "")} value={String(c.corpId || "")}>
+                    {c.corporationName}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="stc-field">
               <label className="stc-field-label">Service</label>
-              <select value={formData.service || "ST"} onChange={(e) => setFormData((s) => ({ ...s, service: e.target.value }))}>
-                {["ST", "Local"].map((svc) => <option key={svc} value={svc}>{svc}</option>)}
-              </select>
-            </div>
-            <div className="stc-field">
-              <label className="stc-field-label">Zone</label>
-              <select value={formData.zoneId || "MSRTC"} onChange={(e) => setFormData((s) => ({ ...s, zoneId: e.target.value }))}>
-                {zoneOptions.map((c) => <option key={c.zoneId} value={c.zoneId}>{c.zoneName}</option>)}
+              <select
+                value={formData.service || ""}
+                onChange={(e) => setFormData((s) => ({ ...s, service: e.target.value }))}
+              >
+                <option value="">Select Service</option>
+                {["ST", "Local"].map((svc) => (
+                  <option key={svc} value={svc}>
+                    {svc}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="stc-field">
               <label className="stc-field-label">Region</label>
-              <select value={formData.regionId || "MSRTC"} onChange={(e) => setFormData((s) => ({ ...s, regionId: e.target.value }))}>
-                {regionOptions.map((c) => <option key={c.regionId} value={c.regionId}>{c.regionName}</option>)}
+              <select
+                value={formData.regionId || ""}
+                disabled={!formData.corpId}
+                onChange={(e) =>
+                  setFormData((s) => ({
+                    ...s,
+                    regionId: e.target.value,
+                    divisionId: "",
+                    zoneId: "",
+                  }))
+                }
+              >
+                <option value="">Select Region</option>
+                {regionOptions.map((c) => (
+                  <option key={c.regionId} value={c.regionId}>
+                    {c.regionName}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="stc-field">
               <label className="stc-field-label">Divisions</label>
-              <select value={formData.divisionId || "MSRTC"} onChange={(e) => setFormData((s) => ({ ...s, divisionId: e.target.value }))}>
-                {divisionOptions.map((c) => <option key={c.divisionId} value={c.divisionId}>{c.divisionName}</option>)}
+              <select
+                value={formData.divisionId || ""}
+                disabled={!formData.regionId}
+                onChange={(e) =>
+                  setFormData((s) => ({
+                    ...s,
+                    divisionId: e.target.value,
+                    zoneId: "",
+                  }))
+                }
+              >
+                <option value="">Select Division</option>
+                {divisionOptions
+                  .filter((d) => !formData.regionId || String(d.regionId) === formData.regionId)
+                  .map((c) => (
+                    <option key={c.divisionId} value={c.divisionId}>
+                      {c.divisionName}
+                    </option>
+                  ))}
               </select>
             </div>
-            {modal.mode === "edit" && (
-                <div className="stc-field">
-                  <label className="stc-field-label">Status</label>
-                  <select
-                    value={formData.isActive !== undefined ? (formData.isActive ? "Active" : "Inactive") : "Active"}
-                    onChange={(e) => setFormData((s) => ({ ...s, isActive: e.target.value === "Active" }))}
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                  </select>
-                </div>
-              )}
+            <div className="stc-field">
+              <label className="stc-field-label">Zone</label>
+              <select
+                value={formData.zoneId || ""}
+                disabled={!formData.regionId}
+                onChange={(e) => setFormData((s) => ({ ...s, zoneId: e.target.value }))}
+              >
+                <option value="">Select Zone</option>
+                {zoneOptions
+                  .filter((z) => !formData.regionId || String(z.regionId) === formData.regionId)
+                  .map((c) => (
+                    <option key={c.zoneId} value={c.zoneId}>
+                      {c.zoneName}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            {/* {modal.mode === "edit" && (
+              <div className="stc-field">
+                <label className="stc-field-label">Status</label>
+                <select
+                  value={formData.isActive !== undefined ? (formData.isActive ? "Active" : "Inactive") : "Active"}
+                  onChange={(e) => setFormData((s) => ({ ...s, isActive: e.target.value === "Active" }))}
+                >
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+              </div>
+            )} */}
           </div>
         </Modal>
       )}

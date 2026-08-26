@@ -25,10 +25,18 @@ export interface DeleteCorporationDto {
 }
 
 export const corporationService = {
-  getAll: async (searchText?: string, stateName?: string, isActive?: boolean): Promise<Corporation[]> => {
+  getAll: async (
+    searchText?: string,
+    stateName?: string,
+    districtName?: string,
+    cityName?: string,
+    isActive?: boolean
+  ): Promise<Corporation[]> => {
     const params = new URLSearchParams();
     if (searchText) params.append("searchText", searchText);
     if (stateName) params.append("stateName", stateName);
+    if (districtName) params.append("districtName", districtName);
+    if (cityName) params.append("cityName", cityName);
     if (isActive !== undefined) params.append("isActive", String(isActive));
 
     const queryString = params.toString();

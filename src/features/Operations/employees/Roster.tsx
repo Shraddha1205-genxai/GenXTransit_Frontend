@@ -212,7 +212,7 @@ export function Roster({ data, depotOptions = [], onAdd, onUpdate, onDelete }: R
               ))}
             </select>
           </div>
-          {modal.mode === "edit" && (
+          {/* {modal.mode === "edit" && (
                 <div className="stc-field">
                   <label className="stc-field-label">Status</label>
                   <select
@@ -223,7 +223,7 @@ export function Roster({ data, depotOptions = [], onAdd, onUpdate, onDelete }: R
                     <option value="Inactive">Inactive</option>
                   </select>
                 </div>
-              )}
+              )} */}
           </div>
         </Modal>
       )}

@@ -19,11 +19,12 @@ interface TableToolbarProps {
   onSearchChange: (value: string) => void;
   searchPlaceholder?: string;
   filters?: TableFilter[];
+  style?: React.CSSProperties;
 }
 
-export function TableToolbar({ search, onSearchChange, searchPlaceholder = "Search...", filters = [] }: TableToolbarProps) {
+export function TableToolbar({ search, onSearchChange, searchPlaceholder = "Search...", filters = [], style }: TableToolbarProps) {
   return (
-    <div className="stc-table-toolbar">
+    <div className="stc-table-toolbar" style={style}>
       <input
         className="stc-table-search"
         type="search"

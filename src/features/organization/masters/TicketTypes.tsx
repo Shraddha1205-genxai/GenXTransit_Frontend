@@ -99,6 +99,7 @@ export function TicketTypes({ data: propData, onAdd, onUpdate, onDelete }: Ticke
               <Th>Code</Th>
               <Th>Name</Th>
               <Th>Description</Th>
+              <Th>Status</Th>
               <Th align="right">Actions</Th>
             </tr>
           </thead>
@@ -108,6 +109,7 @@ export function TicketTypes({ data: propData, onAdd, onUpdate, onDelete }: Ticke
                 <Td mono>{item.ticketCode}</Td>
                 <Td>{item.ticketName}</Td>
                 <Td>{item.description}</Td>
+                <Td>{item.isActive ? "Active" : "Inactive"}</Td>
                 <Td align="right">
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
                     <button onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
@@ -164,7 +166,7 @@ export function TicketTypes({ data: propData, onAdd, onUpdate, onDelete }: Ticke
                   onChange={(e) => setFormData((s) => ({ ...s, description: e.target.value }))}
                 />
               </div>
-              {modal.mode === "edit" && (
+              {/* {modal.mode === "edit" && (
                 <div className="stc-field">
                   <label className="stc-field-label">Status</label>
                   <select
@@ -175,7 +177,7 @@ export function TicketTypes({ data: propData, onAdd, onUpdate, onDelete }: Ticke
                     <option value="Inactive">Inactive</option>
                   </select>
                 </div>
-              )}
+              )} */}
             </div>
           </Modal>
         )}

@@ -1898,81 +1898,26 @@ function UserManagementLayout() {
 
 
 function DepotsTab() {
-  const [depotsData, depotsCrud] = useCrud("depots", "code");
   const [vehiclesData] = useCrud("vehicles", "reg");
-  const [corporationsData] = useCrud("corporations", "id");
-  const [regionsData] = useCrud("regions", "id");
-  const [divisionsData] = useCrud("divisions", "id");
-  const [zonesData] = useCrud("zones", "id");
   return (
     <Depots
-      depotsData={depotsData}
       vehiclesData={vehiclesData}
-      corporationOptions={corporationsData}
-      regionOptions={regionsData}
-      divisionOptions={divisionsData}
-      zoneOptions={zonesData}
-      onAddDepot={depotsCrud.add}
-      onUpdateDepot={depotsCrud.update}
-      onDeleteDepot={depotsCrud.remove}
     />
   );
 }
 function BusStationTab() {
-  const [regionsData] = useCrud("regions", "id");
-  const [divisionsData] = useCrud("divisions", "id");
-  const [depotsData] = useCrud("depots", "id");
-  const [busStationsData, busStationsCrud] = useCrud(
-    "busStations",
-    "stationId",
-  );
   return (
-    <BusStation
-      data={busStationsData}
-      regionOptions={regionsData}
-      divisionOptions={divisionsData}
-      depotOptions={depotsData}
-      onAdd={busStationsCrud.add}
-      onUpdate={busStationsCrud.update}
-      onDelete={busStationsCrud.remove}
-    />
+    <BusStation />
   );
 }
 function WorkshopsTab() {
-  const [regionsData] = useCrud("regions", "regionId");
-  const [divisionsData] = useCrud("divisions", "divisionId");
-  const [depotsData] = useCrud("depots", "depotId");
-  const [workshopsData, workshopsCrud] = useCrud("workshops", "workShopId");
   return (
-    <Workshops
-      data={workshopsData}
-      regionOptions={regionsData}
-      divisionOptions={divisionsData}
-      depotOptions={depotsData}
-      onAdd={workshopsCrud.add}
-      onUpdate={workshopsCrud.update}
-      onDelete={workshopsCrud.remove}
-    />
+    <Workshops />
   );
 }
 function ParkingYardsTab() {
-  const [depotsData] = useCrud("depots", "depotId");
-  const [regionsData] = useCrud("regions", "regionId");
-  const [divisionsData] = useCrud("divisions", "divisionId");
-  const [parkingYardsData, parkingYardsCrud] = useCrud(
-    "parkingYards",
-    "parkingYardId",
-  );
   return (
-    <ParkingYards
-      data={parkingYardsData}
-      depotOptions={depotsData}
-      regionOptions={regionsData}
-      divisionOptions={divisionsData}
-      onAdd={parkingYardsCrud.add}
-      onUpdate={parkingYardsCrud.update}
-      onDelete={parkingYardsCrud.remove}
-    />
+    <ParkingYards />
   );
 }
 

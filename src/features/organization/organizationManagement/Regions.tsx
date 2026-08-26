@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
@@ -44,13 +44,14 @@ export function Regions() {
 
   const [formData, setFormData] = useState<Partial<Region>>({});
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("Active");
 
   const isActiveParam = statusFilter === "" ? undefined : statusFilter === "Active";
 
   const { data = [], isLoading, error } = useQuery({
     queryKey: ["regions", search, statusFilter],
     queryFn: () => regionService.getAll(search || undefined, isActiveParam),
+    staleTime: 0,
   });
 
   const addMutation = useMutation({
@@ -186,7 +187,7 @@ export function Regions() {
               <Th>Stations</Th>
               <Th>Workshops</Th>
               <Th>Status</Th>
-              <Th align="right">Actions</Th>
+              {statusFilter !== "Inactive" && <Th align="right">Actions</Th>}
             </tr>
           </thead>
           <tbody>
@@ -209,47 +210,49 @@ export function Regions() {
                 <Td>
                   <StatusBadge status={r.isActive ? "Active" : "Inactive"} />
                 </Td>
-                <Td align="right">
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 10,
-                      justifyContent: "flex-end",
-                    }}
-                  >
-                    <button
-                      onClick={() => handleOpenEdit(r)}
-                      title="Edit"
+                {statusFilter !== "Inactive" && (
+                  <Td align="right">
+                    <div
                       style={{
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: 2,
                         display: "flex",
+                        gap: 10,
+                        justifyContent: "flex-end",
                       }}
                     >
-                      <Pencil size={14} color={T.textSoft} />
-                    </button>
-                    <button
-                      onClick={() => setToDelete(r)}
-                      title="Delete"
-                      style={{
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: 2,
-                        display: "flex",
-                      }}
-                    >
-                      <Trash2 size={14} color={T.red} />
-                    </button>
-                  </div>
-                </Td>
+                      <button
+                        onClick={() => handleOpenEdit(r)}
+                        title="Edit"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: 2,
+                          display: "flex",
+                        }}
+                      >
+                        <Pencil size={14} color={T.textSoft} />
+                      </button>
+                      <button
+                        onClick={() => setToDelete(r)}
+                        title="Delete"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: 2,
+                          display: "flex",
+                        }}
+                      >
+                        <Trash2 size={14} color={T.red} />
+                      </button>
+                    </div>
+                  </Td>
+                )}
               </tr>
             ))}
             {filteredData.length === 0 && (
               <tr>
-                <Td colSpan={8}>
+                <Td colSpan={statusFilter === "Inactive" ? 7 : 8}>
                   {data.length === 0
                     ? "No records yet — use Add region to create one."
                     : "No regions match the search."}
@@ -306,7 +309,7 @@ export function Regions() {
                 />
               </div>
 
-              {modal.mode === "edit" && (
+              {/* {modal.mode === "edit" && (
                 <div className="stc-field">
                   <label className="stc-field-label">Status</label>
                   <select
@@ -322,7 +325,7 @@ export function Regions() {
                     <option value="Inactive">Inactive</option>
                   </select>
                 </div>
-              )}
+              )} */}
             </div>
           </Modal>
         )}

@@ -294,7 +294,7 @@ export function Route({ data: propData, stationOptions, regionOptions, onAdd, on
                   onChange={(e) => setFormData((s) => ({ ...s, duration: e.target.value }))}
                 />
               </div>
-              {modal.mode === "edit" && (
+              {/* {modal.mode === "edit" && (
                 <div className="stc-field">
                   <label className="stc-field-label">Status</label>
                   <select
@@ -305,7 +305,7 @@ export function Route({ data: propData, stationOptions, regionOptions, onAdd, on
                     <option value="Inactive">Inactive</option>
                   </select>
                 </div>
-              )}
+              )} */}
             </div>
           </Modal>
         )}

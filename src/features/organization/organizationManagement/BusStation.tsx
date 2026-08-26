@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { T } from "../../../constants/theme";
 import {
   Card,
@@ -11,6 +13,10 @@ import {
   Modal,
   Table,
 } from "../../../components/common";
+import { stationService } from "../../../api/organization/organizationManagement/stationService";
+import { regionService } from "../../../api/organization/organizationManagement/regionService";
+import { divisionService } from "../../../api/organization/organizationManagement/divisionService";
+import { depotService } from "../../../api/organization/organizationManagement/depotService";
 
 export interface BusStation {
   stationId: string;
@@ -39,23 +45,7 @@ export interface BusStationPayload {
   platforms: number;
   isActive: boolean;
 }
-export interface BusStationPageProps {
-  data?: BusStation[];
-  regionOptions?: {
-    regionId: string;
-    regionCode: string;
-    regionName: string;
-  }[];
-  divisionOptions?: {
-    divisionId: string;
-    divisionCode: string;
-    divisionName: string;
-  }[];
-  depotOptions?: { depotId: string; depotCode: string; depotName: string }[];
-  onAdd?: (item: BusStationPayload) => void;
-  onUpdate?: (item: BusStationPayload) => void;
-  onDelete?: (stationId: string) => void;
-}
+export interface BusStationPageProps {}
 
 const initialDefaultBusStations: BusStation[] = [
   {
@@ -111,55 +101,98 @@ const initialDefaultBusStations: BusStation[] = [
   },
 ];
 
-export function BusStation({
-  data: propData,
-  regionOptions = [],
-  divisionOptions = [],
-  depotOptions = [],
-  onAdd,
-  onUpdate,
-  onDelete,
-}: BusStationPageProps) {
-  const [internalData, setInternalData] = useState<BusStation[]>(
-    initialDefaultBusStations,
-  );
-  const data = propData || internalData;
+export function BusStation({}: BusStationPageProps) {
+  const queryClient = useQueryClient();
 
-  const [modal, setModal] = useState<{
-    mode: "add" | "edit";
-    record?: BusStation;
-  } | null>(null);
+  // Search & Filter States
+  const [search, setSearch] = useState("");
+  const [filterRegion, setFilterRegion] = useState("");
+  const [filterDivision, setFilterDivision] = useState("");
+  const [filterDepot, setFilterDepot] = useState("");
+  const [filterStatus, setFilterStatus] = useState("Active");
+
+  const isActiveParam = filterStatus === "" ? undefined : filterStatus === "Active";
+
+  // Main Query
+  const { data: stations = [], isLoading, error } = useQuery({
+    queryKey: ["stations", search, filterRegion, filterDivision, filterDepot, filterStatus],
+    queryFn: () =>
+      stationService.getAll(
+        search || undefined,
+        filterRegion || undefined,
+        filterDivision || undefined,
+        filterDepot || undefined,
+        isActiveParam
+      ),
+    staleTime: 0,
+  });
+
+  // Dropdown options queries
+  const { data: regionOptions = [] } = useQuery({
+    queryKey: ["regions", true],
+    queryFn: () => regionService.getAll(undefined, true),
+    staleTime: Infinity,
+  });
+
+  const { data: divisionOptions = [] } = useQuery({
+    queryKey: ["divisions", true],
+    queryFn: () => divisionService.getAll(undefined, undefined, true),
+    staleTime: Infinity,
+  });
+
+  const { data: depotOptions = [] } = useQuery({
+    queryKey: ["depots", true],
+    queryFn: () => depotService.getAll(undefined, undefined, undefined, undefined, undefined, true),
+    staleTime: Infinity,
+  });
+
+  // Mutations
+  const addMutation = useMutation({
+    mutationFn: stationService.insert,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["stations"] });
+      toast.success("Bus station created successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to create bus station");
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: stationService.update,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["stations"] });
+      toast.success("Bus station updated successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to update bus station");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: stationService.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["stations"] });
+      toast.success("Bus station deleted successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to delete bus station");
+    },
+  });
+
+  const [modal, setModal] = useState<{ mode: "add" | "edit"; record?: BusStation } | null>(null);
   const [toDelete, setToDelete] = useState<BusStation | null>(null);
   const [formData, setFormData] = useState<Partial<BusStation>>({});
-  const [search, setSearch] = useState("");
-  const [stationFilter, setStationFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-
-  const filteredData = data.filter((station) => {
-    const query = search.toLowerCase();
-    return (
-      (!query ||
-        [
-          station.stationCode,
-          station.stationName,
-          station.regionCode,
-          station.divisionCode,
-          station.depotCode,
-        ].some((value) => String(value).toLowerCase().includes(query))) &&
-      (!stationFilter || station.stationName === stationFilter) &&
-      (!statusFilter ||
-        (statusFilter === "Active" ? station.isActive : !station.isActive))
-    );
-  });
 
   const handleOpenAdd = () => {
     setFormData({
       stationCode: "",
       stationName: "",
-      regionId: regionOptions[0].regionId || "",
-      divisionId: divisionOptions[0].divisionId || "",
-      depotId: depotOptions[0].depotId || "",
+      regionId: "",
+      divisionId: "",
+      depotId: "",
       platforms: 0,
+      dailyFootfall: 0,
       isActive: true,
     });
     setModal({ mode: "add" });
@@ -171,85 +204,117 @@ export function BusStation({
   };
 
   const handleSave = () => {
-    if (!formData.stationName) return;
-    const newRecord: BusStationPayload = {
-      stationId:
-        modal?.mode === "edit" && modal.record ? modal.record.stationId : "",
-      stationCode:
-        modal?.mode === "edit" && modal.record ? modal.record.stationCode : "",
-      stationName: formData.stationName.trim(),
-      regionId: formData.regionId || regionOptions[0].regionId || "",
-      divisionId: formData.divisionId || divisionOptions[0].divisionId || "",
-      depotId: formData.depotId || depotOptions[0].depotId || "",
-      platforms: Number(formData.platforms) || 0,
-      // dailyFootfall: Number(formData.dailyFootfall) || 0,
-      isActive: modal?.mode === "edit" ? (formData.isActive ?? true) : true,
-    };
+    if (!formData.stationName || !formData.regionId || !formData.divisionId || !formData.depotId) return;
 
     if (modal?.mode === "add") {
-      if (onAdd) onAdd(newRecord);
-      else setInternalData((prev) => [...prev]);
+      addMutation.mutate({
+        stationName: formData.stationName.trim(),
+        regionId: formData.regionId,
+        divisionId: formData.divisionId,
+        depotId: formData.depotId,
+        platforms: Number(formData.platforms) || 0,
+        dailyFootfall: Number(formData.dailyFootfall) || 0,
+        isActive: true,
+      });
     } else if (modal?.mode === "edit" && modal.record) {
-      if (onUpdate) onUpdate(newRecord);
-      else setInternalData((prev) => prev.map((item) => item));
+      updateMutation.mutate({
+        stationId: modal.record.stationId,
+        stationName: formData.stationName.trim(),
+        regionId: formData.regionId,
+        divisionId: formData.divisionId,
+        depotId: formData.depotId,
+        platforms: Number(formData.platforms) || 0,
+        dailyFootfall: Number(formData.dailyFootfall) || 0,
+        isActive: formData.isActive !== undefined ? formData.isActive : true,
+      });
     }
     setModal(null);
   };
 
   const handleConfirmDelete = () => {
-    if (!toDelete) return;
-    if (onDelete) onDelete(toDelete.stationId);
-    else
-      setInternalData((prev) =>
-        prev.filter((item) => item.stationId !== toDelete.stationId),
-      );
+    if (!toDelete || !toDelete.stationId) return;
+    deleteMutation.mutate({ stationId: toDelete.stationId });
     setToDelete(null);
   };
+
+  if (isLoading) {
+    return <div style={{ padding: 20, textAlign: "center", color: "var(--text-soft)" }}>Loading bus stations...</div>;
+  }
+
+  if (error) {
+    return <div style={{ padding: 20, textAlign: "center", color: "var(--red)" }}>Error loading bus stations: {(error as Error).message}</div>;
+  }
 
   return (
     <div>
       <Card
         title="Bus Stations"
         action={
-          <button
-            onClick={handleOpenAdd}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-              fontSize: 12,
-              fontWeight: 600,
-              color: T.amberDeep,
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            <Plus size={13} /> Add bus station
-          </button>
+          filterStatus !== "Inactive" && (
+            <button
+              onClick={handleOpenAdd}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                fontSize: 12,
+                fontWeight: 600,
+                color: T.amberDeep,
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              <Plus size={13} /> Add bus station
+            </button>
+          )
         }
       >
         <TableToolbar
           search={search}
           onSearchChange={setSearch}
           searchPlaceholder="Search bus stations..."
+          style={{ gridTemplateColumns: "minmax(200px, 1.5fr) repeat(4, minmax(130px, 1fr))" }}
           filters={[
             {
-              key: "station",
-              label: "All station names",
-              value: stationFilter,
-              onChange: setStationFilter,
-              options: Array.from(
-                new Set(data.map((station) => station.stationName)),
-              )
-                .sort()
-                .map((name) => ({ value: name, label: name })),
+              key: "region",
+              label: "All Regions",
+              value: filterRegion,
+              onChange: (val) => {
+                setFilterRegion(val);
+                setFilterDivision("");
+                setFilterDepot("");
+              },
+              options: regionOptions.map((r) => ({ value: String(r.regionId), label: r.regionName })),
+            },
+            {
+              key: "division",
+              label: "All Divisions",
+              value: filterDivision,
+              onChange: (val) => {
+                setFilterDivision(val);
+                setFilterDepot("");
+              },
+              options: divisionOptions
+                .filter((d) => !filterRegion || String(d.regionId) === filterRegion)
+                .map((d) => ({ value: String(d.divisionId), label: d.divisionName })),
+              disabled: !filterRegion,
+            },
+            {
+              key: "depot",
+              label: "All Depots",
+              value: filterDepot,
+              onChange: setFilterDepot,
+              options: depotOptions
+                .filter((d) => !filterDivision || String(d.divisionId) === filterDivision)
+                .map((d) => ({ value: String(d.depotId), label: d.depotName })),
+              disabled: !filterDivision,
             },
             {
               key: "status",
               label: "Status",
-              value: statusFilter,
-              onChange: setStatusFilter,
+              value: filterStatus,
+              onChange: setFilterStatus,
               options: [
                 { value: "Active", label: "Active" },
                 { value: "Inactive", label: "Inactive" },
@@ -268,11 +333,11 @@ export function BusStation({
               <Th>Platforms</Th>
               <Th>Daily Footfall</Th>
               <Th>Status</Th>
-              <Th align="right">Actions</Th>
+              {filterStatus !== "Inactive" && <Th align="right">Actions</Th>}
             </tr>
           </thead>
           <tbody>
-            {filteredData.map((b: BusStation) => (
+            {stations.map((b: BusStation) => (
               <tr key={b.stationId} className="stc-row">
                 <Td mono>
                   <RouteChip>{b.stationCode}</RouteChip>
@@ -286,50 +351,50 @@ export function BusStation({
                 <Td>
                   <StatusBadge status={b.isActive ? "Active" : "Inactive"} />
                 </Td>
-                <Td align="right">
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 10,
-                      justifyContent: "flex-end",
-                    }}
-                  >
-                    <button
-                      onClick={() => handleOpenEdit(b)}
-                      title="Edit"
+                {filterStatus !== "Inactive" && (
+                  <Td align="right">
+                    <div
                       style={{
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: 2,
                         display: "flex",
+                        gap: 10,
+                        justifyContent: "flex-end",
                       }}
                     >
-                      <Pencil size={14} color={T.textSoft} />
-                    </button>
-                    <button
-                      onClick={() => setToDelete(b)}
-                      title="Delete"
-                      style={{
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: 2,
-                        display: "flex",
-                      }}
-                    >
-                      <Trash2 size={14} color={T.red} />
-                    </button>
-                  </div>
-                </Td>
+                      <button
+                        onClick={() => handleOpenEdit(b)}
+                        title="Edit"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: 2,
+                          display: "flex",
+                        }}
+                      >
+                        <Pencil size={14} color={T.textSoft} />
+                      </button>
+                      <button
+                        onClick={() => setToDelete(b)}
+                        title="Delete"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: 2,
+                          display: "flex",
+                        }}
+                      >
+                        <Trash2 size={14} color={T.red} />
+                      </button>
+                    </div>
+                  </Td>
+                )}
               </tr>
             ))}
-            {filteredData.length === 0 && (
+            {stations.length === 0 && (
               <tr>
-                <Td colSpan={9}>
-                  {data.length === 0
-                    ? "No records yet — use Add bus station to create one."
-                    : "No bus stations match the selected filters."}
+                <Td colSpan={filterStatus !== "Inactive" ? 9 : 8}>
+                  No bus stations match the selected filters.
                 </Td>
               </tr>
             )}
@@ -382,11 +447,17 @@ export function BusStation({
               <div className="stc-field">
                 <label className="stc-field-label">Region</label>
                 <select
-                  value={formData.regionId || "MSRTC"}
+                  value={formData.regionId || ""}
                   onChange={(e) =>
-                    setFormData((s) => ({ ...s, regionId: e.target.value }))
+                    setFormData((s) => ({
+                      ...s,
+                      regionId: e.target.value,
+                      divisionId: "",
+                      depotId: "",
+                    }))
                   }
                 >
+                  <option value="">Select Region</option>
                   {regionOptions.map((c) => (
                     <option key={c.regionId} value={c.regionId}>
                       {c.regionName}
@@ -397,31 +468,43 @@ export function BusStation({
               <div className="stc-field">
                 <label className="stc-field-label">Divisions</label>
                 <select
-                  value={formData.divisionId || "MSRTC"}
+                  value={formData.divisionId || ""}
+                  disabled={!formData.regionId}
                   onChange={(e) =>
-                    setFormData((s) => ({ ...s, divisionId: e.target.value }))
+                    setFormData((s) => ({
+                      ...s,
+                      divisionId: e.target.value,
+                      depotId: "",
+                    }))
                   }
                 >
-                  {divisionOptions.map((c) => (
-                    <option key={c.divisionId} value={c.divisionId}>
-                      {c.divisionName}
-                    </option>
-                  ))}
+                  <option value="">Select Division</option>
+                  {divisionOptions
+                    .filter((d) => !formData.regionId || String(d.regionId) === formData.regionId)
+                    .map((c) => (
+                      <option key={c.divisionId} value={c.divisionId}>
+                        {c.divisionName}
+                      </option>
+                    ))}
                 </select>
               </div>
               <div className="stc-field">
                 <label className="stc-field-label">Depot</label>
                 <select
-                  value={formData.depotId || "MSRTC"}
+                  value={formData.depotId || ""}
+                  disabled={!formData.divisionId}
                   onChange={(e) =>
                     setFormData((s) => ({ ...s, depotId: e.target.value }))
                   }
                 >
-                  {depotOptions.map((c) => (
-                    <option key={c.depotId} value={c.depotId}>
-                      {c.depotName}
-                    </option>
-                  ))}
+                  <option value="">Select Depot</option>
+                  {depotOptions
+                    .filter((d) => !formData.divisionId || String(d.divisionId) === formData.divisionId)
+                    .map((c) => (
+                      <option key={c.depotId} value={c.depotId}>
+                        {c.depotName}
+                      </option>
+                    ))}
                 </select>
               </div>
               <div className="stc-field">
@@ -437,15 +520,20 @@ export function BusStation({
                   }
                 />
               </div>
-              {/* <div className="stc-field">
+              <div className="stc-field">
                 <label className="stc-field-label">Daily Footfall</label>
                 <input
                   type="number"
                   value={formData.dailyFootfall ?? 0}
-                  onChange={(e) => setFormData((s) => ({ ...s, dailyFootfall: Number(e.target.value) }))}
+                  onChange={(e) =>
+                    setFormData((s) => ({
+                      ...s,
+                      dailyFootfall: Number(e.target.value),
+                    }))
+                  }
                 />
-              </div> */}
-              {modal.mode === "edit" && (
+              </div>
+              {/* {modal.mode === "edit" && (
                 <div className="stc-field">
                   <label className="stc-field-label">Status</label>
                   <select
@@ -461,7 +549,7 @@ export function BusStation({
                     <option value="Inactive">Inactive</option>
                   </select>
                 </div>
-              )}
+              )} */}
             </div>
           </Modal>
         )}

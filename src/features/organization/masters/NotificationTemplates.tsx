@@ -176,7 +176,7 @@ export function NotificationTemplates({ data: propData, onAdd, onUpdate, onDelet
                   onChange={(e) => setFormData((s) => ({ ...s, description: e.target.value }))}
                 />
               </div>
-              {modal.mode === "edit" && (
+              {/* {modal.mode === "edit" && (
                 <div className="stc-field">
                   <label className="stc-field-label">Status</label>
                   <select
@@ -187,7 +187,7 @@ export function NotificationTemplates({ data: propData, onAdd, onUpdate, onDelet
                     <option value="Inactive">Inactive</option>
                   </select>
                 </div>
-              )}
+              )} */}
             </div>
           </Modal>
         )}

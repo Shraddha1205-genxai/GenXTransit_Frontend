@@ -223,7 +223,7 @@ export function RoutesAndSchedule({ routes = [], fleetOptions = [], driverOption
                 ))}
               </select>
             </div>
-            {modal.mode === "edit" && (
+            {/* {modal.mode === "edit" && (
                 <div className="stc-field">
                   <label className="stc-field-label">Status</label>
                   <select
@@ -234,7 +234,7 @@ export function RoutesAndSchedule({ routes = [], fleetOptions = [], driverOption
                     <option value="Inactive">Inactive</option>
                   </select>
                 </div>
-              )}
+              )} */}
           </div>
         </Modal>
       )}

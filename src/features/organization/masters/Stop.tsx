@@ -196,7 +196,7 @@ export function Stop({ data: propData, routeOptions = [], onAdd, onUpdate, onDel
                   onChange={(e) => setFormData((s) => ({ ...s, stopOrder: Number(e.target.value) }))}
                 />
               </div>
-              {modal.mode === "edit" && (
+              {/* {modal.mode === "edit" && (
                 <div className="stc-field">
                   <label className="stc-field-label">Status</label>
                   <select
@@ -207,7 +207,7 @@ export function Stop({ data: propData, routeOptions = [], onAdd, onUpdate, onDel
                     <option value="Inactive">Inactive</option>
                   </select>
                 </div>
-              )}
+              )} */}
             </div>
           </Modal>
         )}

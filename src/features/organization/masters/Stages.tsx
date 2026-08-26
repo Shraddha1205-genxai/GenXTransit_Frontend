@@ -219,7 +219,7 @@ export function Stages({ data: propData, routeOptions = [], stopOptions = [], on
                   onChange={(e) => setFormData((s) => ({ ...s, distance: Number(e.target.value) }))}
                 />
               </div>
-              {modal.mode === "edit" && (
+              {/* {modal.mode === "edit" && (
                 <div className="stc-field">
                   <label className="stc-field-label">Status</label>
                   <select
@@ -230,7 +230,7 @@ export function Stages({ data: propData, routeOptions = [], stopOptions = [], on
                     <option value="Inactive">Inactive</option>
                   </select>
                 </div>
-              )}
+              )} */}
             </div>
           </Modal>
         )}

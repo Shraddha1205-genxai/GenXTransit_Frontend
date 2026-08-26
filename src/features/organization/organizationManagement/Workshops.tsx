@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { T } from "../../../constants/theme";
 import {
   Card,
@@ -11,6 +13,10 @@ import {
   Modal,
   Table,
 } from "../../../components/common";
+import { workshopService } from "../../../api/organization/organizationManagement/workshopService";
+import { regionService } from "../../../api/organization/organizationManagement/regionService";
+import { divisionService } from "../../../api/organization/organizationManagement/divisionService";
+import { depotService } from "../../../api/organization/organizationManagement/depotService";
 
 export interface Workshop {
   workShopId: string;
@@ -40,23 +46,7 @@ export interface WorkshopPayload {
   activeRepairJobs: number;
   isActive: boolean;
 }
-export interface WorkshopPageProps {
-  data?: Workshop[];
-  regionOptions?: {
-    regionId: string;
-    regionName: string;
-    regionCode: string;
-  }[];
-  divisionOptions?: {
-    divisionId: string;
-    divisionName: string;
-    divisionCode: string;
-  }[];
-  depotOptions?: { depotId: string; depotName: string; depotCode: string }[];
-  onAdd?: (item: WorkshopPayload) => void;
-  onUpdate?: (item: WorkshopPayload) => void;
-  onDelete?: (workShopId: string) => void;
-}
+export interface WorkshopPageProps {}
 
 const initialDefaultWorkshops: Workshop[] = [
   {
@@ -112,53 +102,96 @@ const initialDefaultWorkshops: Workshop[] = [
   },
 ];
 
-export function Workshops({
-  data: propData,
-  regionOptions = [],
-  divisionOptions = [],
-  depotOptions = [],
-  onAdd,
-  onUpdate,
-  onDelete,
-}: WorkshopPageProps) {
-  const [internalData, setInternalData] = useState<Workshop[]>(
-    initialDefaultWorkshops,
-  );
-  const data = propData || internalData;
+export function Workshops({}: WorkshopPageProps) {
+  const queryClient = useQueryClient();
 
-  const [modal, setModal] = useState<{
-    mode: "add" | "edit";
-    record?: Workshop;
-  } | null>(null);
+  // Search & Filter States
+  const [search, setSearch] = useState("");
+  const [filterRegion, setFilterRegion] = useState("");
+  const [filterDivision, setFilterDivision] = useState("");
+  const [filterDepot, setFilterDepot] = useState("");
+  const [filterStatus, setFilterStatus] = useState("Active");
+
+  const isActiveParam = filterStatus === "" ? undefined : filterStatus === "Active";
+
+  // Main Query
+  const { data: workshops = [], isLoading, error } = useQuery({
+    queryKey: ["workshops", search, filterRegion, filterDivision, filterDepot, filterStatus],
+    queryFn: () =>
+      workshopService.getAll(
+        search || undefined,
+        filterRegion || undefined,
+        filterDivision || undefined,
+        filterDepot || undefined,
+        isActiveParam
+      ),
+    staleTime: 0,
+  });
+
+  // Dropdown options queries
+  const { data: regionOptions = [] } = useQuery({
+    queryKey: ["regions", true],
+    queryFn: () => regionService.getAll(undefined, true),
+    staleTime: Infinity,
+  });
+
+  const { data: divisionOptions = [] } = useQuery({
+    queryKey: ["divisions", true],
+    queryFn: () => divisionService.getAll(undefined, undefined, true),
+    staleTime: Infinity,
+  });
+
+  const { data: depotOptions = [] } = useQuery({
+    queryKey: ["depots", true],
+    queryFn: () => depotService.getAll(undefined, undefined, undefined, undefined, undefined, true),
+    staleTime: Infinity,
+  });
+
+  // Mutations
+  const addMutation = useMutation({
+    mutationFn: workshopService.insert,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workshops"] });
+      toast.success("Workshop created successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to create workshop");
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: workshopService.update,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workshops"] });
+      toast.success("Workshop updated successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to update workshop");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: workshopService.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workshops"] });
+      toast.success("Workshop deleted successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to delete workshop");
+    },
+  });
+
+  const [modal, setModal] = useState<{ mode: "add" | "edit"; record?: Workshop } | null>(null);
   const [toDelete, setToDelete] = useState<Workshop | null>(null);
   const [formData, setFormData] = useState<Partial<Workshop>>({});
-  const [search, setSearch] = useState("");
-  const [depotFilter, setDepotFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-
-  const filteredData = data.filter((workshop) => {
-    const query = search.toLowerCase();
-    return (
-      (!query ||
-        [
-          workshop.workShopCode,
-          workshop.workShopName,
-          workshop.regionCode,
-          workshop.divisionCode,
-          workshop.depotCode,
-        ].some((value) => String(value).toLowerCase().includes(query))) &&
-      (!depotFilter || workshop.depotCode === depotFilter) &&
-      (!statusFilter ||
-        (statusFilter === "Active" ? workshop.isActive : !workshop.isActive))
-    );
-  });
 
   const handleOpenAdd = () => {
     setFormData({
+      workShopCode: "",
       workShopName: "",
-      regionId: regionOptions[0]?.regionId || "",
-      divisionId: divisionOptions[0]?.divisionId || "",
-      depotId: depotOptions[0]?.depotId || "",
+      regionId: "",
+      divisionId: "",
+      depotId: "",
       workBays: 0,
       activeRepairJobs: 0,
       isActive: true,
@@ -172,85 +205,117 @@ export function Workshops({
   };
 
   const handleSave = () => {
-    if (!formData.workShopName) return;
-    const newRecord: WorkshopPayload = {
-      workShopId:
-        modal?.mode === "edit" && modal.record ? modal.record.workShopId : "",
-      workShopCode:
-        modal?.mode === "edit" && modal.record ? modal.record.workShopCode : "",
-      workShopName: formData.workShopName.trim(),
-      regionId: formData.regionId || regionOptions[0]?.regionId || "",
-      divisionId: formData.divisionId || divisionOptions[0]?.divisionId || "",
-      depotId: formData.depotId || depotOptions[0]?.depotId || "",
-      workBays: Number(formData.workBays) || 0,
-      activeRepairJobs: Number(formData.activeRepairJobs) || 0,
-      isActive: modal?.mode === "edit" ? (formData.isActive ?? true) : true,
-    };
+    if (!formData.workShopName || !formData.regionId || !formData.divisionId || !formData.depotId) return;
 
     if (modal?.mode === "add") {
-      if (onAdd) onAdd(newRecord);
-      else setInternalData((prev) => [...prev]);
+      addMutation.mutate({
+        workShopName: formData.workShopName.trim(),
+        regionId: formData.regionId,
+        divisionId: formData.divisionId,
+        depotId: formData.depotId,
+        workBays: Number(formData.workBays) || 0,
+        activeRepairJobs: Number(formData.activeRepairJobs) || 0,
+        isActive: true,
+      });
     } else if (modal?.mode === "edit" && modal.record) {
-      if (onUpdate) onUpdate(newRecord);
-      else setInternalData((prev) => prev.map((item) => item));
+      updateMutation.mutate({
+        workShopId: modal.record.workShopId,
+        workShopName: formData.workShopName.trim(),
+        regionId: formData.regionId,
+        divisionId: formData.divisionId,
+        depotId: formData.depotId,
+        workBays: Number(formData.workBays) || 0,
+        activeRepairJobs: Number(formData.activeRepairJobs) || 0,
+        isActive: formData.isActive !== undefined ? formData.isActive : true,
+      });
     }
     setModal(null);
   };
 
   const handleConfirmDelete = () => {
-    if (!toDelete) return;
-    if (onDelete) onDelete(toDelete.workShopId);
-    else
-      setInternalData((prev) =>
-        prev.filter((item) => item.workShopId !== toDelete.workShopId),
-      );
+    if (!toDelete || !toDelete.workShopId) return;
+    deleteMutation.mutate({ workShopId: toDelete.workShopId });
     setToDelete(null);
   };
+
+  if (isLoading) {
+    return <div style={{ padding: 20, textAlign: "center", color: "var(--text-soft)" }}>Loading workshops...</div>;
+  }
+
+  if (error) {
+    return <div style={{ padding: 20, textAlign: "center", color: "var(--red)" }}>Error loading workshops: {(error as Error).message}</div>;
+  }
 
   return (
     <div>
       <Card
         title="Workshops"
         action={
-          <button
-            onClick={handleOpenAdd}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-              fontSize: 12,
-              fontWeight: 600,
-              color: T.amberDeep,
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            <Plus size={13} /> Add workshop
-          </button>
+          filterStatus !== "Inactive" && (
+            <button
+              onClick={handleOpenAdd}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                fontSize: 12,
+                fontWeight: 600,
+                color: T.amberDeep,
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              <Plus size={13} /> Add workshop
+            </button>
+          )
         }
       >
         <TableToolbar
           search={search}
           onSearchChange={setSearch}
           searchPlaceholder="Search workshops..."
+          style={{ gridTemplateColumns: "minmax(200px, 1.5fr) repeat(4, minmax(130px, 1fr))" }}
           filters={[
             {
+              key: "region",
+              label: "All Regions",
+              value: filterRegion,
+              onChange: (val) => {
+                setFilterRegion(val);
+                setFilterDivision("");
+                setFilterDepot("");
+              },
+              options: regionOptions.map((r) => ({ value: String(r.regionId), label: r.regionName })),
+            },
+            {
+              key: "division",
+              label: "All Divisions",
+              value: filterDivision,
+              onChange: (val) => {
+                setFilterDivision(val);
+                setFilterDepot("");
+              },
+              options: divisionOptions
+                .filter((d) => !filterRegion || String(d.regionId) === filterRegion)
+                .map((d) => ({ value: String(d.divisionId), label: d.divisionName })),
+              disabled: !filterRegion,
+            },
+            {
               key: "depot",
-              label: "All depot codes",
-              value: depotFilter,
-              onChange: setDepotFilter,
-              options: Array.from(
-                new Set(data.map((workshop) => workshop.depotCode)),
-              )
-                .sort()
-                .map((code) => ({ value: code, label: code })),
+              label: "All Depots",
+              value: filterDepot,
+              onChange: setFilterDepot,
+              options: depotOptions
+                .filter((d) => !filterDivision || String(d.divisionId) === filterDivision)
+                .map((d) => ({ value: String(d.depotId), label: d.depotName })),
+              disabled: !filterDivision,
             },
             {
               key: "status",
               label: "Status",
-              value: statusFilter,
-              onChange: setStatusFilter,
+              value: filterStatus,
+              onChange: setFilterStatus,
               options: [
                 { value: "Active", label: "Active" },
                 { value: "Inactive", label: "Inactive" },
@@ -269,12 +334,12 @@ export function Workshops({
               <Th>Work Bays</Th>
               <Th>Active Repair Jobs</Th>
               <Th>Status</Th>
-              <Th align="right">Actions</Th>
+              {filterStatus !== "Inactive" && <Th align="right">Actions</Th>}
             </tr>
           </thead>
           <tbody>
-            {filteredData.map((w: Workshop) => (
-              <tr key={w.workShopCode} className="stc-row">
+            {workshops.map((w: Workshop) => (
+              <tr key={w.workShopId} className="stc-row">
                 <Td mono>
                   <RouteChip>{w.workShopCode}</RouteChip>
                 </Td>
@@ -287,50 +352,50 @@ export function Workshops({
                 <Td>
                   <StatusBadge status={w.isActive ? "Active" : "Inactive"} />
                 </Td>
-                <Td align="right">
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 10,
-                      justifyContent: "flex-end",
-                    }}
-                  >
-                    <button
-                      onClick={() => handleOpenEdit(w)}
-                      title="Edit"
+                {filterStatus !== "Inactive" && (
+                  <Td align="right">
+                    <div
                       style={{
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: 2,
                         display: "flex",
+                        gap: 10,
+                        justifyContent: "flex-end",
                       }}
                     >
-                      <Pencil size={14} color={T.textSoft} />
-                    </button>
-                    <button
-                      onClick={() => setToDelete(w)}
-                      title="Delete"
-                      style={{
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: 2,
-                        display: "flex",
-                      }}
-                    >
-                      <Trash2 size={14} color={T.red} />
-                    </button>
-                  </div>
-                </Td>
+                      <button
+                        onClick={() => handleOpenEdit(w)}
+                        title="Edit"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: 2,
+                          display: "flex",
+                        }}
+                      >
+                        <Pencil size={14} color={T.textSoft} />
+                      </button>
+                      <button
+                        onClick={() => setToDelete(w)}
+                        title="Delete"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: 2,
+                          display: "flex",
+                        }}
+                      >
+                        <Trash2 size={14} color={T.red} />
+                      </button>
+                    </div>
+                  </Td>
+                )}
               </tr>
             ))}
-            {filteredData.length === 0 && (
+            {workshops.length === 0 && (
               <tr>
-                <Td colSpan={9}>
-                  {data.length === 0
-                    ? "No records yet — use Add workshop to create one."
-                    : "No workshops match the selected filters."}
+                <Td colSpan={filterStatus !== "Inactive" ? 9 : 8}>
+                  No workshops match the selected filters.
                 </Td>
               </tr>
             )}
@@ -381,13 +446,19 @@ export function Workshops({
                 />
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Region Code</label>
+                <label className="stc-field-label">Region</label>
                 <select
-                  value={formData.regionCode || ""}
+                  value={formData.regionId || ""}
                   onChange={(e) =>
-                    setFormData((s) => ({ ...s, regionCode: e.target.value }))
+                    setFormData((s) => ({
+                      ...s,
+                      regionId: e.target.value,
+                      divisionId: "",
+                      depotId: "",
+                    }))
                   }
                 >
+                  <option value="">Select Region</option>
                   {regionOptions.map((opt) => (
                     <option key={opt.regionId} value={opt.regionId}>
                       {opt.regionName}
@@ -396,33 +467,45 @@ export function Workshops({
                 </select>
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Division Code</label>
+                <label className="stc-field-label">Divisions</label>
                 <select
-                  value={formData.divisionCode || ""}
+                  value={formData.divisionId || ""}
+                  disabled={!formData.regionId}
                   onChange={(e) =>
-                    setFormData((s) => ({ ...s, divisionCode: e.target.value }))
+                    setFormData((s) => ({
+                      ...s,
+                      divisionId: e.target.value,
+                      depotId: "",
+                    }))
                   }
                 >
-                  {divisionOptions.map((opt) => (
-                    <option key={opt.divisionId} value={opt.divisionId}>
-                      {opt.divisionName}
-                    </option>
-                  ))}
+                  <option value="">Select Division</option>
+                  {divisionOptions
+                    .filter((d) => !formData.regionId || String(d.regionId) === formData.regionId)
+                    .map((opt) => (
+                      <option key={opt.divisionId} value={opt.divisionId}>
+                        {opt.divisionName}
+                      </option>
+                    ))}
                 </select>
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Depot Code</label>
+                <label className="stc-field-label">Depot</label>
                 <select
-                  value={formData.depotCode || ""}
+                  value={formData.depotId || ""}
+                  disabled={!formData.divisionId}
                   onChange={(e) =>
-                    setFormData((s) => ({ ...s, depotCode: e.target.value }))
+                    setFormData((s) => ({ ...s, depotId: e.target.value }))
                   }
                 >
-                  {depotOptions.map((opt) => (
-                    <option key={opt.depotId} value={opt.depotId}>
-                      {opt.depotName}
-                    </option>
-                  ))}
+                  <option value="">Select Depot</option>
+                  {depotOptions
+                    .filter((d) => !formData.divisionId || String(d.divisionId) === formData.divisionId)
+                    .map((opt) => (
+                      <option key={opt.depotId} value={opt.depotId}>
+                        {opt.depotName}
+                      </option>
+                    ))}
                 </select>
               </div>
               <div className="stc-field">
@@ -451,7 +534,7 @@ export function Workshops({
                   }
                 />
               </div>
-              {modal.mode === "edit" && (
+              {/* {modal.mode === "edit" && (
                 <div className="stc-field">
                   <label className="stc-field-label">Status</label>
                   <select
@@ -467,7 +550,7 @@ export function Workshops({
                     <option value="Inactive">Inactive</option>
                   </select>
                 </div>
-              )}
+              )} */}
             </div>
           </Modal>
         )}

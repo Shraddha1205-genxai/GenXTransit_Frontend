@@ -95,7 +95,9 @@ export function Sidebar({
           </div>
         )}
         {collapsed && (
-          <div
+          <button
+            onClick={onToggleCollapse}
+            title="Expand sidebar"
             style={{
               width: 26,
               height: 26,
@@ -104,30 +106,31 @@ export function Sidebar({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              border: "none",
+              cursor: "pointer",
+              padding: 0,
             }}
           >
             <Bus size={15} color={T.ink} />
-          </div>
+          </button>
         )}
-        <button
-          onClick={onToggleCollapse}
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: 4,
-            display: "flex",
-            color: T.sidebarTextSoft,
-            transition: "color 0.15s ease",
-          }}
-        >
-          {collapsed ? (
-            <PanelLeftOpen size={16} />
-          ) : (
+        {!collapsed && (
+          <button
+            onClick={onToggleCollapse}
+            title="Collapse sidebar"
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: 4,
+              display: "flex",
+              color: T.sidebarTextSoft,
+              transition: "color 0.15s ease",
+            }}
+          >
             <PanelLeftClose size={16} />
-          )}
-        </button>
+          </button>
+        )}
       </div>
 
       {/* Navigation */}

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
@@ -14,6 +14,259 @@ import {
 } from "../../../components/common";
 import { zoneService } from "../../../api/organization/organizationManagement/zoneService";
 import { regionService } from "../../../api/organization/organizationManagement/regionService";
+
+const toTitleCase = (str: string) => {
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
+
+interface SearchableMultiSelectProps {
+  value: string[];
+  onChange: (value: string[]) => void;
+  options: string[];
+  placeholder?: string;
+  disabled?: boolean;
+}
+
+function SearchableMultiSelect({
+  value = [],
+  onChange,
+  options,
+  placeholder = "Select options",
+  disabled = false,
+}: SearchableMultiSelectProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setSearch("");
+    }
+  }, [isOpen]);
+
+  const filteredOptions = useMemo(() => {
+    return options.filter((opt) =>
+      opt.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [options, search]);
+
+  const toggleOption = (opt: string) => {
+    const nextValue = value.includes(opt)
+      ? value.filter((v) => v !== opt)
+      : [...value, opt];
+    onChange(nextValue);
+  };
+
+  return (
+    <div ref={containerRef} style={{ position: "relative", width: "100%" }}>
+      <style>{`
+        .stc-field .multi-select-checkbox {
+          width: 16px !important;
+          height: 16px !important;
+          min-height: 16px !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          box-shadow: none !important;
+          appearance: checkbox !important;
+          -webkit-appearance: checkbox !important;
+          display: inline-block !important;
+          cursor: pointer !important;
+          background: transparent !important;
+          border: 1px solid var(--border) !important;
+        }
+        .stc-field .multi-select-checkbox:hover,
+        .stc-field .multi-select-checkbox:focus {
+          border-color: var(--amber) !important;
+          box-shadow: none !important;
+        }
+      `}</style>
+      <button
+        type="button"
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        disabled={disabled}
+        style={{
+          minHeight: "48px",
+          padding: "8px 40px 8px 16px",
+          background: disabled ? "var(--hover)" : "var(--panel)",
+          border: "1.5px solid var(--border)",
+          borderRadius: "10px",
+          color: value.length > 0 ? "var(--text)" : "var(--text-soft)",
+          fontSize: "14px",
+          fontFamily: "inherit",
+          outline: "none",
+          width: "100%",
+          boxShadow: "inset 0 1px 2px rgba(0,0,0,0.04)",
+          transition: "border-color 0.15s, box-shadow 0.15s",
+          cursor: disabled ? "not-allowed" : "pointer",
+          textAlign: "left",
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "6px",
+          alignItems: "center",
+          opacity: disabled ? 0.4 : 1,
+          position: "relative",
+        }}
+      >
+        {value.length > 0 ? (
+          value.map((val) => (
+            <span
+              key={val}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+                background: "var(--hover)",
+                border: "1px solid var(--border)",
+                borderRadius: "6px",
+                padding: "2px 8px",
+                fontSize: "12px",
+                color: "var(--text)",
+              }}
+            >
+              {val}
+              <span
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleOption(val);
+                }}
+                style={{
+                  cursor: "pointer",
+                  fontWeight: "bold",
+                  marginLeft: "2px",
+                  color: "var(--text-soft)",
+                }}
+              >
+                ×
+              </span>
+            </span>
+          ))
+        ) : (
+          placeholder
+        )}
+        <span
+          style={{
+            position: "absolute",
+            right: "16px",
+            top: "50%",
+            transform: "translateY(-50%)",
+            pointerEvents: "none",
+            borderLeft: "5px solid transparent",
+            borderRight: "5px solid transparent",
+            borderTop: "5px solid var(--text-soft)",
+          }}
+        />
+      </button>
+
+      {isOpen && (
+        <div
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            right: 0,
+            marginTop: "6px",
+            background: "var(--panel)",
+            border: "1.5px solid var(--border)",
+            borderRadius: "10px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+            zIndex: 1000,
+            maxHeight: "220px",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              padding: "8px",
+              borderBottom: "1px solid var(--border)",
+            }}
+          >
+            <input
+              type="text"
+              placeholder="Search districts..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{
+                height: "36px",
+                width: "100%",
+                padding: "0 12px",
+                background: "var(--hover)",
+                border: "1px solid var(--border)",
+                borderRadius: "6px",
+                fontSize: "13px",
+                outline: "none",
+                boxSizing: "border-box",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+          <div
+            style={{
+              overflowY: "auto",
+              flex: 1,
+            }}
+          >
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((opt) => {
+                const isSelected = value.includes(opt);
+                return (
+                  <div
+                    key={opt}
+                    onClick={() => toggleOption(opt)}
+                    style={{
+                      padding: "10px 16px",
+                      fontSize: "14px",
+                      color: "var(--text)",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      background: isSelected ? "var(--hover)" : "transparent",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      readOnly
+                      className="multi-select-checkbox"
+                    />
+                    <span>{opt}</span>
+                  </div>
+                );
+              })
+            ) : (
+              <div
+                style={{
+                  padding: "12px 16px",
+                  fontSize: "13px",
+                  color: "var(--text-soft)",
+                  textAlign: "center",
+                }}
+              >
+                No districts found
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export interface Zone {
   zoneId: string;
@@ -45,19 +298,36 @@ export function Zones() {
   const [formData, setFormData] = useState<Partial<Zone>>({});
   const [search, setSearch] = useState("");
   const [regionFilter, setRegionFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("Active");
 
   const isActiveParam = statusFilter === "" ? undefined : statusFilter === "Active";
 
   const { data = [], isLoading: isLoadingZones, error: errorZones } = useQuery({
     queryKey: ["zones", search, regionFilter, statusFilter],
     queryFn: () => zoneService.getAll(search || undefined, regionFilter || undefined, isActiveParam),
+    staleTime: 0,
   });
 
   const { data: regionOptions = [], isLoading: isLoadingRegions, error: errorRegions } = useQuery({
-    queryKey: ["regions"],
-    queryFn: () => regionService.getAll(),
+    queryKey: ["regions", true],
+    queryFn: () => regionService.getAll(undefined, true),
   });
+
+  // Fetch Maharashtra districts
+  const { data: districtsData } = useQuery({
+    queryKey: ["maharashtraDistricts"],
+    queryFn: async () => {
+      const res = await fetch("https://aniket-thapa.github.io/india-pincode-api/states/maharashtra.json");
+      if (!res.ok) throw new Error("Failed to fetch districts");
+      return res.json() as Promise<{ districts: { name: string; slug: string }[] }>;
+    },
+    staleTime: Infinity,
+  });
+
+  const districtsList = useMemo(() => {
+    if (!districtsData?.districts) return [];
+    return districtsData.districts.map((d) => toTitleCase(d.name)).sort();
+  }, [districtsData]);
 
   const addMutation = useMutation({
     mutationFn: zoneService.insert,
@@ -213,7 +483,7 @@ export function Zones() {
               <Th>Region Name</Th>
               <Th>Districts</Th>
               <Th>Status</Th>
-              <Th align="right">Actions</Th>
+              {statusFilter !== "Inactive" && <Th align="right">Actions</Th>}
             </tr>
           </thead>
           <tbody>
@@ -226,47 +496,49 @@ export function Zones() {
                 <Td>
                   <StatusBadge status={item.isActive ? "Active" : "Inactive"} />
                 </Td>
-                <Td align="right">
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 10,
-                      justifyContent: "flex-end",
-                    }}
-                  >
-                    <button
-                      onClick={() => handleOpenEdit(item)}
-                      title="Edit"
+                {statusFilter !== "Inactive" && (
+                  <Td align="right">
+                    <div
                       style={{
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: 2,
                         display: "flex",
+                        gap: 10,
+                        justifyContent: "flex-end",
                       }}
                     >
-                      <Pencil size={14} color={T.textSoft} />
-                    </button>
-                    <button
-                      onClick={() => setToDelete(item)}
-                      title="Delete"
-                      style={{
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: 2,
-                        display: "flex",
-                      }}
-                    >
-                      <Trash2 size={14} color={T.red} />
-                    </button>
-                  </div>
-                </Td>
+                      <button
+                        onClick={() => handleOpenEdit(item)}
+                        title="Edit"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: 2,
+                          display: "flex",
+                        }}
+                      >
+                        <Pencil size={14} color={T.textSoft} />
+                      </button>
+                      <button
+                        onClick={() => setToDelete(item)}
+                        title="Delete"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: 2,
+                          display: "flex",
+                        }}
+                      >
+                        <Trash2 size={14} color={T.red} />
+                      </button>
+                    </div>
+                  </Td>
+                )}
               </tr>
             ))}
             {filteredData.length === 0 && (
               <tr>
-                <Td colSpan={6}>
+                <Td colSpan={statusFilter === "Inactive" ? 5 : 6}>
                   {data.length === 0
                     ? "No records yet — use Add zone to create one."
                     : "No zones match the selected filters."}
@@ -309,7 +581,7 @@ export function Zones() {
                 </div>
               )}
 
-              <div className="stc-field" style={{ gridColumn: "1 / -1" }}>
+              <div className="stc-field">
                 <label className="stc-field-label">Zone Name</label>
                 <input
                   value={formData.zoneName || ""}
@@ -331,33 +603,28 @@ export function Zones() {
                     regionOptions.length > 0 &&
                     regionOptions.map((opt) => (
                       <option key={opt.regionId} value={opt.regionId}>
-                        {opt.regionCode}
+                        {opt.regionCode} / {opt.regionName}
                       </option>
                     ))}
                 </select>
               </div>
 
-              <div className="stc-field">
+              <div className="stc-field" style={{ gridColumn: "1 / -1" }}>
                 <label className="stc-field-label">Districts</label>
-                <input
-                  value={
-                    Array.isArray(formData.districts)
-                      ? formData.districts.join(", ")
-                      : formData.districts || ""
-                  }
-                  onChange={(e) =>
+                <SearchableMultiSelect
+                  value={formData.districts || []}
+                  onChange={(val) =>
                     setFormData((s) => ({
                       ...s,
-                      districts: e.target.value
-                        .split(",")
-                        .map((v) => v.trim())
-                        .filter(Boolean),
+                      districts: val,
                     }))
                   }
+                  options={districtsList}
+                  placeholder="Select Districts"
                 />
               </div>
 
-              {modal.mode === "edit" && (
+              {/* {modal.mode === "edit" && (
                 <div className="stc-field">
                   <label className="stc-field-label">Status</label>
                   <select
@@ -373,7 +640,7 @@ export function Zones() {
                     <option value="Inactive">Inactive</option>
                   </select>
                 </div>
-              )}
+              )} */}
             </div>
           </Modal>
         )}

@@ -1,7 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { T } from "../../../constants/theme";
 import { Card, RouteChip, TableToolbar, Th, Td, Modal, Table } from "../../../components/common";
+import { parkingYardService } from "../../../api/organization/organizationManagement/parkingYardService";
+import { regionService } from "../../../api/organization/organizationManagement/regionService";
+import { divisionService } from "../../../api/organization/organizationManagement/divisionService";
+import { depotService } from "../../../api/organization/organizationManagement/depotService";
 
 export interface ParkingYard {
   yardId: string;
@@ -31,15 +37,7 @@ export interface ParkingYardPayload {
   occupied: number;
   isActive: boolean;
 }
-export interface ParkingYardPageProps {
-  data?: ParkingYard[];
-  depotOptions?: {depotId: string; depotCode: string, depotName: string}[];
-  regionOptions?: {regionId: string; regionCode: string, regionName: string}[];
-  divisionOptions?: {divisionId: string; divisionCode: string, divisionName: string}[];
-  onAdd?: (item: ParkingYardPayload) => void;
-  onUpdate?: (item: ParkingYardPayload) => void;
-  onDelete?: (yardId: string) => void;
-}
+export interface ParkingYardPageProps {}
 
 const initialDefaultParkingYards: ParkingYard[] = [
   { yardId: "01", yardCode: "PY-PUN-01", yardName: "Swargate Overnight Yard",regionId: "001", regionCode: "REG-PUN", regionName: "Pune", divisionId: "001", divisionCode: "DIV-PUN", divisionName: "Pune Division", depotId: "MSRTC-PUN-01", depotCode: "DEP-PUN-01", depotName: "MSRTC-PUN-01", capacity: 110, occupied: 88, isActive: true },
@@ -47,25 +45,100 @@ const initialDefaultParkingYards: ParkingYard[] = [
   { yardId: "03", yardCode: "PY-MUM-07", yardName: "Colaba Parking Yard",regionId: "002", regionCode: "REG-MUM", regionName: "Mumbai", divisionId: "002", divisionCode: "DIV-MUM", divisionName: "Mumbai Division", depotId: "BEST-MUM-07", depotCode: "DEP-MUM-07", depotName: "BEST-MUM-07", capacity: 52, occupied: 40, isActive: true },
 ];
 
-export function ParkingYards({ data: propData, depotOptions = [], regionOptions = [], divisionOptions = [], onAdd, onUpdate, onDelete }: ParkingYardPageProps) {
-  const [internalData, setInternalData] = useState<ParkingYard[]>(initialDefaultParkingYards);
-  const data = propData || internalData;
+export function ParkingYards({}: ParkingYardPageProps) {
+  const queryClient = useQueryClient();
+
+  // Search & Filter States
+  const [search, setSearch] = useState("");
+  const [filterRegion, setFilterRegion] = useState("");
+  const [filterDivision, setFilterDivision] = useState("");
+  const [filterDepot, setFilterDepot] = useState("");
+  const [filterStatus, setFilterStatus] = useState("Active");
+
+  const isActiveParam = filterStatus === "" ? undefined : filterStatus === "Active";
+
+  // Main Query
+  const { data: parkingYards = [], isLoading, error } = useQuery({
+    queryKey: ["parkingYards", search, filterRegion, filterDivision, filterDepot, filterStatus],
+    queryFn: () =>
+      parkingYardService.getAll(
+        search || undefined,
+        filterRegion || undefined,
+        filterDivision || undefined,
+        filterDepot || undefined,
+        isActiveParam
+      ),
+    staleTime: 0,
+  });
+
+  // Dropdown options queries
+  const { data: regionOptions = [] } = useQuery({
+    queryKey: ["regions", true],
+    queryFn: () => regionService.getAll(undefined, true),
+    staleTime: Infinity,
+  });
+
+  const { data: divisionOptions = [] } = useQuery({
+    queryKey: ["divisions", true],
+    queryFn: () => divisionService.getAll(undefined, undefined, true),
+    staleTime: Infinity,
+  });
+
+  const { data: depotOptions = [] } = useQuery({
+    queryKey: ["depots", true],
+    queryFn: () => depotService.getAll(undefined, undefined, undefined, undefined, undefined, true),
+    staleTime: Infinity,
+  });
+
+  // Mutations
+  const addMutation = useMutation({
+    mutationFn: parkingYardService.insert,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["parkingYards"] });
+      toast.success("Parking yard created successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to create parking yard");
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: parkingYardService.update,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["parkingYards"] });
+      toast.success("Parking yard updated successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to update parking yard");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: parkingYardService.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["parkingYards"] });
+      toast.success("Parking yard deleted successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to delete parking yard");
+    },
+  });
 
   const [modal, setModal] = useState<{ mode: "add" | "edit"; record?: ParkingYard } | null>(null);
   const [toDelete, setToDelete] = useState<ParkingYard | null>(null);
   const [formData, setFormData] = useState<Partial<ParkingYard>>({});
-  const [search, setSearch] = useState("");
-  const [regionFilter, setRegionFilter] = useState("");
-  const [divisionFilter, setDivisionFilter] = useState("");
-  const [depotFilter, setDepotFilter] = useState("");
-
-  const filteredData = data.filter((yard) => {
-    const query = search.toLowerCase();
-    return (!query || [yard.yardCode, yard.yardName, yard.regionCode, yard.divisionCode, yard.depotCode].some((value) => String(value).toLowerCase().includes(query))) && (!regionFilter || yard.regionId === regionFilter) && (!divisionFilter || yard.divisionId === divisionFilter) && (!depotFilter || yard.depotId === depotFilter);
-  });
 
   const handleOpenAdd = () => {
-    setFormData({ yardId: "", yardCode: "", yardName: "", regionId: regionOptions[0]?.regionId || "", divisionId: divisionOptions[0]?.divisionId || "", depotId: depotOptions[0]?.depotId || "", capacity: 0, occupied: 0 });
+    setFormData({
+      yardCode: "",
+      yardName: "",
+      regionId: "",
+      divisionId: "",
+      depotId: "",
+      capacity: 0,
+      occupied: 0,
+      isActive: true,
+    });
     setModal({ mode: "add" });
   };
 
@@ -75,57 +148,112 @@ export function ParkingYards({ data: propData, depotOptions = [], regionOptions 
   };
 
   const handleSave = () => {
-    if (!formData.yardCode || !formData.yardName) return;
-    const newRecord: ParkingYardPayload = {
-      yardId: modal?.mode === "edit" && modal.record ? modal.record.yardId : "",
-      yardCode: formData.yardCode,
-      yardName: formData.yardName,
-      regionId: formData.regionId || regionOptions[0]?.regionId || "",
-      divisionId: formData.divisionId || divisionOptions[0]?.divisionId || "",
-      depotId: formData.depotId || depotOptions[0]?.depotId || "",
-      capacity: Number(formData.capacity) || 0,
-      occupied: Number(formData.occupied) || 0,
-      isActive: formData.isActive ?? true,
-    };
+    if (!formData.yardName || !formData.regionId || !formData.divisionId || !formData.depotId) return;
 
     if (modal?.mode === "add") {
-      if (onAdd) onAdd(newRecord);
-      else setInternalData((prev) => [...prev]);
+      addMutation.mutate({
+        yardName: formData.yardName.trim(),
+        regionId: formData.regionId,
+        divisionId: formData.divisionId,
+        depotId: formData.depotId,
+        capacity: Number(formData.capacity) || 0,
+        occupied: Number(formData.occupied) || 0,
+        isActive: true,
+      });
     } else if (modal?.mode === "edit" && modal.record) {
-      if (onUpdate) onUpdate(newRecord);
-      else setInternalData((prev) => prev.map((item) => (item)));
+      updateMutation.mutate({
+        yardId: modal.record.yardId,
+        yardName: formData.yardName.trim(),
+        regionId: formData.regionId,
+        divisionId: formData.divisionId,
+        depotId: formData.depotId,
+        capacity: Number(formData.capacity) || 0,
+        occupied: Number(formData.occupied) || 0,
+        isActive: formData.isActive !== undefined ? formData.isActive : true,
+      });
     }
     setModal(null);
   };
 
   const handleConfirmDelete = () => {
-    if (!toDelete) return;
-    if (onDelete) onDelete(toDelete.yardId);
-    else setInternalData((prev) => prev.filter((item) => item.yardId !== toDelete.yardId));
+    if (!toDelete || !toDelete.yardId) return;
+    deleteMutation.mutate({ yardId: toDelete.yardId });
     setToDelete(null);
   };
+
+  if (isLoading) {
+    return <div style={{ padding: 20, textAlign: "center", color: "var(--text-soft)" }}>Loading parking yards...</div>;
+  }
+
+  if (error) {
+    return <div style={{ padding: 20, textAlign: "center", color: "var(--red)" }}>Error loading parking yards: {(error as Error).message}</div>;
+  }
 
   return (
     <div>
       <Card
         title="Parking Yards"
         action={
-          <button
-            onClick={handleOpenAdd}
-            style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: T.amberDeep, background: "none", border: "none", cursor: "pointer" }}
-          >
-            <Plus size={13} /> Add parking yard
-          </button>
+          filterStatus !== "Inactive" && (
+            <button
+              onClick={handleOpenAdd}
+              style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: T.amberDeep, background: "none", border: "none", cursor: "pointer" }}
+            >
+              <Plus size={13} /> Add parking yard
+            </button>
+          )
         }
       >
         <TableToolbar
           search={search}
           onSearchChange={setSearch}
           searchPlaceholder="Search parking yards..."
+          style={{ gridTemplateColumns: "minmax(200px, 1.5fr) repeat(4, minmax(130px, 1fr))" }}
           filters={[
-            { key: "region", label: "All regions", value: regionFilter, onChange: (value) => { setRegionFilter(value); setDivisionFilter(""); setDepotFilter(""); }, options: regionOptions.map((region) => ({ value: region.regionId, label: region.regionName })) },
-            { key: "division", label: "All divisions", value: divisionFilter, onChange: (value) => { setDivisionFilter(value); setDepotFilter(""); }, disabled: !regionFilter, options: divisionOptions.filter((division) => !regionFilter || data.some((yard) => yard.regionId === regionFilter && yard.divisionId === division.divisionId)).map((division) => ({ value: division.divisionId, label: division.divisionName })) },
-            { key: "depot", label: "All depots", value: depotFilter, onChange: setDepotFilter, disabled: !divisionFilter, options: depotOptions.filter((depot) => !divisionFilter || data.some((yard) => yard.divisionId === divisionFilter && yard.depotId === depot.depotId)).map((depot) => ({ value: depot.depotId, label: depot.depotCode })) },
+            {
+              key: "region",
+              label: "All Regions",
+              value: filterRegion,
+              onChange: (val) => {
+                setFilterRegion(val);
+                setFilterDivision("");
+                setFilterDepot("");
+              },
+              options: regionOptions.map((r) => ({ value: String(r.regionId), label: r.regionName })),
+            },
+            {
+              key: "division",
+              label: "All Divisions",
+              value: filterDivision,
+              onChange: (val) => {
+                setFilterDivision(val);
+                setFilterDepot("");
+              },
+              options: divisionOptions
+                .filter((d) => !filterRegion || String(d.regionId) === filterRegion)
+                .map((d) => ({ value: String(d.divisionId), label: d.divisionName })),
+              disabled: !filterRegion,
+            },
+            {
+              key: "depot",
+              label: "All Depots",
+              value: filterDepot,
+              onChange: setFilterDepot,
+              options: depotOptions
+                .filter((d) => !filterDivision || String(d.divisionId) === filterDivision)
+                .map((d) => ({ value: String(d.depotId), label: d.depotName })),
+              disabled: !filterDivision,
+            },
+            {
+              key: "status",
+              label: "Status",
+              value: filterStatus,
+              onChange: setFilterStatus,
+              options: [
+                { value: "Active", label: "Active" },
+                { value: "Inactive", label: "Inactive" },
+              ],
+            },
           ]}
         />
         <Table>
@@ -138,11 +266,11 @@ export function ParkingYards({ data: propData, depotOptions = [], regionOptions 
               <Th>Depot</Th>
               <Th>Capacity</Th>
               <Th>Occupied</Th>
-              <Th align="right">Actions</Th>
+              {filterStatus !== "Inactive" && <Th align="right">Actions</Th>}
             </tr>
           </thead>
           <tbody>
-            {filteredData.map((p: ParkingYard) => (
+            {parkingYards.map((p: ParkingYard) => (
               <tr key={p.yardId} className="stc-row">
                 <Td mono><RouteChip>{p.yardCode}</RouteChip></Td>
                 <Td>{p.yardName}</Td>
@@ -151,20 +279,26 @@ export function ParkingYards({ data: propData, depotOptions = [], regionOptions 
                 <Td mono>{p.depotCode}</Td>
                 <Td>{p.capacity}</Td>
                 <Td>{p.occupied} ({p.capacity ? Math.round((p.occupied / p.capacity) * 100) : 0}%)</Td>
-                <Td align="right">
-                  <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                    <button onClick={() => handleOpenEdit(p)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                      <Pencil size={14} color={T.textSoft} />
-                    </button>
-                    <button onClick={() => setToDelete(p)} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                      <Trash2 size={14} color={T.red} />
-                    </button>
-                  </div>
-                </Td>
+                {filterStatus !== "Inactive" && (
+                  <Td align="right">
+                    <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                      <button onClick={() => handleOpenEdit(p)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                        <Pencil size={14} color={T.textSoft} />
+                      </button>
+                      <button onClick={() => setToDelete(p)} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                        <Trash2 size={14} color={T.red} />
+                      </button>
+                    </div>
+                  </Td>
+                )}
               </tr>
             ))}
-            {filteredData.length === 0 && (
-              <tr><Td colSpan={8}>{data.length === 0 ? "No records yet — use Add parking yard to create one." : "No parking yards match the selected filters."}</Td></tr>
+            {parkingYards.length === 0 && (
+              <tr>
+                <Td colSpan={filterStatus !== "Inactive" ? 8 : 7}>
+                  No parking yards match the selected filters.
+                </Td>
+              </tr>
             )}
           </tbody>
         </Table>
@@ -200,13 +334,23 @@ export function ParkingYards({ data: propData, depotOptions = [], regionOptions 
                 />
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Regions</label>
+                <label className="stc-field-label">Region</label>
                 <select
                   value={formData.regionId || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, regionId: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((s) => ({
+                      ...s,
+                      regionId: e.target.value,
+                      divisionId: "",
+                      depotId: "",
+                    }))
+                  }
                 >
+                  <option value="">Select Region</option>
                   {regionOptions.map((opt) => (
-                    <option key={opt.regionId} value={opt.regionId}>{opt.regionName}</option>
+                    <option key={opt.regionId} value={opt.regionId}>
+                      {opt.regionName}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -214,22 +358,42 @@ export function ParkingYards({ data: propData, depotOptions = [], regionOptions 
                 <label className="stc-field-label">Divisions</label>
                 <select
                   value={formData.divisionId || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, divisionId: e.target.value }))}
+                  disabled={!formData.regionId}
+                  onChange={(e) =>
+                    setFormData((s) => ({
+                      ...s,
+                      divisionId: e.target.value,
+                      depotId: "",
+                    }))
+                  }
                 >
-                  {divisionOptions.map((opt) => (
-                    <option key={opt.divisionId} value={opt.divisionId}>{opt.divisionName}</option>
-                  ))}
+                  <option value="">Select Division</option>
+                  {divisionOptions
+                    .filter((d) => !formData.regionId || String(d.regionId) === formData.regionId)
+                    .map((opt) => (
+                      <option key={opt.divisionId} value={opt.divisionId}>
+                        {opt.divisionName}
+                      </option>
+                    ))}
                 </select>
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Depots</label>
+                <label className="stc-field-label">Depot</label>
                 <select
                   value={formData.depotId || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, depotId: e.target.value }))}
+                  disabled={!formData.divisionId}
+                  onChange={(e) =>
+                    setFormData((s) => ({ ...s, depotId: e.target.value }))
+                  }
                 >
-                  {depotOptions.map((opt) => (
-                    <option key={opt.depotId} value={opt.depotId}>{opt.depotName}</option>
-                  ))}
+                  <option value="">Select Depot</option>
+                  {depotOptions
+                    .filter((d) => !formData.divisionId || String(d.divisionId) === formData.divisionId)
+                    .map((opt) => (
+                      <option key={opt.depotId} value={opt.depotId}>
+                        {opt.depotName}
+                      </option>
+                    ))}
                 </select>
               </div>
               <div className="stc-field">
@@ -237,7 +401,9 @@ export function ParkingYards({ data: propData, depotOptions = [], regionOptions 
                 <input
                   type="number"
                   value={formData.capacity ?? 0}
-                  onChange={(e) => setFormData((s) => ({ ...s, capacity: Number(e.target.value) }))}
+                  onChange={(e) =>
+                    setFormData((s) => ({ ...s, capacity: Number(e.target.value) }))
+                  }
                 />
               </div>
               <div className="stc-field">
@@ -245,18 +411,28 @@ export function ParkingYards({ data: propData, depotOptions = [], regionOptions 
                 <input
                   type="number"
                   value={formData.occupied ?? 0}
-                  onChange={(e) => setFormData((s) => ({ ...s, occupied: Number(e.target.value) }))}
+                  onChange={(e) =>
+                    setFormData((s) => ({ ...s, occupied: Number(e.target.value) }))
+                  }
                 />
               </div>
-              {modal.mode === "edit" && (
+              {/* {modal.mode === "edit" && (
                 <div className="stc-field">
                   <label className="stc-field-label">Status</label>
-                  <select value={formData.isActive ? "Active" : "Inactive"} onChange={(e) => setFormData((s) => ({ ...s, isActive: e.target.value === "Active" }))}>
+                  <select
+                    value={formData.isActive ? "Active" : "Inactive"}
+                    onChange={(e) =>
+                      setFormData((s) => ({
+                        ...s,
+                        isActive: e.target.value === "Active",
+                      }))
+                    }
+                  >
                     <option value="Active">Active</option>
                     <option value="Inactive">Inactive</option>
                   </select>
                 </div>
-              )}
+              )} */}
             </div>
           </Modal>
         )}

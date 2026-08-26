@@ -9,6 +9,7 @@ export interface TaxConfiguration {
   textType: string;
   rate: string;
   description?: string;
+  isActive: boolean;
 }
 
 export interface TaxConfigurationProps {
@@ -19,9 +20,9 @@ export interface TaxConfigurationProps {
 }
 
 const initialDefaultTaxConfigurations: TaxConfiguration[] = [
-  { textId: "TX-GST5", textCode: "TX-GST5", textType: "GST — Local city service", rate: "5%", description: "GST for local city service" },
-  { textId: "TX-GST12", textCode: "TX-GST12", textType: "GST — AC / Luxury service", rate: "12%", description: "GST for AC / Luxury service" },
-  { textId: "TX-CESS", textCode: "TX-CESS", textType: "State road cess", rate: "1%", description: "State road cess" },
+  { textId: "TX-GST5", textCode: "TX-GST5", textType: "GST — Local city service", rate: "5%", description: "GST for local city service", isActive: true },
+  { textId: "TX-GST12", textCode: "TX-GST12", textType: "GST — AC / Luxury service", rate: "12%", description: "GST for AC / Luxury service", isActive: true },
+  { textId: "TX-CESS", textCode: "TX-CESS", textType: "State road cess", rate: "1%", description: "State road cess", isActive: true },
 ];
 
 export function TaxConfiguration({ data: propData, onAdd, onUpdate, onDelete }: TaxConfigurationProps) {
@@ -51,6 +52,7 @@ export function TaxConfiguration({ data: propData, onAdd, onUpdate, onDelete }: 
       textType: formData.textType || "",
       rate: formData.rate || "",
       description: formData.description || "",
+      isActive: formData.isActive || true
     };
 
     if (modal?.mode === "add") {
@@ -99,6 +101,7 @@ export function TaxConfiguration({ data: propData, onAdd, onUpdate, onDelete }: 
               <Th>Code</Th>
               <Th>Name</Th>
               <Th align="right">Rate</Th>
+              <Th>Status</Th>
               <Th align="right">Actions</Th>
             </tr>
           </thead>
@@ -108,6 +111,7 @@ export function TaxConfiguration({ data: propData, onAdd, onUpdate, onDelete }: 
                 <Td mono>{item.textCode}</Td>
                 <Td>{item.textType}</Td>
                 <Td align="right">{item.rate}</Td>
+                <Td>{item.isActive ? "Active" : "Inactive"}</Td>
                 <Td align="right">
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
                     <button onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>

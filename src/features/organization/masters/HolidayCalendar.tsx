@@ -198,7 +198,7 @@ export function HolidayCalendar({ data: propData, onAdd, onUpdate, onDelete }: H
                   {typeOptions.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
               </div>
-              {modal.mode === "edit" && (
+              {/* {modal.mode === "edit" && (
                 <div className="stc-field">
                   <label className="stc-field-label">Status</label>
                   <select
@@ -209,7 +209,7 @@ export function HolidayCalendar({ data: propData, onAdd, onUpdate, onDelete }: H
                     <option value="Inactive">Inactive</option>
                   </select>
                 </div>
-              )}
+              )} */}
             </div>
           </Modal>
         )}

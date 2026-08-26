@@ -184,7 +184,7 @@ export function ComplaintCategories({ data: propData, onAdd, onUpdate, onDelete 
                   onChange={(e) => setFormData((s) => ({ ...s, description: e.target.value }))}
                 />
               </div>
-              {modal.mode === "edit" && (
+              {/* {modal.mode === "edit" && (
                 <div className="stc-field">
                   <label className="stc-field-label">Status</label>
                   <select
@@ -195,7 +195,7 @@ export function ComplaintCategories({ data: propData, onAdd, onUpdate, onDelete 
                     <option value="Inactive">Inactive</option>
                   </select>
                 </div>
-              )}
+              )} */}
             </div>
           </Modal>
         )}

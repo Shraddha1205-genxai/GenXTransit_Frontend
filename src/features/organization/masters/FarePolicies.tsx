@@ -234,7 +234,7 @@ export function FarePolicies({ data: propData, routeOptions = [], categoryOption
                   onChange={(e) => setFormData((s) => ({ ...s, rateDescription: e.target.value }))}
                 />
               </div>
-              {modal.mode === "edit" && (
+              {/* {modal.mode === "edit" && (
                 <div className="stc-field">
                   <label className="stc-field-label">Status</label>
                   <select
@@ -245,7 +245,7 @@ export function FarePolicies({ data: propData, routeOptions = [], categoryOption
                     <option value="Inactive">Inactive</option>
                   </select>
                 </div>
-              )}
+              )} */}
             </div>
           </Modal>
         )}

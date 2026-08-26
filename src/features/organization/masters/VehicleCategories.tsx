@@ -197,7 +197,7 @@ export function VehicleCategories({ data: propData, onAdd, onUpdate, onDelete }:
                   <option value="City">City</option>
                 </select>
               </div>
-              {modal.mode === "edit" && (
+              {/* {modal.mode === "edit" && (
                 <div className="stc-field">
                   <label className="stc-field-label">Status</label>
                   <select
@@ -208,7 +208,7 @@ export function VehicleCategories({ data: propData, onAdd, onUpdate, onDelete }:
                     <option value="Inactive">Inactive</option>
                   </select>
                 </div>
-              )}
+              )} */}
             </div>
           </Modal>
         )}
