@@ -25,7 +25,7 @@ export interface RolePayload {
   isActive: boolean;
 }
 
-const initialRoles: RoleRecord[] = [
+export const initialRoles: RoleRecord[] = [
   {
     roleId: "ROL-001",
     roleName: "Super Admin",

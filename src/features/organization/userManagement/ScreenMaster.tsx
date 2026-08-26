@@ -38,7 +38,7 @@ export interface ScreenEditPayload extends ScreenPayload {
   isActive: boolean;
 }
 
-const sectionOptions = [
+export const sectionOptions = [
   { sectionId: "ORG", sectionName: "Organization" },
   { sectionId: "OPS", sectionName: "Operations" },
   { sectionId: "COM", sectionName: "Commercial" },
@@ -46,7 +46,7 @@ const sectionOptions = [
   { sectionId: "SUP", sectionName: "Support" },
 ];
 
-const initialScreens: ScreenRecord[] = [
+export const initialScreens: ScreenRecord[] = [
   {
     screenId: "SCR-ID-001",
     pageKey: "organization-management",
