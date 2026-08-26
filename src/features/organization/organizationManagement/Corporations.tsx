@@ -1,7 +1,10 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { T } from "../../../constants/theme";
 import { Card, StatusBadge, Th, Td, Modal, Table } from "../../../components/common";
+import { corporationService } from "../../../api/organization/organizationManagement/corporationService";
 
 export interface Corporation {
   corpId: string | false | undefined;
@@ -13,47 +16,46 @@ export interface Corporation {
   isActive: boolean;
 }
 
-export interface CorporationPageProps {
-  data?: Corporation[];
-  onAdd?: (item: Corporation) => void;
-  onUpdate?: (item: Corporation) => void;
-  onDelete?: (corpId: string) => void;
-}
+export function Corporations() {
+  const queryClient = useQueryClient();
 
-const initialDefaultCorporations: Corporation[] = [
-  {
-    corpId: "CORP-ID-1001",
-    corpCode: "CORP-0001",
-    corporationName: "Maharashtra State Road Transport Corporation",
-    stateName: "Maharashtra",
-    districtName: "Pune",
-    cityName: "Pune",
-    isActive: true,
-  },
-  {
-    corpId: "CORP-ID-1002",
-    corpCode: "CORP-0002",
-    corporationName: "Brihanmumbai Electric Supply and Transport",
-    stateName: "Maharashtra",
-    districtName: "Mumbai",
-    cityName: "Mumbai",
-    isActive: true,
-  },
-  {
-    corpId: "CORP-ID-1003",
-    corpCode: "CORP-0003",
-    corporationName: "Pune Mahanagar Parivahan Mahamandal Limited",
-    stateName: "Maharashtra",
-    districtName: "Pune",
-    cityName: "Pune",
-    isActive: true,
-  },
-];
+  const { data = [], isLoading, error } = useQuery({
+    queryKey: ["corporations"],
+    queryFn: () => corporationService.getAll(),
+  });
 
+  const addMutation = useMutation({
+    mutationFn: corporationService.insert,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["corporations"] });
+      toast.success("Corporation created successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to create corporation");
+    },
+  });
 
-export function Corporations({ data: propData, onAdd, onUpdate, onDelete }: CorporationPageProps) {
-  const [internalData, setInternalData] = useState<Corporation[]>(initialDefaultCorporations);
-  const data = propData ?? internalData;
+  const updateMutation = useMutation({
+    mutationFn: corporationService.update,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["corporations"] });
+      toast.success("Corporation updated successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to update corporation");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: corporationService.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["corporations"] });
+      toast.success("Corporation deleted successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to delete corporation");
+    },
+  });
 
   const [modal, setModal] = useState<{ mode: "add" | "edit"; record?: Corporation } | null>(null);
   const [toDelete, setToDelete] = useState<Corporation | null>(null);
@@ -78,42 +80,41 @@ export function Corporations({ data: propData, onAdd, onUpdate, onDelete }: Corp
   const handleSave = () => {
     if (!formData.corporationName || !formData.stateName || !formData.districtName || !formData.cityName) return;
 
-    const newRecord: Corporation = {
-      corpId: modal?.mode === "edit" && modal.record && modal.record.corpId,
-      corpCode: modal?.mode === "edit" && modal.record && modal.record.corpCode || "",
-      corporationName: formData.corporationName.trim(),
-      stateName: formData.stateName.trim(),
-      districtName: formData.districtName.trim(),
-      cityName: formData.cityName.trim(),
-      isActive: modal?.mode === "edit" ? (formData.isActive !== undefined ? formData.isActive : true) : true,
-    };
-
     if (modal?.mode === "add") {
-      if (onAdd) {
-        onAdd(newRecord);
-      } else {
-        setInternalData((prev) => [...prev, newRecord]);
-      }
+      addMutation.mutate({
+        corporationName: formData.corporationName.trim(),
+        stateName: formData.stateName.trim(),
+        districtName: formData.districtName.trim(),
+        cityName: formData.cityName.trim(),
+        isActive: true,
+      });
     } else if (modal?.mode === "edit" && modal.record) {
-      if (onUpdate) {
-        onUpdate(newRecord);
-      } else {
-        setInternalData((prev) => prev.map((item) => (item)));
-      }
+      updateMutation.mutate({
+        corporationId: String(modal.record.corpId),
+        corporationName: formData.corporationName.trim(),
+        stateName: formData.stateName.trim(),
+        districtName: formData.districtName.trim(),
+        cityName: formData.cityName.trim(),
+        isActive: formData.isActive !== undefined ? formData.isActive : true,
+      });
     }
 
     setModal(null);
   };
 
   const handleConfirmDelete = () => {
-    if (!toDelete) return;
-    if (onDelete) {
-      onDelete(toDelete?.corpId || '0');
-    } else {
-      setInternalData((prev) => prev.filter((item) => item.corpId !== toDelete.corpId));
-    }
+    if (!toDelete || !toDelete.corpId) return;
+    deleteMutation.mutate({ corporationId: String(toDelete.corpId) });
     setToDelete(null);
   };
+
+  if (isLoading) {
+    return <div style={{ padding: 20, textAlign: "center", color: "var(--text-soft)" }}>Loading corporations...</div>;
+  }
+
+  if (error) {
+    return <div style={{ padding: 20, textAlign: "center", color: "var(--red)" }}>Error loading corporations: {(error as Error).message}</div>;
+  }
 
   return (
     <div>

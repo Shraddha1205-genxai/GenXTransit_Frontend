@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { T } from "../../../constants/theme";
 import {
   Card,
@@ -11,6 +13,8 @@ import {
   Table,
   StatusBadge,
 } from "../../../components/common";
+import { divisionService } from "../../../api/organization/organizationManagement/divisionService";
+import { regionService } from "../../../api/organization/organizationManagement/regionService";
 
 export interface Division {
   divisionId: string;
@@ -33,71 +37,9 @@ export interface DivisionPayload {
   regionId: string;
   isActive: boolean;
 }
-export interface DivisionPageProps {
-  data?: Division[];
-  regionOptions?: {
-    regionId: string;
-    regionCode: string;
-    regionName?: string;
-  }[];
-  onAdd?: (item: DivisionPayload) => void;
-  onUpdate?: (item: DivisionPayload) => void;
-  onDelete?: (divisionId: string) => void;
-}
 
-const initialDefaultDivisions: Division[] = [
-  {
-    divisionId: "DIV-ID-1001",
-    divisionCode: "DIV-0001",
-    depots: 2,
-    workshops: 1,
-    stations: 3,
-    parkingYards: 1,
-    divisionName: "Pune Division",
-    regionId: "0001",
-    regionCode: "REG-0001",
-    regionName: "Pune Region",
-    isActive: true,
-  },
-  {
-    divisionId: "DIV-ID-1002",
-    divisionCode: "DIV-0002",
-    depots: 1,
-    workshops: 1,
-    stations: 2,
-    parkingYards: 1,
-    divisionName: "Solapur Division",
-    regionId: "0001",
-    regionCode: "REG-0001",
-    regionName: "Pune Region",
-    isActive: true,
-  },
-  {
-    divisionId: "DIV-ID-1003",
-    divisionCode: "DIV-0003",
-    depots: 1,
-    workshops: 1,
-    stations: 2,
-    parkingYards: 1,
-    divisionName: "Mumbai Division",
-    regionId: "0002",
-    regionCode: "REG-0002",
-    regionName: "Mumbai Region",
-    isActive: true,
-  },
-];
-
-export function Divisions({
-  data: propData,
-  regionOptions = [],
-  onAdd,
-  onUpdate,
-  onDelete,
-}: DivisionPageProps) {
-  const [internalData, setInternalData] = useState<Division[]>(
-    initialDefaultDivisions,
-  );
-  const data = propData || internalData;
+export function Divisions() {
+  const queryClient = useQueryClient();
 
   const [modal, setModal] = useState<{
     mode: "add" | "edit";
@@ -109,20 +51,61 @@ export function Divisions({
   const [regionFilter, setRegionFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
-  const filteredData = data.filter((division) => {
-    const query = search.toLowerCase();
-    return (
-      (!query ||
-        [
-          division.divisionCode,
-          division.divisionName,
-          division.regionName,
-        ].some((value) => String(value).toLowerCase().includes(query))) &&
-      (!regionFilter || division.regionId === regionFilter) &&
-      (!statusFilter ||
-        (statusFilter === "Active" ? division.isActive : !division.isActive))
-    );
+  const isActiveParam = statusFilter === "" ? undefined : statusFilter === "Active";
+
+  const { data = [], isLoading: isLoadingDivisions, error: errorDivisions } = useQuery({
+    queryKey: ["divisions", search, regionFilter, statusFilter],
+    queryFn: () => divisionService.getAll(search || undefined, regionFilter || undefined, isActiveParam),
   });
+
+  const { data: regionOptions = [], isLoading: isLoadingRegions, error: errorRegions } = useQuery({
+    queryKey: ["regions"],
+    queryFn: () => regionService.getAll(),
+  });
+
+  const addMutation = useMutation({
+    mutationFn: divisionService.insert,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["divisions"] });
+      toast.success("Division created successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to create division");
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: divisionService.update,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["divisions"] });
+      toast.success("Division updated successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to update division");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: divisionService.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["divisions"] });
+      toast.success("Division deleted successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to delete division");
+    },
+  });
+
+  if (isLoadingDivisions || isLoadingRegions) {
+    return <div style={{ padding: 20, textAlign: "center", color: "var(--text-soft)" }}>Loading divisions...</div>;
+  }
+
+  if (errorDivisions || errorRegions) {
+    const errorMsg = (errorDivisions as Error)?.message || (errorRegions as Error)?.message;
+    return <div style={{ padding: 20, textAlign: "center", color: "var(--red)" }}>Error loading data: {errorMsg}</div>;
+  }
+
+  const filteredData = data;
 
   const handleOpenAdd = () => {
     setFormData({
@@ -142,41 +125,29 @@ export function Divisions({
 
   const handleSave = () => {
     if (!formData.divisionName) return;
-    const newRecord: DivisionPayload = {
-      divisionId:
-        modal?.mode === "edit" && modal.record ? modal.record.divisionId : "",
-      divisionCode:
-        modal?.mode === "edit" && modal.record ? modal.record.divisionCode : "",
-      divisionName: formData.divisionName.trim(),
-      regionId: formData.regionId || regionOptions[0]?.regionId || "",
-      isActive: formData.isActive ?? true,
-    };
+
+    const rId = formData.regionId || regionOptions[0]?.regionId || "";
 
     if (modal?.mode === "add") {
-      if (onAdd) {
-        onAdd(newRecord);
-      } else {
-        setInternalData((prev) => [...prev]);
-      }
+      addMutation.mutate({
+        divisionName: formData.divisionName.trim(),
+        regionId: rId,
+        isActive: true,
+      });
     } else if (modal?.mode === "edit" && modal.record) {
-      if (onUpdate) {
-        onUpdate(newRecord);
-      } else {
-        setInternalData((prev) => prev.map((item) => item));
-      }
+      updateMutation.mutate({
+        divisionId: modal.record.divisionId,
+        divisionName: formData.divisionName.trim(),
+        regionId: rId,
+        isActive: formData.isActive ?? true,
+      });
     }
     setModal(null);
   };
 
   const handleConfirmDelete = () => {
     if (!toDelete) return;
-    if (onDelete) {
-      onDelete(toDelete.divisionId);
-    } else {
-      setInternalData((prev) =>
-        prev.filter((item) => item.divisionId !== toDelete.divisionId),
-      );
-    }
+    deleteMutation.mutate({ divisionId: toDelete.divisionId });
     setToDelete(null);
   };
 
