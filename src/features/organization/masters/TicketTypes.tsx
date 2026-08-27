@@ -1,7 +1,19 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { T } from "../../../constants/theme";
-import { Card, Th, Td, Modal, Table } from "../../../components/common";
+import {
+  Card,
+  Th,
+  Td,
+  Modal,
+  Table,
+  TableToolbar,
+  StatusBadge,
+} from "../../../components/common";
+import { ticketTypeService } from "../../../api/organization/master/ticketTypeService";
+import { useDebounce } from "../../../hooks/useDebounce";
 
 export interface TicketType {
   ticketId: string;
@@ -11,29 +23,71 @@ export interface TicketType {
   isActive: boolean;
 }
 
-export interface TicketTypesProps {
-  data?: TicketType[];
-  onAdd?: (item: TicketType) => void;
-  onUpdate?: (item: TicketType) => void;
-  onDelete?: (ticketId: string) => void;
-}
+export function TicketTypes() {
+  const queryClient = useQueryClient();
 
-const initialDefaultTicketTypes: TicketType[] = [
-  { ticketId: "TT-ADULT", ticketCode: "TT-ADULT", ticketName: "Adult", description: "Standard full fare", isActive: true },
-  { ticketId: "TT-STUDENT", ticketCode: "TT-STUDENT", ticketName: "Student", description: "Concession ticket", isActive: true },
-  { ticketId: "TT-SENIOR", ticketCode: "TT-SENIOR", ticketName: "Senior citizen", description: "Discounted fare", isActive: true },
-];
-
-export function TicketTypes({ data: propData, onAdd, onUpdate, onDelete }: TicketTypesProps) {
-  const [internalData, setInternalData] = useState<TicketType[]>(initialDefaultTicketTypes);
-  const data = propData ?? internalData;
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 500);
+  const [statusFilter, setStatusFilter] = useState("Active");
 
   const [modal, setModal] = useState<{ mode: "add" | "edit"; record?: TicketType } | null>(null);
   const [toDelete, setToDelete] = useState<TicketType | null>(null);
   const [formData, setFormData] = useState<Partial<TicketType>>({});
 
+  const isActiveParam = statusFilter === "" ? undefined : statusFilter === "Active";
+
+  const { data: ticketTypes = [], isLoading, error } = useQuery({
+    queryKey: ["ticketTypes", debouncedSearch, statusFilter],
+    queryFn: () =>
+      ticketTypeService.getAll(
+        debouncedSearch || undefined,
+        isActiveParam,
+        1,
+        100
+      ),
+    staleTime: 0,
+  });
+
+  const addMutation = useMutation({
+    mutationFn: ticketTypeService.insert,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ticketTypes"] });
+      toast.success("Ticket type added successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to add ticket type");
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ticketTypeService.update,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ticketTypes"] });
+      toast.success("Ticket type updated successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to update ticket type");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: ticketTypeService.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ticketTypes"] });
+      toast.success("Ticket type deleted successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to delete ticket type");
+    },
+  });
+
   const handleOpenAdd = () => {
-    setFormData({ ticketId: "", ticketCode: "", ticketName: "", description: "", isActive: true });
+    setFormData({
+      ticketCode: "",
+      ticketName: "",
+      description: "",
+      isActive: true,
+    });
     setModal({ mode: "add" });
   };
 
@@ -43,40 +97,28 @@ export function TicketTypes({ data: propData, onAdd, onUpdate, onDelete }: Ticke
   };
 
   const handleSave = () => {
-    if (!formData.ticketId || !formData.ticketName) return;
+    if (!formData.ticketName) return;
 
-    const newRecord: TicketType = {
-      ticketId: formData.ticketId || "",
-      ticketCode: formData.ticketCode || "",
+    const payload = {
       ticketName: formData.ticketName || "",
       description: formData.description || "",
-      isActive: formData.isActive || true,
     };
 
     if (modal?.mode === "add") {
-      if (onAdd) {
-        onAdd(newRecord);
-      } else {
-        setInternalData((prev) => [...prev]);
-      }
+      addMutation.mutate(payload);
     } else if (modal?.mode === "edit" && modal.record) {
-      if (onUpdate) {
-        onUpdate(newRecord);
-      } else {
-        setInternalData((prev) => prev.map((item: TicketType) => (item)));
-      }
+      updateMutation.mutate({
+        ...payload,
+        ticketId: formData.ticketId || "",
+      });
     }
 
     setModal(null);
   };
 
   const handleConfirmDelete = () => {
-    if (!toDelete) return;
-    if (onDelete) {
-      onDelete(toDelete.ticketId);
-    } else {
-      setInternalData((prev) => prev.filter((item: TicketType) => item.ticketId !== toDelete.ticketId));
-    }
+    if (!toDelete || !toDelete.ticketId) return;
+    deleteMutation.mutate({ ticketId: toDelete.ticketId });
     setToDelete(null);
   };
 
@@ -85,14 +127,33 @@ export function TicketTypes({ data: propData, onAdd, onUpdate, onDelete }: Ticke
       <Card
         title="Ticket types"
         action={
-          <button
-            onClick={handleOpenAdd}
-            style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: T.amberDeep, background: "none", border: "none", cursor: "pointer" }}
-          >
-            <Plus size={13} /> Add type
-          </button>
+          statusFilter !== "Inactive" && (
+            <button
+              onClick={handleOpenAdd}
+              style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: T.amberDeep, background: "none", border: "none", cursor: "pointer" }}
+            >
+              <Plus size={13} /> Add type
+            </button>
+          )
         }
       >
+        <TableToolbar
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search ticket types..."
+          filters={[
+            {
+              key: "status",
+              label: "Status",
+              value: statusFilter,
+              onChange: setStatusFilter,
+              options: [
+                { value: "Active", label: "Active" },
+                { value: "Inactive", label: "Inactive" },
+              ],
+            },
+          ]}
+        />
         <Table>
           <thead>
             <tr>
@@ -100,32 +161,52 @@ export function TicketTypes({ data: propData, onAdd, onUpdate, onDelete }: Ticke
               <Th>Name</Th>
               <Th>Description</Th>
               <Th>Status</Th>
-              <Th align="right">Actions</Th>
+              {statusFilter !== "Inactive" && <Th align="right">Actions</Th>}
             </tr>
           </thead>
           <tbody>
-            {data.map((item: TicketType) => (
-              <tr key={item.ticketId} className="stc-row">
-                <Td mono>{item.ticketCode}</Td>
-                <Td>{item.ticketName}</Td>
-                <Td>{item.description}</Td>
-                <Td>{item.isActive ? "Active" : "Inactive"}</Td>
-                <Td align="right">
-                  <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                    <button onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                      <Pencil size={14} color={T.textSoft} />
-                    </button>
-                    <button onClick={() => setToDelete(item)} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                      <Trash2 size={14} color={T.red} />
-                    </button>
-                  </div>
+            {isLoading ? (
+              <tr>
+                <Td colSpan={statusFilter === "Inactive" ? 4 : 5}>
+                  <div style={{ textAlign: "center", color: "var(--text-soft)", padding: 10 }}>Loading ticket types...</div>
                 </Td>
               </tr>
-            ))}
-            {data.length === 0 && (
+            ) : error ? (
               <tr>
-                <Td colSpan={4}>No records yet — use Add type to create one.</Td>
+                <Td colSpan={statusFilter === "Inactive" ? 4 : 5}>
+                  <div style={{ textAlign: "center", color: "var(--red)", padding: 10 }}>Error loading ticket types: {(error as Error).message}</div>
+                </Td>
               </tr>
+            ) : (
+              <>
+                {ticketTypes.map((item: TicketType) => (
+                  <tr key={item.ticketId} className="stc-row">
+                    <Td mono>{item.ticketCode}</Td>
+                    <Td>{item.ticketName}</Td>
+                    <Td>{item.description}</Td>
+                    <Td>
+                      <StatusBadge status={item.isActive ? "Active" : "Inactive"} />
+                    </Td>
+                    {statusFilter !== "Inactive" && (
+                      <Td align="right">
+                        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                          <button onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                            <Pencil size={14} color={T.textSoft} />
+                          </button>
+                          <button onClick={() => setToDelete(item)} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                            <Trash2 size={14} color={T.red} />
+                          </button>
+                        </div>
+                      </Td>
+                    )}
+                  </tr>
+                ))}
+                {ticketTypes.length === 0 && (
+                  <tr>
+                    <Td colSpan={statusFilter === "Inactive" ? 4 : 5}>No records yet — use Add type to create one.</Td>
+                  </tr>
+                )}
+              </>
             )}
           </tbody>
         </Table>
@@ -144,14 +225,15 @@ export function TicketTypes({ data: propData, onAdd, onUpdate, onDelete }: Ticke
             }
           >
             <div className="stc-form-grid">
-             {modal.mode == "edit" && (<div className="stc-field">
-                <label className="stc-field-label">Code</label>
-                <input
-                  disabled={modal.mode === "edit"}
-                  value={formData.ticketCode || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, ticketCode: e.target.value }))}
-                />
-              </div>)}
+              {modal.mode === "edit" && (
+                <div className="stc-field">
+                  <label className="stc-field-label">Code</label>
+                  <input
+                    disabled
+                    value={formData.ticketCode || ""}
+                  />
+                </div>
+              )}
               <div className="stc-field">
                 <label className="stc-field-label">Name</label>
                 <input
@@ -166,18 +248,6 @@ export function TicketTypes({ data: propData, onAdd, onUpdate, onDelete }: Ticke
                   onChange={(e) => setFormData((s) => ({ ...s, description: e.target.value }))}
                 />
               </div>
-              {/* {modal.mode === "edit" && (
-                <div className="stc-field">
-                  <label className="stc-field-label">Status</label>
-                  <select
-                    value={formData.isActive ? "Active" : "Inactive"}
-                    onChange={(e) => setFormData((s) => ({ ...s, isActive: e.target.value === "Active" }))}
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                  </select>
-                </div>
-              )} */}
             </div>
           </Modal>
         )}

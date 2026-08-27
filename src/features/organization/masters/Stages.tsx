@@ -1,7 +1,21 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { T } from "../../../constants/theme";
-import { Card, Th, Td, Modal, Table } from "../../../components/common";
+import {
+  Card,
+  Th,
+  Td,
+  Modal,
+  Table,
+  TableToolbar,
+  StatusBadge,
+} from "../../../components/common";
+import { stageService } from "../../../api/organization/master/stageService";
+import { routeService } from "../../../api/organization/master/routeService";
+import { stopService } from "../../../api/organization/master/stopService";
+import { useDebounce } from "../../../hooks/useDebounce";
 
 export interface Stage {
   stageId: string;
@@ -19,41 +33,90 @@ export interface Stage {
   distance: number;
   isActive: boolean;
 }
-export interface StagePayload {
-  stageId: string;
-  stageCode: string;
-  stageName: string;
-  routeId: string;
-  sectionFromId: string;
-  sectionToId: string;
-  distance: number;
-  isActive: boolean;
-}
-export interface StagesProps {
-  data?: Stage[];
-  routeOptions?: {routeId: string, routeCode: string, routeName: string}[];
-  stopOptions?: {stopId: string, stopCode: string, stopName: string}[];
-  onAdd?: (item: StagePayload) => void;
-  onUpdate?: (item: StagePayload) => void;
-  onDelete?: (stopId: string) => void;
-}
 
-const initialDefaultStages: Stage[] = [
-  { stageId: "STG-001", stageCode: "STG-001", stageName: "Pune Section", routeId: "9502", routeCode: "MSRTC-9502", routeName: "MSRTC-9502", sectionFromId: "001", sectionFromCode: "SEC-001", sectionFromName: "Pune Section", sectionToId: "002", sectionToCode: "SEC-002", sectionToName: "Lonavala Section", distance: 40, isActive: true },
-  { stageId: "STG-002", stageCode: "STG-002", stageName: "Lonavala Section", routeId: "9502", routeCode: "MSRTC-9502", routeName: "MSRTC-9502", sectionFromId: "002", sectionFromCode: "SEC-002", sectionFromName: "Lonavala Section", sectionToId: "003", sectionToCode: "SEC-003", sectionToName: "Colaba Section", distance: 82, isActive: true },
-  { stageId: "STG-003", stageCode: "STG-003", stageName: "Colaba Section", routeId: "101", routeCode: "BEST-A-1", routeName: "BEST-A-1", sectionFromId: "003", sectionFromCode: "SEC-003", sectionFromName: "Colaba Section", sectionToId: "004", sectionToCode: "SEC-004", sectionToName: "Mumbai Section", distance: 6, isActive: true },
-];
+export function Stages() {
+  const queryClient = useQueryClient();
 
-export function Stages({ data: propData, routeOptions = [], stopOptions = [], onAdd, onUpdate, onDelete }: StagesProps) {
-  const [internalData, setInternalData] = useState<Stage[]>(initialDefaultStages);
-  const data = propData ?? internalData;
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 500);
+  const [routeIdFilter, setRouteIdFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("Active");
 
   const [modal, setModal] = useState<{ mode: "add" | "edit"; record?: Stage } | null>(null);
   const [toDelete, setToDelete] = useState<Stage | null>(null);
   const [formData, setFormData] = useState<Partial<Stage>>({});
 
+  const routeIdParam = routeIdFilter === "" ? undefined : Number(routeIdFilter);
+  const isActiveParam = statusFilter === "" ? undefined : statusFilter === "Active";
+
+  const { data: stages = [], isLoading, error } = useQuery({
+    queryKey: ["stages", debouncedSearch, routeIdFilter, statusFilter],
+    queryFn: () =>
+      stageService.getAll(
+        debouncedSearch || undefined,
+        routeIdParam,
+        isActiveParam,
+        1,
+        100
+      ),
+    staleTime: 0,
+  });
+
+  const { data: routeOptions = [] } = useQuery({
+    queryKey: ["routes", true],
+    queryFn: () => routeService.getAll(undefined, undefined, undefined, true),
+    staleTime: Infinity,
+  });
+
+  const { data: stopOptions = [] } = useQuery({
+    queryKey: ["stops", true],
+    queryFn: () => stopService.getAll(undefined, undefined, true),
+    staleTime: Infinity,
+  });
+
+  const addMutation = useMutation({
+    mutationFn: stageService.insert,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["stages"] });
+      toast.success("Stage added successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to add stage");
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: stageService.update,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["stages"] });
+      toast.success("Stage updated successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to update stage");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: stageService.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["stages"] });
+      toast.success("Stage deleted successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to delete stage");
+    },
+  });
+
   const handleOpenAdd = () => {
-    setFormData({stageId: "", stageCode: "", routeId: routeOptions[0]?.routeId || "", stageName: "", sectionFromId: "", sectionToId: "", distance: 0 });
+    setFormData({
+      stageCode: "",
+      stageName: "",
+      routeId: routeOptions[0]?.routeId || "",
+      sectionFromId: stopOptions[0]?.stopId || "",
+      sectionToId: stopOptions[1]?.stopId || stopOptions[0]?.stopId || "",
+      distance: 0,
+      isActive: true,
+    });
     setModal({ mode: "add" });
   };
 
@@ -63,43 +126,33 @@ export function Stages({ data: propData, routeOptions = [], stopOptions = [], on
   };
 
   const handleSave = () => {
-    if (!formData.stageCode || !formData.stageName) return;
-
-    const newRecord: StagePayload = {
-      stageId: formData.stageCode,
-      stageCode: formData.stageCode,
-      stageName: formData.stageName,
-      routeId: formData.routeId || "",
-      sectionFromId: formData.sectionFromId || "",
-      sectionToId: formData.sectionToId || "",
-      distance: Number(formData.distance) || 0,
-      isActive: true,
-    };
+    if (!formData.stageName) return;
 
     if (modal?.mode === "add") {
-      if (onAdd) {
-        onAdd(newRecord);
-      } else {
-        setInternalData((prev) => [...prev]);
-      }
+      addMutation.mutate({
+        stageName: formData.stageName || "",
+        routeId: formData.routeId || routeOptions[0]?.routeId || "",
+        sectionFromId: formData.sectionFromId || stopOptions[0]?.stopId || "",
+        sectionToId: formData.sectionToId || stopOptions[1]?.stopId || stopOptions[0]?.stopId || "",
+        distance: Number(formData.distance) || 0,
+      });
     } else if (modal?.mode === "edit" && modal.record) {
-      if (onUpdate) {
-        onUpdate(newRecord);
-      } else {
-        setInternalData((prev) => prev.map((item: Stage) => (item)));
-      }
+      updateMutation.mutate({
+        stageId: formData.stageId || "",
+        stageName: formData.stageName || "",
+        routeId: formData.routeId || routeOptions[0]?.routeId || "",
+        sectionFromId: formData.sectionFromId || stopOptions[0]?.stopId || "",
+        sectionToId: formData.sectionToId || stopOptions[1]?.stopId || stopOptions[0]?.stopId || "",
+        distance: Number(formData.distance) || 0,
+      });
     }
 
     setModal(null);
   };
 
   const handleConfirmDelete = () => {
-    if (!toDelete) return;
-    if (onDelete) {
-      onDelete(toDelete.stageId);
-    } else {
-      setInternalData((prev) => prev.filter((item: Stage) => item.stageId !== toDelete.stageId));
-    }
+    if (!toDelete || !toDelete.stageId) return;
+    deleteMutation.mutate({ stageId: toDelete.stageId });
     setToDelete(null);
   };
 
@@ -108,49 +161,99 @@ export function Stages({ data: propData, routeOptions = [], stopOptions = [], on
       <Card
         title="Stage master"
         action={
-          <button
-            onClick={handleOpenAdd}
-            style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: T.amberDeep, background: "none", border: "none", cursor: "pointer" }}
-          >
-            <Plus size={13} /> Add stage
-          </button>
+          statusFilter !== "Inactive" && (
+            <button
+              onClick={handleOpenAdd}
+              style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: T.amberDeep, background: "none", border: "none", cursor: "pointer" }}
+            >
+              <Plus size={13} /> Add stage
+            </button>
+          )
         }
       >
+        <TableToolbar
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search stages..."
+          filters={[
+            {
+              key: "route",
+              label: "Route",
+              value: routeIdFilter,
+              onChange: setRouteIdFilter,
+              options: routeOptions.map((opt) => ({ value: opt.routeId, label: opt.routeName })),
+            },
+            {
+              key: "status",
+              label: "Status",
+              value: statusFilter,
+              onChange: setStatusFilter,
+              options: [
+                { value: "Active", label: "Active" },
+                { value: "Inactive", label: "Inactive" },
+              ],
+            },
+          ]}
+        />
         <Table>
           <thead>
             <tr>
               <Th>Stage code</Th>
+              <Th>Stage Name</Th>
               <Th>Route</Th>
               <Th>From Section</Th>
               <Th>To Section</Th>
               <Th align="right">Distance (km)</Th>
-              <Th align="right">Actions</Th>
+              <Th>Status</Th>
+              {statusFilter !== "Inactive" && <Th align="right">Actions</Th>}
             </tr>
           </thead>
           <tbody>
-            {data.map((item: Stage) => (
-              <tr key={item.stageId} className="stc-row">
-                <Td mono>{item.stageCode}</Td>
-                <Td mono>{item.routeName}</Td>
-                <Td mono>{item.sectionFromName}</Td>
-                <Td mono>{item.sectionToName}</Td>
-                <Td align="right">{item.distance}</Td>
-                <Td align="right">
-                  <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                    <button onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                      <Pencil size={14} color={T.textSoft} />
-                    </button>
-                    <button onClick={() => setToDelete(item)} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                      <Trash2 size={14} color={T.red} />
-                    </button>
-                  </div>
+            {isLoading ? (
+              <tr>
+                <Td colSpan={statusFilter === "Inactive" ? 7 : 8}>
+                  <div style={{ textAlign: "center", color: "var(--text-soft)", padding: 10 }}>Loading stages...</div>
                 </Td>
               </tr>
-            ))}
-            {data.length === 0 && (
+            ) : error ? (
               <tr>
-                <Td colSpan={6}>No records yet — use Add stage to create one.</Td>
+                <Td colSpan={statusFilter === "Inactive" ? 7 : 8}>
+                  <div style={{ textAlign: "center", color: "var(--red)", padding: 10 }}>Error loading stages: {(error as Error).message}</div>
+                </Td>
               </tr>
+            ) : (
+              <>
+                {stages.map((item: Stage) => (
+                  <tr key={item.stageId} className="stc-row">
+                    <Td mono>{item.stageCode}</Td>
+                    <Td>{item.stageName}</Td>
+                    <Td mono>{item.routeName}</Td>
+                    <Td mono>{item.sectionFromName}</Td>
+                    <Td mono>{item.sectionToName}</Td>
+                    <Td align="right">{item.distance}</Td>
+                    <Td>
+                      <StatusBadge status={item.isActive ? "Active" : "Inactive"} />
+                    </Td>
+                    {statusFilter !== "Inactive" && (
+                      <Td align="right">
+                        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                          <button onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                            <Pencil size={14} color={T.textSoft} />
+                          </button>
+                          <button onClick={() => setToDelete(item)} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                            <Trash2 size={14} color={T.red} />
+                          </button>
+                        </div>
+                      </Td>
+                    )}
+                  </tr>
+                ))}
+                {stages.length === 0 && (
+                  <tr>
+                    <Td colSpan={statusFilter === "Inactive" ? 7 : 8}>No records yet — use Add stage to create one.</Td>
+                  </tr>
+                )}
+              </>
             )}
           </tbody>
         </Table>
@@ -169,14 +272,15 @@ export function Stages({ data: propData, routeOptions = [], stopOptions = [], on
             }
           >
             <div className="stc-form-grid">
-              {modal.mode === "edit" && (<div className="stc-field">
-                <label className="stc-field-label">Stage code</label>
-                <input
-                  disabled={modal.mode === "edit"}
-                  value={formData.stageCode || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, stageCode: e.target.value }))}
-                />
-              </div>)}
+              {modal.mode === "edit" && (
+                <div className="stc-field">
+                  <label className="stc-field-label">Stage code</label>
+                  <input
+                    disabled
+                    value={formData.stageCode || ""}
+                  />
+                </div>
+              )}
               <div className="stc-field">
                 <label className="stc-field-label">Stage Name</label>
                 <input
@@ -190,7 +294,12 @@ export function Stages({ data: propData, routeOptions = [], stopOptions = [], on
                   value={formData.routeId || ""}
                   onChange={(e) => setFormData((s) => ({ ...s, routeId: e.target.value }))}
                 >
-                  {routeOptions.map((opt) => <option key={opt.routeId} value={opt.routeName}>{opt.routeName}</option>)}
+                  <option value="">Select Route</option>
+                  {routeOptions.map((opt) => (
+                    <option key={opt.routeId} value={opt.routeId}>
+                      {opt.routeName}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="stc-field">
@@ -199,7 +308,12 @@ export function Stages({ data: propData, routeOptions = [], stopOptions = [], on
                   value={formData.sectionFromId || ""}
                   onChange={(e) => setFormData((s) => ({ ...s, sectionFromId: e.target.value }))}
                 >
-                  {stopOptions.map((opt) => <option key={opt.stopId} value={opt.stopId}>{opt.stopName}</option>)}
+                  <option value="">Select From Section</option>
+                  {stopOptions.map((opt) => (
+                    <option key={opt.stopId} value={opt.stopId}>
+                      {opt.stopName}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="stc-field">
@@ -208,7 +322,12 @@ export function Stages({ data: propData, routeOptions = [], stopOptions = [], on
                   value={formData.sectionToId || ""}
                   onChange={(e) => setFormData((s) => ({ ...s, sectionToId: e.target.value }))}
                 >
-                  {stopOptions.map((opt) => <option key={opt.stopId} value={opt.stopId}>{opt.stopName}</option>)}
+                  <option value="">Select To Section</option>
+                  {stopOptions.map((opt) => (
+                    <option key={opt.stopId} value={opt.stopId}>
+                      {opt.stopName}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="stc-field">
@@ -219,18 +338,6 @@ export function Stages({ data: propData, routeOptions = [], stopOptions = [], on
                   onChange={(e) => setFormData((s) => ({ ...s, distance: Number(e.target.value) }))}
                 />
               </div>
-              {/* {modal.mode === "edit" && (
-                <div className="stc-field">
-                  <label className="stc-field-label">Status</label>
-                  <select
-                    value={formData.isActive ? "Active" : "Inactive"}
-                    onChange={(e) => setFormData((s) => ({ ...s, isActive: e.target.value === "Active" }))}
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                  </select>
-                </div>
-              )} */}
             </div>
           </Modal>
         )}

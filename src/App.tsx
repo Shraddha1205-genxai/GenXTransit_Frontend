@@ -1922,72 +1922,28 @@ function ParkingYardsTab() {
 }
 
 function RouteTab() {
-  const [routesData, routesCrud] = useCrud("routes", "code");
-  const [stationData] = useCrud("busStations", "stationId");
-  const [regionData] = useCrud("regions", "regionId");
   return (
-    <RouteMaster
-      data={routesData}
-      stationOptions={stationData}
-      regionOptions={regionData}
-      onAdd={routesCrud.add}
-      onUpdate={routesCrud.update}
-      onDelete={routesCrud.remove}
-    />
+    <RouteMaster />
   );
 }
 function StopTab() {
-  const [routesData] = useCrud("routes", "code");
-  const [stopsData, stopsCrud] = useCrud("stops", "code");
   return (
-    <Stop
-      data={stopsData}
-      routeOptions={routesData}
-      onAdd={stopsCrud.add}
-      onUpdate={stopsCrud.update}
-      onDelete={stopsCrud.remove}
-    />
+    <Stop />
   );
 }
 function StagesTab() {
-  const [routesData] = useCrud("routes", "code");
-  const [stagesData, stagesCrud] = useCrud("stages", "code");
-  const [stopsData] = useCrud("stops", "code");
   return (
-    <Stages
-      data={stagesData}
-      routeOptions={routesData}
-      stopOptions={stopsData}
-      onAdd={stagesCrud.add}
-      onUpdate={stagesCrud.update}
-      onDelete={stagesCrud.remove}
-    />
+    <Stages />
   );
 }
 function FarePoliciesTab() {
-  const [routesData] = useCrud("routes", "code");
-  const [vehicleCategoriesData] = useCrud("vehicleCategories", "code");
-  const [farePoliciesData, farePoliciesCrud] = useCrud("farePolicies", "code");
   return (
-    <FarePolicies
-      data={farePoliciesData}
-      routeOptions={routesData}
-      categoryOptions={vehicleCategoriesData}
-      onAdd={farePoliciesCrud.add}
-      onUpdate={farePoliciesCrud.update}
-      onDelete={farePoliciesCrud.remove}
-    />
+    <FarePolicies />
   );
 }
 function TicketTypesTab() {
-  const [ticketTypesData, ticketTypesCrud] = useCrud("ticketTypes", "code");
   return (
-    <TicketTypes
-      data={ticketTypesData}
-      onAdd={ticketTypesCrud.add}
-      onUpdate={ticketTypesCrud.update}
-      onDelete={ticketTypesCrud.remove}
-    />
+    <TicketTypes />
   );
 }
 function PaymentModesTab() {
@@ -2002,17 +1958,8 @@ function PaymentModesTab() {
   );
 }
 function VehicleCategoriesTab() {
-  const [vehicleCategoriesData, vehicleCategoriesCrud] = useCrud(
-    "vehicleCategories",
-    "code",
-  );
   return (
-    <VehicleCategories
-      data={vehicleCategoriesData}
-      onAdd={vehicleCategoriesCrud.add}
-      onUpdate={vehicleCategoriesCrud.update}
-      onDelete={vehicleCategoriesCrud.remove}
-    />
+    <VehicleCategories />
   );
 }
 function SeatLayoutsTab() {

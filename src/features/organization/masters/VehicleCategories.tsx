@@ -1,7 +1,19 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { T } from "../../../constants/theme";
-import { Card, Th, Td, Modal, Table } from "../../../components/common";
+import {
+  Card,
+  Th,
+  Td,
+  Modal,
+  Table,
+  TableToolbar,
+  StatusBadge,
+} from "../../../components/common";
+import { vehicleCategoryService } from "../../../api/organization/master/vehicleCategoryService";
+import { useDebounce } from "../../../hooks/useDebounce";
 
 export interface VehicleCategory {
   categoryId: string;
@@ -13,27 +25,67 @@ export interface VehicleCategory {
   isActive: boolean;
 }
 
-export interface VehicleCategoriesProps {
-  data?: VehicleCategory[];
-  onAdd?: (item: VehicleCategory) => void;
-  onUpdate?: (item: VehicleCategory) => void;
-  onDelete?: (categoryId: string) => void;
-}
+export function VehicleCategories() {
+  const queryClient = useQueryClient();
 
-const initialDefaultVehicleCategories: VehicleCategory[] = [
-  { categoryId: "VC-SHIV", categoryCode: "VC-SHIV", categoryName: "AC Shivneri", capacity: 42, type: "AC", class: "Luxury", isActive: true },
-  { categoryId: "VC-EXP", categoryCode: "VC-EXP", categoryName: "Express (ST)", capacity: 52, type: "AC", class: "Standard", isActive: true },
-  { categoryId: "VC-ORD", categoryCode: "VC-ORD", categoryName: "Ordinary Local", capacity: 58, type: "AC", class: "Standard", isActive: true },
-  { categoryId: "VC-DD", categoryCode: "VC-DD", categoryName: "Double-decker", capacity: 96, type: "Non AC", class: "City", isActive: true },
-];
-
-export function VehicleCategories({ data: propData, onAdd, onUpdate, onDelete }: VehicleCategoriesProps) {
-  const [internalData, setInternalData] = useState<VehicleCategory[]>(initialDefaultVehicleCategories);
-  const data = propData ?? internalData;
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 500);
+  const [typeFilter, setTypeFilter] = useState("");
+  const [classFilter, setClassFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("Active");
 
   const [modal, setModal] = useState<{ mode: "add" | "edit"; record?: VehicleCategory } | null>(null);
   const [toDelete, setToDelete] = useState<VehicleCategory | null>(null);
   const [formData, setFormData] = useState<Partial<VehicleCategory>>({});
+
+  const isActiveParam = statusFilter === "" ? undefined : statusFilter === "Active";
+
+  const { data: vehicleCategories = [], isLoading, error } = useQuery({
+    queryKey: ["vehicleCategories", debouncedSearch, typeFilter, classFilter, statusFilter],
+    queryFn: () =>
+      vehicleCategoryService.getAll(
+        debouncedSearch || undefined,
+        typeFilter || undefined,
+        classFilter || undefined,
+        isActiveParam,
+        1,
+        100
+      ),
+    staleTime: 0,
+  });
+
+  const addMutation = useMutation({
+    mutationFn: vehicleCategoryService.insert,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vehicleCategories"] });
+      toast.success("Vehicle category added successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to add vehicle category");
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: vehicleCategoryService.update,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vehicleCategories"] });
+      toast.success("Vehicle category updated successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to update vehicle category");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: vehicleCategoryService.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vehicleCategories"] });
+      toast.success("Vehicle category deleted successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to delete vehicle category");
+    },
+  });
 
   const handleOpenAdd = () => {
     setFormData({ categoryCode: "", categoryName: "", capacity: 0, type: "Non AC", class: "Standard" });
@@ -46,42 +98,33 @@ export function VehicleCategories({ data: propData, onAdd, onUpdate, onDelete }:
   };
 
   const handleSave = () => {
-    if (!formData.categoryCode || !formData.categoryName) return;
-
-    const newRecord: VehicleCategory = {
-      categoryId: formData.categoryId  || "",
-      categoryCode: formData.categoryCode || "",
-      categoryName: formData.categoryName,
-      capacity: Number(formData.capacity) || 0,
-      type: formData.type || "Non AC",
-      class: formData.class || "Standard",
-      isActive: formData.isActive !== undefined ? formData.isActive : true,
-    };
+    if (!formData.categoryName) return;
 
     if (modal?.mode === "add") {
-      if (onAdd) {
-        onAdd(newRecord);
-      } else {
-        setInternalData((prev) => [...prev]);
-      }
+      addMutation.mutate({
+        categoryName: formData.categoryName || "",
+        capacity: String(formData.capacity ?? 0),
+        type: formData.type || "Non AC",
+        class: formData.class || "Standard",
+        isActive: true,
+      });
     } else if (modal?.mode === "edit" && modal.record) {
-      if (onUpdate) {
-        onUpdate(newRecord);
-      } else {
-        setInternalData((prev) => prev.map((item: VehicleCategory) => (item)));
-      }
+      updateMutation.mutate({
+        categoryId: formData.categoryId || "",
+        categoryName: formData.categoryName || "",
+        capacity: String(formData.capacity ?? 0),
+        type: formData.type || "Non AC",
+        class: formData.class || "Standard",
+        isActive: formData.isActive !== undefined ? formData.isActive : true,
+      });
     }
 
     setModal(null);
   };
 
   const handleConfirmDelete = () => {
-    if (!toDelete) return;
-    if (onDelete) {
-      onDelete(toDelete.categoryId);
-    } else {
-      setInternalData((prev) => prev.filter((item: VehicleCategory) => item.categoryId !== toDelete.categoryId));
-    }
+    if (!toDelete || !toDelete.categoryId) return;
+    deleteMutation.mutate({ categoryId: toDelete.categoryId });
     setToDelete(null);
   };
 
@@ -90,14 +133,54 @@ export function VehicleCategories({ data: propData, onAdd, onUpdate, onDelete }:
       <Card
         title="Vehicle categories"
         action={
-          <button
-            onClick={handleOpenAdd}
-            style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: T.amberDeep, background: "none", border: "none", cursor: "pointer" }}
-          >
-            <Plus size={13} /> Add category
-          </button>
+          statusFilter !== "Inactive" && (
+            <button
+              onClick={handleOpenAdd}
+              style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: T.amberDeep, background: "none", border: "none", cursor: "pointer" }}
+            >
+              <Plus size={13} /> Add category
+            </button>
+          )
         }
       >
+        <TableToolbar
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search categories..."
+          filters={[
+            {
+              key: "type",
+              label: "Type",
+              value: typeFilter,
+              onChange: setTypeFilter,
+              options: [
+                { value: "AC", label: "AC" },
+                { value: "Non AC", label: "Non AC" },
+              ],
+            },
+            {
+              key: "class",
+              label: "Class",
+              value: classFilter,
+              onChange: setClassFilter,
+              options: [
+                { value: "Luxury", label: "Luxury" },
+                { value: "Standard", label: "Standard" },
+                { value: "City", label: "City" },
+              ],
+            },
+            {
+              key: "status",
+              label: "Status",
+              value: statusFilter,
+              onChange: setStatusFilter,
+              options: [
+                { value: "Active", label: "Active" },
+                { value: "Inactive", label: "Inactive" },
+              ],
+            },
+          ]}
+        />
         <Table>
           <thead>
             <tr>
@@ -107,34 +190,54 @@ export function VehicleCategories({ data: propData, onAdd, onUpdate, onDelete }:
               <Th>Type</Th>
               <Th>Class</Th>
               <Th>Status</Th>
-              <Th align="right">Actions</Th>
+              {statusFilter !== "Inactive" && <Th align="right">Actions</Th>}
             </tr>
           </thead>
           <tbody>
-            {data.map((item: VehicleCategory) => (
-              <tr key={item.categoryId} className="stc-row">
-                <Td mono>{item.categoryCode}</Td>
-                <Td>{item.categoryName}</Td>
-                <Td align="center">{item.capacity}</Td>
-                <Td>{item.type}</Td>
-                <Td>{item.class}</Td>
-                <Td>{item.isActive ? "Active" : "Inactive"}</Td>
-                <Td align="right">
-                  <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                    <button onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                      <Pencil size={14} color={T.textSoft} />
-                    </button>
-                    <button onClick={() => setToDelete(item)} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                      <Trash2 size={14} color={T.red} />
-                    </button>
-                  </div>
+            {isLoading ? (
+              <tr>
+                <Td colSpan={statusFilter === "Inactive" ? 6 : 7}>
+                  <div style={{ textAlign: "center", color: "var(--text-soft)", padding: 10 }}>Loading categories...</div>
                 </Td>
               </tr>
-            ))}
-            {data.length === 0 && (
+            ) : error ? (
               <tr>
-                <Td colSpan={7}>No records yet — use Add category to create one.</Td>
+                <Td colSpan={statusFilter === "Inactive" ? 6 : 7}>
+                  <div style={{ textAlign: "center", color: "var(--red)", padding: 10 }}>Error loading categories: {(error as Error).message}</div>
+                </Td>
               </tr>
+            ) : (
+              <>
+                {vehicleCategories.map((item: VehicleCategory) => (
+                  <tr key={item.categoryId} className="stc-row">
+                    <Td mono>{item.categoryCode}</Td>
+                    <Td>{item.categoryName}</Td>
+                    <Td align="center">{item.capacity}</Td>
+                    <Td>{item.type}</Td>
+                    <Td>{item.class}</Td>
+                    <Td>
+                      <StatusBadge status={item.isActive ? "Active" : "Inactive"} />
+                    </Td>
+                    {statusFilter !== "Inactive" && (
+                      <Td align="right">
+                        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                          <button onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                            <Pencil size={14} color={T.textSoft} />
+                          </button>
+                          <button onClick={() => setToDelete(item)} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                            <Trash2 size={14} color={T.red} />
+                          </button>
+                        </div>
+                      </Td>
+                    )}
+                  </tr>
+                ))}
+                {vehicleCategories.length === 0 && (
+                  <tr>
+                    <Td colSpan={statusFilter === "Inactive" ? 6 : 7}>No records yet — use Add category to create one.</Td>
+                  </tr>
+                )}
+              </>
             )}
           </tbody>
         </Table>
@@ -153,14 +256,15 @@ export function VehicleCategories({ data: propData, onAdd, onUpdate, onDelete }:
             }
           >
             <div className="stc-form-grid">
-              {modal.mode == "edit" && (<div className="stc-field">
-                <label className="stc-field-label">Code</label>
-                <input
-                  disabled={modal.mode === "edit"}
-                  value={formData.categoryCode || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, categoryCode: e.target.value }))}
-                />
-              </div>)}
+              {modal.mode === "edit" && (
+                <div className="stc-field">
+                  <label className="stc-field-label">Code</label>
+                  <input
+                    disabled
+                    value={formData.categoryCode || ""}
+                  />
+                </div>
+              )}
               <div className="stc-field">
                 <label className="stc-field-label">Name</label>
                 <input
@@ -182,8 +286,8 @@ export function VehicleCategories({ data: propData, onAdd, onUpdate, onDelete }:
                   value={formData.type || "Non AC"}
                   onChange={(e) => setFormData((s) => ({ ...s, type: e.target.value }))}
                 >
-                  <option value="Luxury">AC</option>
-                  <option value="Standard">Non AC</option>
+                  <option value="AC">AC</option>
+                  <option value="Non AC">Non AC</option>
                 </select>
               </div>
               <div className="stc-field">
@@ -197,18 +301,6 @@ export function VehicleCategories({ data: propData, onAdd, onUpdate, onDelete }:
                   <option value="City">City</option>
                 </select>
               </div>
-              {/* {modal.mode === "edit" && (
-                <div className="stc-field">
-                  <label className="stc-field-label">Status</label>
-                  <select
-                    value={formData.isActive ? "Active" : "Inactive"}
-                    onChange={(e) => setFormData((s) => ({ ...s, isActive: e.target.value === "Active" }))}
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                  </select>
-                </div>
-              )} */}
             </div>
           </Modal>
         )}

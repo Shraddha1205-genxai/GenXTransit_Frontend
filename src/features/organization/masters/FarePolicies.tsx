@@ -1,7 +1,22 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { T } from "../../../constants/theme";
-import { Card, RouteChip, StatusBadge, Th, Td, Modal, Table } from "../../../components/common";
+import {
+  Card,
+  RouteChip,
+  StatusBadge,
+  Th,
+  Td,
+  Modal,
+  Table,
+  TableToolbar,
+} from "../../../components/common";
+import { farePolicyService } from "../../../api/organization/master/farePolicyService";
+import { routeService } from "../../../api/organization/master/routeService";
+import { vehicleCategoryService } from "../../../api/organization/master/vehicleCategoryService";
+import { useDebounce } from "../../../hooks/useDebounce";
 
 export interface FarePolicy {
   policyId: string;
@@ -10,6 +25,7 @@ export interface FarePolicy {
   policyStatus: string;
   categoryId: string;
   categoryCode: string;
+  categoryName: string;
   routeId: string;
   routeCode: string;
   routeName: string;
@@ -17,45 +33,101 @@ export interface FarePolicy {
   rateDescription: string;
   isActive: boolean;
 }
-export interface FarePolicyPayload {
-  policyId: string;
-  policyCode: string;
-  model: string;
-  policyStatus: string;
-  categoryId: string;
-  routeId: string;
-  baseFare: number;
-  rateDescription: string;
-  isActive: boolean;
-}
-export interface FarePoliciesProps {
-  data?: FarePolicy[];
-  routeOptions?: { routeId: string; routeCode: string; routeName: string }[];
-  categoryOptions?: { categoryId: string; categoryCode: string; }[];
-  onAdd?: (item: FarePolicyPayload) => void;
-  onUpdate?: (item: FarePolicyPayload) => void;
-  onDelete?: (policyCode: string) => void;
-}
-
-const initialDefaultFarePolicies: FarePolicy[] = [
-  { policyId: "01", policyCode: "FP-FIX-01", model: "Fixed", categoryId:"01", categoryCode: "CAT-FIX-01", baseFare: 350, rateDescription: "Flat (Shivneri)", routeId: "MSRTC-9502", routeCode: "MSRTC-9502", routeName: "Pune – Mumbai Shivneri (Expressway)",policyStatus: "Published", isActive: true },
-  { policyId: "02", policyCode: "FP-DIST-02", model: "Distance", categoryId:"02", categoryCode: "CAT-DIST-02", baseFare: 20, rateDescription: "₹1.45/km", routeId: "MSRTC-7714", routeCode: "MSRTC-7714", routeName: "Pune – Nashik ST Express", policyStatus: "Simulated", isActive: true },
-  { policyId: "03", policyCode: "FP-ZONE-03", model: "Zone", categoryId:"03", categoryCode: "CAT-ZONE-03", baseFare: 15, rateDescription: "Zone matrix", routeId: "MSRTC-8801", routeCode: "MSRTC-8801", routeName: "Pune – Nashik Local", policyStatus: "Draft", isActive: false },
-];
 
 const modelOptions = ["Fixed", "Distance", "Zone"];
 const statusOptions = ["Published", "Simulated", "Draft"];
 
-export function FarePolicies({ data: propData, routeOptions = [], categoryOptions = [], onAdd, onUpdate, onDelete }: FarePoliciesProps) {
-  const [internalData, setInternalData] = useState<FarePolicy[]>(initialDefaultFarePolicies);
-  const data = propData || internalData;
+export function FarePolicies() {
+  const queryClient = useQueryClient();
+
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 500);
+  const [modelFilter, setModelFilter] = useState("");
+  const [policyStatusFilter, setPolicyStatusFilter] = useState("");
+  const [categoryIdFilter, setCategoryIdFilter] = useState("");
+  const [routeIdFilter, setRouteIdFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("Active");
 
   const [modal, setModal] = useState<{ mode: "add" | "edit"; record?: FarePolicy } | null>(null);
   const [toDelete, setToDelete] = useState<FarePolicy | null>(null);
   const [formData, setFormData] = useState<Partial<FarePolicy>>({});
 
+  const categoryIdParam = categoryIdFilter === "" ? undefined : Number(categoryIdFilter);
+  const routeIdParam = routeIdFilter === "" ? undefined : Number(routeIdFilter);
+  const isActiveParam = statusFilter === "" ? undefined : statusFilter === "Active";
+
+  const { data: farePolicies = [], isLoading, error } = useQuery({
+    queryKey: ["farePolicies", debouncedSearch, modelFilter, policyStatusFilter, categoryIdFilter, routeIdFilter, statusFilter],
+    queryFn: () =>
+      farePolicyService.getAll(
+        debouncedSearch || undefined,
+        modelFilter || undefined,
+        policyStatusFilter || undefined,
+        categoryIdParam,
+        routeIdParam,
+        isActiveParam,
+        1,
+        100
+      ),
+    staleTime: 0,
+  });
+
+  const { data: routeOptions = [] } = useQuery({
+    queryKey: ["routes", true],
+    queryFn: () => routeService.getAll(undefined, undefined, undefined, true),
+    staleTime: Infinity,
+  });
+
+  const { data: categoryOptions = [] } = useQuery({
+    queryKey: ["vehicleCategories", true],
+    queryFn: () => vehicleCategoryService.getAll(undefined, undefined, undefined, true),
+    staleTime: Infinity,
+  });
+
+  const addMutation = useMutation({
+    mutationFn: farePolicyService.insert,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["farePolicies"] });
+      toast.success("Fare policy added successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to add fare policy");
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: farePolicyService.update,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["farePolicies"] });
+      toast.success("Fare policy updated successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to update fare policy");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: farePolicyService.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["farePolicies"] });
+      toast.success("Fare policy deleted successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to delete fare policy");
+    },
+  });
+
   const handleOpenAdd = () => {
-    setFormData({ policyId: "", policyCode: "", model: modelOptions[0], baseFare: 0, rateDescription: "", routeId: routeOptions[0]?.routeId || "", isActive: true });
+    setFormData({
+      policyCode: "",
+      model: modelOptions[0],
+      policyStatus: statusOptions[0],
+      categoryId: categoryOptions[0]?.categoryId || "",
+      routeId: routeOptions[0]?.routeId || "",
+      baseFare: 0,
+      rateDescription: "",
+      isActive: true,
+    });
     setModal({ mode: "add" });
   };
 
@@ -65,43 +137,30 @@ export function FarePolicies({ data: propData, routeOptions = [], categoryOption
   };
 
   const handleSave = () => {
-    if (!formData.policyCode) return;
-
-    const newRecord: FarePolicyPayload = {
-      policyId: formData.policyId || "",
-      policyCode: formData.policyCode,
+    const payload = {
       model: formData.model || modelOptions[0],
       policyStatus: formData.policyStatus || "Draft",
-      categoryId: formData.categoryId || "",
-      baseFare: Number(formData.baseFare) || 0,
-      rateDescription: formData.rateDescription || "",
+      categoryId: formData.categoryId || categoryOptions[0]?.categoryId || "",
       routeId: formData.routeId || routeOptions[0]?.routeId || "",
-      isActive: formData.isActive ?? true,
+      baseFare: String(formData.baseFare ?? 0),
+      rateDescription: formData.rateDescription || "",
     };
 
     if (modal?.mode === "add") {
-      if (onAdd) {
-        onAdd(newRecord);
-      } else {
-        setInternalData((prev) => [...prev]);
-      }
+      addMutation.mutate(payload);
     } else if (modal?.mode === "edit" && modal.record) {
-      if (onUpdate) {
-        onUpdate(newRecord);
-      } else {
-        setInternalData((prev) => prev.map((item: FarePolicy) => (item)));
-      }
+      updateMutation.mutate({
+        ...payload,
+        policyId: Number(formData.policyId) || 0,
+      });
     }
+
     setModal(null);
   };
 
   const handleConfirmDelete = () => {
-    if (!toDelete) return;
-    if (onDelete) {
-      onDelete(toDelete.policyId);
-    } else {
-      setInternalData((prev) => prev.filter((item: FarePolicy) => item.policyId !== toDelete.policyId));
-    }
+    if (!toDelete || !toDelete.policyId) return;
+    deleteMutation.mutate({ policyId: Number(toDelete.policyId) });
     setToDelete(null);
   };
 
@@ -110,14 +169,61 @@ export function FarePolicies({ data: propData, routeOptions = [], categoryOption
       <Card
         title="Fare policies"
         action={
-          <button
-            onClick={handleOpenAdd}
-            style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: T.amberDeep, background: "none", border: "none", cursor: "pointer" }}
-          >
-            <Plus size={13} /> Add policy
-          </button>
+          statusFilter !== "Inactive" && (
+            <button
+              onClick={handleOpenAdd}
+              style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: T.amberDeep, background: "none", border: "none", cursor: "pointer" }}
+            >
+              <Plus size={13} /> Add policy
+            </button>
+          )
         }
       >
+        <TableToolbar
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search fare policies..."
+          filters={[
+            {
+              key: "model",
+              label: "Model",
+              value: modelFilter,
+              onChange: setModelFilter,
+              options: modelOptions.map((opt) => ({ value: opt, label: opt })),
+            },
+            {
+              key: "policyStatus",
+              label: "Policy Status",
+              value: policyStatusFilter,
+              onChange: setPolicyStatusFilter,
+              options: statusOptions.map((opt) => ({ value: opt, label: opt })),
+            },
+            {
+              key: "category",
+              label: "Category",
+              value: categoryIdFilter,
+              onChange: setCategoryIdFilter,
+              options: categoryOptions.map((opt) => ({ value: opt.categoryId, label: opt.categoryName })),
+            },
+            {
+              key: "route",
+              label: "Route",
+              value: routeIdFilter,
+              onChange: setRouteIdFilter,
+              options: routeOptions.map((opt) => ({ value: opt.routeId, label: opt.routeName })),
+            },
+            {
+              key: "status",
+              label: "Status",
+              value: statusFilter,
+              onChange: setStatusFilter,
+              options: [
+                { value: "Active", label: "Active" },
+                { value: "Inactive", label: "Inactive" },
+              ],
+            },
+          ]}
+        />
         <Table>
           <thead>
             <tr>
@@ -128,35 +234,60 @@ export function FarePolicies({ data: propData, routeOptions = [], categoryOption
               <Th>Route</Th>
               <Th>Policy Status</Th>
               <Th>Status</Th>
-              <Th align="right">Actions</Th>
+              {statusFilter !== "Inactive" && <Th align="right">Actions</Th>}
             </tr>
           </thead>
           <tbody>
-            {data.map((item: FarePolicy) => (
-              <tr key={item.policyCode} className="stc-row">
-                <Td mono><RouteChip>{item.policyCode}</RouteChip></Td>
-                <Td>{item.model}</Td>
-                <Td>₹{item.baseFare}</Td>
-                <Td mono>{item.categoryCode}</Td>
-                <Td mono>{item.routeName}</Td>
-                <Td>{item.policyStatus}</Td>
-                <Td><StatusBadge status={item.isActive ? "Active" : "Inactive"} /></Td>
-                <Td align="right">
-                  <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                    <button onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                      <Pencil size={14} color={T.textSoft} />
-                    </button>
-                    <button onClick={() => setToDelete(item)} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                      <Trash2 size={14} color={T.red} />
-                    </button>
-                  </div>
+            {isLoading ? (
+              <tr>
+                <Td colSpan={statusFilter === "Inactive" ? 7 : 8}>
+                  <div style={{ textAlign: "center", color: "var(--text-soft)", padding: 10 }}>Loading policies...</div>
                 </Td>
               </tr>
-            ))}
-            {data.length === 0 && (
+            ) : error ? (
               <tr>
-                <Td colSpan={6}>No records yet — use Add policy to create one.</Td>
+                <Td colSpan={statusFilter === "Inactive" ? 7 : 8}>
+                  <div style={{ textAlign: "center", color: "var(--red)", padding: 10 }}>Error loading policies: {(error as Error).message}</div>
+                </Td>
               </tr>
+            ) : (
+              <>
+                {farePolicies.map((item: FarePolicy) => (
+                  <tr key={item.policyId} className="stc-row">
+                    <Td mono>
+                      <div>
+                        <RouteChip>{item.policyCode}</RouteChip>
+                        <div style={{ fontSize: 12, color: T.textSoft, marginTop: 3 }}>{item.rateDescription}</div>
+                      </div>
+                    </Td>
+                    <Td>{item.model}</Td>
+                    <Td>₹{item.baseFare}</Td>
+                    <Td mono>{item.categoryName || item.categoryCode || "-"}</Td>
+                    <Td mono>{item.routeName || "-"}</Td>
+                    <Td>{item.policyStatus}</Td>
+                    <Td>
+                      <StatusBadge status={item.isActive ? "Active" : "Inactive"} />
+                    </Td>
+                    {statusFilter !== "Inactive" && (
+                      <Td align="right">
+                        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                          <button onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                            <Pencil size={14} color={T.textSoft} />
+                          </button>
+                          <button onClick={() => setToDelete(item)} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                            <Trash2 size={14} color={T.red} />
+                          </button>
+                        </div>
+                      </Td>
+                    )}
+                  </tr>
+                ))}
+                {farePolicies.length === 0 && (
+                  <tr>
+                    <Td colSpan={statusFilter === "Inactive" ? 7 : 8}>No records yet — use Add policy to create one.</Td>
+                  </tr>
+                )}
+              </>
             )}
           </tbody>
         </Table>
@@ -175,14 +306,15 @@ export function FarePolicies({ data: propData, routeOptions = [], categoryOption
             }
           >
             <div className="stc-form-grid">
-              {modal.mode == "edit" && (<div className="stc-field">
-                <label className="stc-field-label">Policy policyCode</label>
-                <input
-                  disabled={modal.mode === "edit"}
-                  value={formData.policyCode || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, policyCode: e.target.value }))}
-                />
-              </div>)}
+              {modal.mode === "edit" && (
+                <div className="stc-field">
+                  <label className="stc-field-label">Policy code</label>
+                  <input
+                    disabled
+                    value={formData.policyCode || ""}
+                  />
+                </div>
+              )}
               <div className="stc-field">
                 <label className="stc-field-label">Model</label>
                 <select
@@ -198,6 +330,7 @@ export function FarePolicies({ data: propData, routeOptions = [], categoryOption
                   value={formData.categoryId || ""}
                   onChange={(e) => setFormData((s) => ({ ...s, categoryId: e.target.value }))}
                 >
+                  <option value="">Select Category</option>
                   {categoryOptions.map((opt: any) => <option key={opt.categoryId} value={opt.categoryId}>{opt.categoryName}</option>)}
                 </select>
               </div>
@@ -224,6 +357,7 @@ export function FarePolicies({ data: propData, routeOptions = [], categoryOption
                   value={formData.routeId || ""}
                   onChange={(e) => setFormData((s) => ({ ...s, routeId: e.target.value }))}
                 >
+                  <option value="">Select Route</option>
                   {routeOptions.map((opt: any) => <option key={opt.routeId} value={opt.routeId}>{opt.routeName}</option>)}
                 </select>
               </div>
@@ -234,18 +368,6 @@ export function FarePolicies({ data: propData, routeOptions = [], categoryOption
                   onChange={(e) => setFormData((s) => ({ ...s, rateDescription: e.target.value }))}
                 />
               </div>
-              {/* {modal.mode === "edit" && (
-                <div className="stc-field">
-                  <label className="stc-field-label">Status</label>
-                  <select
-                    value={formData.isActive ? "Active" : "Inactive"}
-                    onChange={(e) => setFormData((s) => ({ ...s, isActive: e.target.value === "Active" }))}
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                  </select>
-                </div>
-              )} */}
             </div>
           </Modal>
         )}
