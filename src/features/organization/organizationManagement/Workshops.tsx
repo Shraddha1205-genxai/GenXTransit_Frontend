@@ -17,6 +17,7 @@ import { workshopService } from "../../../api/organization/organizationManagemen
 import { regionService } from "../../../api/organization/organizationManagement/regionService";
 import { divisionService } from "../../../api/organization/organizationManagement/divisionService";
 import { depotService } from "../../../api/organization/organizationManagement/depotService";
+import { useDebounce } from "../../../hooks/useDebounce";
 
 export interface Workshop {
   workShopId: string;
@@ -107,6 +108,7 @@ export function Workshops({}: WorkshopPageProps) {
 
   // Search & Filter States
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 500);
   const [filterRegion, setFilterRegion] = useState("");
   const [filterDivision, setFilterDivision] = useState("");
   const [filterDepot, setFilterDepot] = useState("");
@@ -116,10 +118,10 @@ export function Workshops({}: WorkshopPageProps) {
 
   // Main Query
   const { data: workshops = [], isLoading, error } = useQuery({
-    queryKey: ["workshops", search, filterRegion, filterDivision, filterDepot, filterStatus],
+    queryKey: ["workshops", debouncedSearch, filterRegion, filterDivision, filterDepot, filterStatus],
     queryFn: () =>
       workshopService.getAll(
-        search || undefined,
+        debouncedSearch || undefined,
         filterRegion || undefined,
         filterDivision || undefined,
         filterDepot || undefined,
@@ -238,13 +240,7 @@ export function Workshops({}: WorkshopPageProps) {
     setToDelete(null);
   };
 
-  if (isLoading) {
-    return <div style={{ padding: 20, textAlign: "center", color: "var(--text-soft)" }}>Loading workshops...</div>;
-  }
 
-  if (error) {
-    return <div style={{ padding: 20, textAlign: "center", color: "var(--red)" }}>Error loading workshops: {(error as Error).message}</div>;
-  }
 
   return (
     <div>
@@ -338,66 +334,82 @@ export function Workshops({}: WorkshopPageProps) {
             </tr>
           </thead>
           <tbody>
-            {workshops.map((w: Workshop) => (
-              <tr key={w.workShopId} className="stc-row">
-                <Td mono>
-                  <RouteChip>{w.workShopCode}</RouteChip>
-                </Td>
-                <Td>{w.workShopName}</Td>
-                <Td mono>{w.regionCode}</Td>
-                <Td mono>{w.divisionCode}</Td>
-                <Td mono>{w.depotCode}</Td>
-                <Td>{w.workBays}</Td>
-                <Td>{w.activeRepairJobs}</Td>
-                <Td>
-                  <StatusBadge status={w.isActive ? "Active" : "Inactive"} />
-                </Td>
-                {filterStatus !== "Inactive" && (
-                  <Td align="right">
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 10,
-                        justifyContent: "flex-end",
-                      }}
-                    >
-                      <button
-                        onClick={() => handleOpenEdit(w)}
-                        title="Edit"
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          padding: 2,
-                          display: "flex",
-                        }}
-                      >
-                        <Pencil size={14} color={T.textSoft} />
-                      </button>
-                      <button
-                        onClick={() => setToDelete(w)}
-                        title="Delete"
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          padding: 2,
-                          display: "flex",
-                        }}
-                      >
-                        <Trash2 size={14} color={T.red} />
-                      </button>
-                    </div>
-                  </Td>
-                )}
-              </tr>
-            ))}
-            {workshops.length === 0 && (
+            {isLoading ? (
               <tr>
                 <Td colSpan={filterStatus !== "Inactive" ? 9 : 8}>
-                  No workshops match the selected filters.
+                  <div style={{ textAlign: "center", color: "var(--text-soft)", padding: 10 }}>Loading workshops...</div>
                 </Td>
               </tr>
+            ) : error ? (
+              <tr>
+                <Td colSpan={filterStatus !== "Inactive" ? 9 : 8}>
+                  <div style={{ textAlign: "center", color: "var(--red)", padding: 10 }}>Error loading workshops: {(error as Error).message}</div>
+                </Td>
+              </tr>
+            ) : (
+              <>
+                {workshops.map((w: Workshop) => (
+                  <tr key={w.workShopId} className="stc-row">
+                    <Td mono>
+                      <RouteChip>{w.workShopCode}</RouteChip>
+                    </Td>
+                    <Td>{w.workShopName}</Td>
+                    <Td mono>{w.regionCode}</Td>
+                    <Td mono>{w.divisionCode}</Td>
+                    <Td mono>{w.depotCode}</Td>
+                    <Td>{w.workBays}</Td>
+                    <Td>{w.activeRepairJobs}</Td>
+                    <Td>
+                      <StatusBadge status={w.isActive ? "Active" : "Inactive"} />
+                    </Td>
+                    {filterStatus !== "Inactive" && (
+                      <Td align="right">
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 10,
+                            justifyContent: "flex-end",
+                          }}
+                        >
+                          <button
+                            onClick={() => handleOpenEdit(w)}
+                            title="Edit"
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: 2,
+                              display: "flex",
+                            }}
+                          >
+                            <Pencil size={14} color={T.textSoft} />
+                          </button>
+                          <button
+                            onClick={() => setToDelete(w)}
+                            title="Delete"
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: 2,
+                              display: "flex",
+                            }}
+                          >
+                            <Trash2 size={14} color={T.red} />
+                          </button>
+                        </div>
+                      </Td>
+                    )}
+                  </tr>
+                ))}
+                {workshops.length === 0 && (
+                  <tr>
+                    <Td colSpan={filterStatus !== "Inactive" ? 9 : 8}>
+                      No workshops match the selected filters.
+                    </Td>
+                  </tr>
+                )}
+              </>
             )}
           </tbody>
         </Table>

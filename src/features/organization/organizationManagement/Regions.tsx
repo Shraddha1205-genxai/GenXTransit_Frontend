@@ -14,6 +14,7 @@ import {
   StatusBadge,
 } from "../../../components/common";
 import { regionService } from "../../../api/organization/organizationManagement/regionService";
+import { useDebounce } from "../../../hooks/useDebounce";
 
 export interface Region {
   regionId: string;
@@ -44,13 +45,14 @@ export function Regions() {
 
   const [formData, setFormData] = useState<Partial<Region>>({});
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 500);
   const [statusFilter, setStatusFilter] = useState("Active");
 
   const isActiveParam = statusFilter === "" ? undefined : statusFilter === "Active";
 
   const { data = [], isLoading, error } = useQuery({
-    queryKey: ["regions", search, statusFilter],
-    queryFn: () => regionService.getAll(search || undefined, isActiveParam),
+    queryKey: ["regions", debouncedSearch, statusFilter],
+    queryFn: () => regionService.getAll(debouncedSearch || undefined, isActiveParam),
     staleTime: 0,
   });
 
@@ -86,15 +88,6 @@ export function Regions() {
       toast.error(err.message || "Failed to delete region");
     },
   });
-
-  if (isLoading) {
-    return <div style={{ padding: 20, textAlign: "center", color: "var(--text-soft)" }}>Loading regions...</div>;
-  }
-
-  if (error) {
-    return <div style={{ padding: 20, textAlign: "center", color: "var(--red)" }}>Error loading regions: {(error as Error).message}</div>;
-  }
-
   const filteredData = data;
 
   const handleOpenAdd = () => {
@@ -191,73 +184,89 @@ export function Regions() {
             </tr>
           </thead>
           <tbody>
-            {filteredData.map((r: Region) => (
-              <tr key={r.regionId} className="stc-row">
-                <Td mono>{r.regionCode}</Td>
-                <Td>{r.regionName}</Td>
-                <Td>
-                  <RouteChip>{r.divisions}</RouteChip>
-                </Td>
-                <Td>
-                  <RouteChip>{r.depots}</RouteChip>
-                </Td>
-                <Td>
-                  <RouteChip>{r.stations}</RouteChip>
-                </Td>
-                <Td>
-                  <RouteChip>{r.workshops}</RouteChip>
-                </Td>
-                <Td>
-                  <StatusBadge status={r.isActive ? "Active" : "Inactive"} />
-                </Td>
-                {statusFilter !== "Inactive" && (
-                  <Td align="right">
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 10,
-                        justifyContent: "flex-end",
-                      }}
-                    >
-                      <button
-                        onClick={() => handleOpenEdit(r)}
-                        title="Edit"
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          padding: 2,
-                          display: "flex",
-                        }}
-                      >
-                        <Pencil size={14} color={T.textSoft} />
-                      </button>
-                      <button
-                        onClick={() => setToDelete(r)}
-                        title="Delete"
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          padding: 2,
-                          display: "flex",
-                        }}
-                      >
-                        <Trash2 size={14} color={T.red} />
-                      </button>
-                    </div>
-                  </Td>
-                )}
-              </tr>
-            ))}
-            {filteredData.length === 0 && (
+            {isLoading ? (
               <tr>
                 <Td colSpan={statusFilter === "Inactive" ? 7 : 8}>
-                  {data.length === 0
-                    ? "No records yet — use Add region to create one."
-                    : "No regions match the search."}
+                  <div style={{ textAlign: "center", color: "var(--text-soft)", padding: 10 }}>Loading regions...</div>
                 </Td>
               </tr>
+            ) : error ? (
+              <tr>
+                <Td colSpan={statusFilter === "Inactive" ? 7 : 8}>
+                  <div style={{ textAlign: "center", color: "var(--red)", padding: 10 }}>Error loading regions: {(error as Error).message}</div>
+                </Td>
+              </tr>
+            ) : (
+              <>
+                {filteredData.map((r: Region) => (
+                  <tr key={r.regionId} className="stc-row">
+                    <Td mono>{r.regionCode}</Td>
+                    <Td>{r.regionName}</Td>
+                    <Td>
+                      <RouteChip>{r.divisions}</RouteChip>
+                    </Td>
+                    <Td>
+                      <RouteChip>{r.depots}</RouteChip>
+                    </Td>
+                    <Td>
+                      <RouteChip>{r.stations}</RouteChip>
+                    </Td>
+                    <Td>
+                      <RouteChip>{r.workshops}</RouteChip>
+                    </Td>
+                    <Td>
+                      <StatusBadge status={r.isActive ? "Active" : "Inactive"} />
+                    </Td>
+                    {statusFilter !== "Inactive" && (
+                      <Td align="right">
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 10,
+                            justifyContent: "flex-end",
+                          }}
+                        >
+                          <button
+                            onClick={() => handleOpenEdit(r)}
+                            title="Edit"
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: 2,
+                              display: "flex",
+                            }}
+                          >
+                            <Pencil size={14} color={T.textSoft} />
+                          </button>
+                          <button
+                            onClick={() => setToDelete(r)}
+                            title="Delete"
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: 2,
+                              display: "flex",
+                            }}
+                          >
+                            <Trash2 size={14} color={T.red} />
+                          </button>
+                        </div>
+                      </Td>
+                    )}
+                  </tr>
+                ))}
+                {filteredData.length === 0 && (
+                  <tr>
+                    <Td colSpan={statusFilter === "Inactive" ? 7 : 8}>
+                      {data.length === 0
+                        ? "No records yet — use Add region to create one."
+                        : "No regions match the search."}
+                    </Td>
+                  </tr>
+                )}
+              </>
             )}
           </tbody>
         </Table>

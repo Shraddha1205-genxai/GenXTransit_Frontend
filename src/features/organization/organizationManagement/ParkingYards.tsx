@@ -8,6 +8,7 @@ import { parkingYardService } from "../../../api/organization/organizationManage
 import { regionService } from "../../../api/organization/organizationManagement/regionService";
 import { divisionService } from "../../../api/organization/organizationManagement/divisionService";
 import { depotService } from "../../../api/organization/organizationManagement/depotService";
+import { useDebounce } from "../../../hooks/useDebounce";
 
 export interface ParkingYard {
   yardId: string;
@@ -50,6 +51,7 @@ export function ParkingYards({}: ParkingYardPageProps) {
 
   // Search & Filter States
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 500);
   const [filterRegion, setFilterRegion] = useState("");
   const [filterDivision, setFilterDivision] = useState("");
   const [filterDepot, setFilterDepot] = useState("");
@@ -59,10 +61,10 @@ export function ParkingYards({}: ParkingYardPageProps) {
 
   // Main Query
   const { data: parkingYards = [], isLoading, error } = useQuery({
-    queryKey: ["parkingYards", search, filterRegion, filterDivision, filterDepot, filterStatus],
+    queryKey: ["parkingYards", debouncedSearch, filterRegion, filterDivision, filterDepot, filterStatus],
     queryFn: () =>
       parkingYardService.getAll(
-        search || undefined,
+        debouncedSearch || undefined,
         filterRegion || undefined,
         filterDivision || undefined,
         filterDepot || undefined,
@@ -181,13 +183,7 @@ export function ParkingYards({}: ParkingYardPageProps) {
     setToDelete(null);
   };
 
-  if (isLoading) {
-    return <div style={{ padding: 20, textAlign: "center", color: "var(--text-soft)" }}>Loading parking yards...</div>;
-  }
 
-  if (error) {
-    return <div style={{ padding: 20, textAlign: "center", color: "var(--red)" }}>Error loading parking yards: {(error as Error).message}</div>;
-  }
 
   return (
     <div>
@@ -270,35 +266,51 @@ export function ParkingYards({}: ParkingYardPageProps) {
             </tr>
           </thead>
           <tbody>
-            {parkingYards.map((p: ParkingYard) => (
-              <tr key={p.yardId} className="stc-row">
-                <Td mono><RouteChip>{p.yardCode}</RouteChip></Td>
-                <Td>{p.yardName}</Td>
-                <Td mono>{p.regionCode}</Td>
-                <Td mono>{p.divisionCode}</Td>
-                <Td mono>{p.depotCode}</Td>
-                <Td>{p.capacity}</Td>
-                <Td>{p.occupied} ({p.capacity ? Math.round((p.occupied / p.capacity) * 100) : 0}%)</Td>
-                {filterStatus !== "Inactive" && (
-                  <Td align="right">
-                    <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                      <button onClick={() => handleOpenEdit(p)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                        <Pencil size={14} color={T.textSoft} />
-                      </button>
-                      <button onClick={() => setToDelete(p)} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                        <Trash2 size={14} color={T.red} />
-                      </button>
-                    </div>
-                  </Td>
-                )}
-              </tr>
-            ))}
-            {parkingYards.length === 0 && (
+            {isLoading ? (
               <tr>
                 <Td colSpan={filterStatus !== "Inactive" ? 8 : 7}>
-                  No parking yards match the selected filters.
+                  <div style={{ textAlign: "center", color: "var(--text-soft)", padding: 10 }}>Loading parking yards...</div>
                 </Td>
               </tr>
+            ) : error ? (
+              <tr>
+                <Td colSpan={filterStatus !== "Inactive" ? 8 : 7}>
+                  <div style={{ textAlign: "center", color: "var(--red)", padding: 10 }}>Error loading parking yards: {(error as Error).message}</div>
+                </Td>
+              </tr>
+            ) : (
+              <>
+                {parkingYards.map((p: ParkingYard) => (
+                  <tr key={p.yardId} className="stc-row">
+                    <Td mono><RouteChip>{p.yardCode}</RouteChip></Td>
+                    <Td>{p.yardName}</Td>
+                    <Td mono>{p.regionCode}</Td>
+                    <Td mono>{p.divisionCode}</Td>
+                    <Td mono>{p.depotCode}</Td>
+                    <Td>{p.capacity}</Td>
+                    <Td>{p.occupied} ({p.capacity ? Math.round((p.occupied / p.capacity) * 100) : 0}%)</Td>
+                    {filterStatus !== "Inactive" && (
+                      <Td align="right">
+                        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                          <button onClick={() => handleOpenEdit(p)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                            <Pencil size={14} color={T.textSoft} />
+                          </button>
+                          <button onClick={() => setToDelete(p)} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                            <Trash2 size={14} color={T.red} />
+                          </button>
+                        </div>
+                      </Td>
+                    )}
+                  </tr>
+                ))}
+                {parkingYards.length === 0 && (
+                  <tr>
+                    <Td colSpan={filterStatus !== "Inactive" ? 8 : 7}>
+                      No parking yards match the selected filters.
+                    </Td>
+                  </tr>
+                )}
+              </>
             )}
           </tbody>
         </Table>

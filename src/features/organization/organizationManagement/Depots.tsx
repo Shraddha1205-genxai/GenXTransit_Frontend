@@ -9,6 +9,7 @@ import { corporationService } from "../../../api/organization/organizationManage
 import { regionService } from "../../../api/organization/organizationManagement/regionService";
 import { divisionService } from "../../../api/organization/organizationManagement/divisionService";
 import { zoneService } from "../../../api/organization/organizationManagement/zoneService";
+import { useDebounce } from "../../../hooks/useDebounce";
 
 export interface Depot {
   depotId: string;
@@ -82,6 +83,7 @@ export function Depots({
 
   // Search & Filter States
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 500);
   const [filterCorp, setFilterCorp] = useState("");
   const [filterRegion, setFilterRegion] = useState("");
   const [filterDivision, setFilterDivision] = useState("");
@@ -95,10 +97,10 @@ export function Depots({
 
   // Main Query
   const { data: rawDepotsData = [], isLoading, error } = useQuery({
-    queryKey: ["depots", search, filterCorp, filterRegion, filterDivision, filterZone, filterStatus],
+    queryKey: ["depots", debouncedSearch, filterCorp, filterRegion, filterDivision, filterZone, filterStatus],
     queryFn: () =>
       depotService.getAll(
-        search || undefined,
+        debouncedSearch || undefined,
         filterCorp || undefined,
         filterRegion || undefined,
         filterDivision || undefined,
@@ -236,13 +238,7 @@ export function Depots({
     setToDelete(null);
   };
 
-  if (isLoading) {
-    return <div style={{ padding: 20, textAlign: "center", color: "var(--text-soft)" }}>Loading depots...</div>;
-  }
 
-  if (error) {
-    return <div style={{ padding: 20, textAlign: "center", color: "var(--red)" }}>Error loading depots: {(error as Error).message}</div>;
-  }
 
   return (
     <div>
@@ -323,41 +319,53 @@ export function Depots({
           }
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {depots.map((d: Depot) => (
-              <div
-                key={d.depotCode}
-                onClick={() => setSelCode(d.depotCode)}
-                style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6,
-                  padding: "10px 12px", borderRadius: 4, cursor: "pointer",
-                  background: selected?.depotCode === d.depotCode ? T.amberFill : "transparent",
-                }}
-              >
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{d.depotName}</span>
-                    <span style={{ fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 3, background: d.service === "ST" ? T.blueFill : T.greenFill, color: d.service === "ST" ? T.blue : T.green }}>
-                      {d.corporationName} · {d.service}
-                    </span>
+            {isLoading ? (
+              <div style={{ padding: "10px 12px", fontSize: 13, color: T.textSoft, textAlign: "center" }}>
+                Loading depots...
+              </div>
+            ) : error ? (
+              <div style={{ padding: "10px 12px", fontSize: 13, color: T.red, textAlign: "center" }}>
+                Error loading depots: {(error as Error).message}
+              </div>
+            ) : (
+              <>
+                {depots.map((d: Depot) => (
+                  <div
+                    key={d.depotCode}
+                    onClick={() => setSelCode(d.depotCode)}
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6,
+                      padding: "10px 12px", borderRadius: 4, cursor: "pointer",
+                      background: selected?.depotCode === d.depotCode ? T.amberFill : "transparent",
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{d.depotName}</span>
+                        <span style={{ fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 3, background: d.service === "ST" ? T.blueFill : T.greenFill, color: d.service === "ST" ? T.blue : T.green }}>
+                          {d.corporationName} · {d.service}
+                        </span>
+                      </div>
+                      <div className="stc-mono" style={{ fontSize: 11, color: T.textSoft, marginTop: 2 }}>{d.depotCode} · {d.zoneCode}</div>
+                    </div>
+                    {filterStatus !== "Inactive" && (
+                      <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                        <button onClick={(e) => { e.stopPropagation(); handleOpenEdit(d); }} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                          <Pencil size={13} color={T.textSoft} />
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); setToDelete(d); }} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                          <Trash2 size={13} color={T.red} />
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <div className="stc-mono" style={{ fontSize: 11, color: T.textSoft, marginTop: 2 }}>{d.depotCode} · {d.zoneCode}</div>
-                </div>
-                {filterStatus !== "Inactive" && (
-                  <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                    <button onClick={(e) => { e.stopPropagation(); handleOpenEdit(d); }} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                      <Pencil size={13} color={T.textSoft} />
-                    </button>
-                    <button onClick={(e) => { e.stopPropagation(); setToDelete(d); }} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                      <Trash2 size={13} color={T.red} />
-                    </button>
+                ))}
+                {depots.length === 0 && (
+                  <div style={{ padding: "10px 12px", fontSize: 13, color: T.textSoft, textAlign: "center" }}>
+                    No depots match filter.
                   </div>
                 )}
-              </div>
-            ))}
-            {depots.length === 0 && (
-              <div style={{ padding: "10px 12px", fontSize: 13, color: T.textSoft, textAlign: "center" }}>
-                No depots match filter.
-              </div>
+              </>
             )}
           </div>
         </Card>

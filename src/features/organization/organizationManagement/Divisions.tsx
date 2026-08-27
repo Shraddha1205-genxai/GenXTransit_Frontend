@@ -15,6 +15,7 @@ import {
 } from "../../../components/common";
 import { divisionService } from "../../../api/organization/organizationManagement/divisionService";
 import { regionService } from "../../../api/organization/organizationManagement/regionService";
+import { useDebounce } from "../../../hooks/useDebounce";
 
 export interface Division {
   divisionId: string;
@@ -48,14 +49,15 @@ export function Divisions() {
   const [toDelete, setToDelete] = useState<DivisionPayload | null>(null);
   const [formData, setFormData] = useState<Partial<DivisionPayload>>({});
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 500);
   const [regionFilter, setRegionFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("Active");
 
   const isActiveParam = statusFilter === "" ? undefined : statusFilter === "Active";
 
   const { data = [], isLoading: isLoadingDivisions, error: errorDivisions } = useQuery({
-    queryKey: ["divisions", search, regionFilter, statusFilter],
-    queryFn: () => divisionService.getAll(search || undefined, regionFilter || undefined, isActiveParam),
+    queryKey: ["divisions", debouncedSearch, regionFilter, statusFilter],
+    queryFn: () => divisionService.getAll(debouncedSearch || undefined, regionFilter || undefined, isActiveParam),
     staleTime: 0,
   });
 
@@ -96,15 +98,6 @@ export function Divisions() {
       toast.error(err.message || "Failed to delete division");
     },
   });
-
-  if (isLoadingDivisions || isLoadingRegions) {
-    return <div style={{ padding: 20, textAlign: "center", color: "var(--text-soft)" }}>Loading divisions...</div>;
-  }
-
-  if (errorDivisions || errorRegions) {
-    const errorMsg = (errorDivisions as Error)?.message || (errorRegions as Error)?.message;
-    return <div style={{ padding: 20, textAlign: "center", color: "var(--red)" }}>Error loading data: {errorMsg}</div>;
-  }
 
   const filteredData = data;
 
@@ -217,68 +210,84 @@ export function Divisions() {
             </tr>
           </thead>
           <tbody>
-            {filteredData.map((d: Division) => (
-              <tr key={d.divisionId} className="stc-row">
-                <Td mono>{d.divisionCode}</Td>
-                <Td>{d.divisionName}</Td>
-                <Td mono>
-                  <RouteChip> {d.regionName} </RouteChip>
-                </Td>
-                <Td mono>{d.depots}</Td>
-                <Td mono>{d.workshops}</Td>
-                <Td mono>{d.stations}</Td>
-                <Td mono>{d.parkingYards}</Td>
-                <Td>
-                  <StatusBadge status={d.isActive ? "Active" : "Inactive"} />
-                </Td>
-                {statusFilter !== "Inactive" && (
-                  <Td align="right">
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 10,
-                        justifyContent: "flex-end",
-                      }}
-                    >
-                      <button
-                        onClick={() => handleOpenEdit(d)}
-                        title="Edit"
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          padding: 2,
-                          display: "flex",
-                        }}
-                      >
-                        <Pencil size={14} color={T.textSoft} />
-                      </button>
-                      <button
-                        onClick={() => setToDelete(d)}
-                        title="Delete"
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          padding: 2,
-                          display: "flex",
-                        }}
-                      >
-                        <Trash2 size={14} color={T.red} />
-                      </button>
-                    </div>
-                  </Td>
-                )}
-              </tr>
-            ))}
-            {filteredData.length === 0 && (
+            {isLoadingDivisions || isLoadingRegions ? (
               <tr>
                 <Td colSpan={statusFilter === "Inactive" ? 8 : 9}>
-                  {data.length === 0
-                    ? "No records yet — use Add division to create one."
-                    : "No divisions match the selected filters."}
+                  <div style={{ textAlign: "center", color: "var(--text-soft)", padding: 10 }}>Loading divisions...</div>
                 </Td>
               </tr>
+            ) : errorDivisions || errorRegions ? (
+              <tr>
+                <Td colSpan={statusFilter === "Inactive" ? 8 : 9}>
+                  <div style={{ textAlign: "center", color: "var(--red)", padding: 10 }}>Error loading data: {(errorDivisions as Error)?.message || (errorRegions as Error)?.message}</div>
+                </Td>
+              </tr>
+            ) : (
+              <>
+                {filteredData.map((d: Division) => (
+                  <tr key={d.divisionId} className="stc-row">
+                    <Td mono>{d.divisionCode}</Td>
+                    <Td>{d.divisionName}</Td>
+                    <Td mono>
+                      <RouteChip> {d.regionName} </RouteChip>
+                    </Td>
+                    <Td mono>{d.depots}</Td>
+                    <Td mono>{d.workshops}</Td>
+                    <Td mono>{d.stations}</Td>
+                    <Td mono>{d.parkingYards}</Td>
+                    <Td>
+                      <StatusBadge status={d.isActive ? "Active" : "Inactive"} />
+                    </Td>
+                    {statusFilter !== "Inactive" && (
+                      <Td align="right">
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 10,
+                            justifyContent: "flex-end",
+                          }}
+                        >
+                          <button
+                            onClick={() => handleOpenEdit(d)}
+                            title="Edit"
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: 2,
+                              display: "flex",
+                            }}
+                          >
+                            <Pencil size={14} color={T.textSoft} />
+                          </button>
+                          <button
+                            onClick={() => setToDelete(d)}
+                            title="Delete"
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: 2,
+                              display: "flex",
+                            }}
+                          >
+                            <Trash2 size={14} color={T.red} />
+                          </button>
+                        </div>
+                      </Td>
+                    )}
+                  </tr>
+                ))}
+                {filteredData.length === 0 && (
+                  <tr>
+                    <Td colSpan={statusFilter === "Inactive" ? 8 : 9}>
+                      {data.length === 0
+                        ? "No records yet — use Add division to create one."
+                        : "No divisions match the selected filters."}
+                    </Td>
+                  </tr>
+                )}
+              </>
             )}
           </tbody>
         </Table>

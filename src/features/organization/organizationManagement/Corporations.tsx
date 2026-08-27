@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { T } from "../../../constants/theme";
 import { Card, StatusBadge, Th, Td, Modal, Table, TableToolbar } from "../../../components/common";
 import { corporationService } from "../../../api/organization/organizationManagement/corporationService";
+import { useDebounce } from "../../../hooks/useDebounce";
 
 export interface Corporation {
   corpId: string | false | undefined;
@@ -195,6 +196,7 @@ export function Corporations() {
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 500);
   const [filterState, setFilterState] = useState("");
   const [filterDistrict, setFilterDistrict] = useState("");
   const [filterCity, setFilterCity] = useState("");
@@ -203,10 +205,10 @@ export function Corporations() {
   const isActiveParam = filterStatus === "" ? undefined : filterStatus === "Active";
 
   const { data = [], isLoading, error } = useQuery({
-    queryKey: ["corporations", search, filterState, filterDistrict, filterCity, filterStatus],
+    queryKey: ["corporations", debouncedSearch, filterState, filterDistrict, filterCity, filterStatus],
     queryFn: () =>
       corporationService.getAll(
-        search || undefined,
+        debouncedSearch || undefined,
         filterState || undefined,
         filterDistrict || undefined,
         filterCity || undefined,
@@ -446,13 +448,7 @@ export function Corporations() {
     setToDelete(null);
   };
 
-  if (isLoading) {
-    return <div style={{ padding: 20, textAlign: "center", color: "var(--text-soft)" }}>Loading corporations...</div>;
-  }
 
-  if (error) {
-    return <div style={{ padding: 20, textAlign: "center", color: "var(--red)" }}>Error loading corporations: {(error as Error).message}</div>;
-  }
 
   return (
     <div>
@@ -528,32 +524,48 @@ export function Corporations() {
             </tr>
           </thead>
           <tbody>
-            {data.map((item: Corporation) => (
-              <tr key={item?.corpId || Math.random()} className="stc-row">
-                <Td mono>{item.corpCode}</Td>
-                <Td>{item.corporationName}</Td>
-                <Td>{item.stateName}</Td>
-                <Td>{item.districtName}</Td>
-                <Td>{item.cityName}</Td>
-                <Td><StatusBadge status={item.isActive ? "Active" : "Inactive"} /></Td>
-                {filterStatus !== "Inactive" && (
-                  <Td align="right">
-                    <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                      <button onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                        <Pencil size={14} color={T.textSoft} />
-                      </button>
-                      <button onClick={() => setToDelete(item)} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                        <Trash2 size={14} color={T.red} />
-                      </button>
-                    </div>
-                  </Td>
-                )}
-              </tr>
-            ))}
-            {data.length === 0 && (
+            {isLoading ? (
               <tr>
-                <Td colSpan={filterStatus === "Inactive" ? 6 : 7}>No records yet — use Add corporation to create one.</Td>
+                <Td colSpan={filterStatus === "Inactive" ? 6 : 7}>
+                  <div style={{ textAlign: "center", color: "var(--text-soft)", padding: 10 }}>Loading corporations...</div>
+                </Td>
               </tr>
+            ) : error ? (
+              <tr>
+                <Td colSpan={filterStatus === "Inactive" ? 6 : 7}>
+                  <div style={{ textAlign: "center", color: "var(--red)", padding: 10 }}>Error loading corporations: {(error as Error).message}</div>
+                </Td>
+              </tr>
+            ) : (
+              <>
+                {data.map((item: Corporation) => (
+                  <tr key={item?.corpId || Math.random()} className="stc-row">
+                    <Td mono>{item.corpCode}</Td>
+                    <Td>{item.corporationName}</Td>
+                    <Td>{item.stateName}</Td>
+                    <Td>{item.districtName}</Td>
+                    <Td>{item.cityName}</Td>
+                    <Td><StatusBadge status={item.isActive ? "Active" : "Inactive"} /></Td>
+                    {filterStatus !== "Inactive" && (
+                      <Td align="right">
+                        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                          <button onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                            <Pencil size={14} color={T.textSoft} />
+                          </button>
+                          <button onClick={() => setToDelete(item)} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                            <Trash2 size={14} color={T.red} />
+                          </button>
+                        </div>
+                      </Td>
+                    )}
+                  </tr>
+                ))}
+                {data.length === 0 && (
+                  <tr>
+                    <Td colSpan={filterStatus === "Inactive" ? 6 : 7}>No records yet — use Add corporation to create one.</Td>
+                  </tr>
+                )}
+              </>
             )}
           </tbody>
         </Table>

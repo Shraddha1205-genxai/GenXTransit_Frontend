@@ -14,6 +14,7 @@ import {
 } from "../../../components/common";
 import { zoneService } from "../../../api/organization/organizationManagement/zoneService";
 import { regionService } from "../../../api/organization/organizationManagement/regionService";
+import { useDebounce } from "../../../hooks/useDebounce";
 
 const toTitleCase = (str: string) => {
   return str
@@ -297,14 +298,15 @@ export function Zones() {
   const [toDelete, setToDelete] = useState<Zone | null>(null);
   const [formData, setFormData] = useState<Partial<Zone>>({});
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 500);
   const [regionFilter, setRegionFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("Active");
 
   const isActiveParam = statusFilter === "" ? undefined : statusFilter === "Active";
 
   const { data = [], isLoading: isLoadingZones, error: errorZones } = useQuery({
-    queryKey: ["zones", search, regionFilter, statusFilter],
-    queryFn: () => zoneService.getAll(search || undefined, regionFilter || undefined, isActiveParam),
+    queryKey: ["zones", debouncedSearch, regionFilter, statusFilter],
+    queryFn: () => zoneService.getAll(debouncedSearch || undefined, regionFilter || undefined, isActiveParam),
     staleTime: 0,
   });
 
@@ -361,15 +363,6 @@ export function Zones() {
       toast.error(err.message || "Failed to delete zone");
     },
   });
-
-  if (isLoadingZones || isLoadingRegions) {
-    return <div style={{ padding: 20, textAlign: "center", color: "var(--text-soft)" }}>Loading zones...</div>;
-  }
-
-  if (errorZones || errorRegions) {
-    const errorMsg = (errorZones as Error)?.message || (errorRegions as Error)?.message;
-    return <div style={{ padding: 20, textAlign: "center", color: "var(--red)" }}>Error loading data: {errorMsg}</div>;
-  }
 
   const filteredData = data;
 
@@ -487,63 +480,79 @@ export function Zones() {
             </tr>
           </thead>
           <tbody>
-            {filteredData.map((item: Zone) => (
-              <tr key={item.zoneId} className="stc-row">
-                <Td mono>{item.zoneCode}</Td>
-                <Td>{item.zoneName}</Td>
-                <Td mono>{item.regionName}</Td>
-                <Td>{item.districts?.join(", ")}</Td>
-                <Td>
-                  <StatusBadge status={item.isActive ? "Active" : "Inactive"} />
-                </Td>
-                {statusFilter !== "Inactive" && (
-                  <Td align="right">
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 10,
-                        justifyContent: "flex-end",
-                      }}
-                    >
-                      <button
-                        onClick={() => handleOpenEdit(item)}
-                        title="Edit"
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          padding: 2,
-                          display: "flex",
-                        }}
-                      >
-                        <Pencil size={14} color={T.textSoft} />
-                      </button>
-                      <button
-                        onClick={() => setToDelete(item)}
-                        title="Delete"
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          padding: 2,
-                          display: "flex",
-                        }}
-                      >
-                        <Trash2 size={14} color={T.red} />
-                      </button>
-                    </div>
-                  </Td>
-                )}
-              </tr>
-            ))}
-            {filteredData.length === 0 && (
+            {isLoadingZones || isLoadingRegions ? (
               <tr>
                 <Td colSpan={statusFilter === "Inactive" ? 5 : 6}>
-                  {data.length === 0
-                    ? "No records yet — use Add zone to create one."
-                    : "No zones match the selected filters."}
+                  <div style={{ textAlign: "center", color: "var(--text-soft)", padding: 10 }}>Loading zones...</div>
                 </Td>
               </tr>
+            ) : errorZones || errorRegions ? (
+              <tr>
+                <Td colSpan={statusFilter === "Inactive" ? 5 : 6}>
+                  <div style={{ textAlign: "center", color: "var(--red)", padding: 10 }}>Error loading data: {(errorZones as Error)?.message || (errorRegions as Error)?.message}</div>
+                </Td>
+              </tr>
+            ) : (
+              <>
+                {filteredData.map((item: Zone) => (
+                  <tr key={item.zoneId} className="stc-row">
+                    <Td mono>{item.zoneCode}</Td>
+                    <Td>{item.zoneName}</Td>
+                    <Td mono>{item.regionName}</Td>
+                    <Td>{item.districts?.join(", ")}</Td>
+                    <Td>
+                      <StatusBadge status={item.isActive ? "Active" : "Inactive"} />
+                    </Td>
+                    {statusFilter !== "Inactive" && (
+                      <Td align="right">
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 10,
+                            justifyContent: "flex-end",
+                          }}
+                        >
+                          <button
+                            onClick={() => handleOpenEdit(item)}
+                            title="Edit"
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: 2,
+                              display: "flex",
+                            }}
+                          >
+                            <Pencil size={14} color={T.textSoft} />
+                          </button>
+                          <button
+                            onClick={() => setToDelete(item)}
+                            title="Delete"
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: 2,
+                              display: "flex",
+                            }}
+                          >
+                            <Trash2 size={14} color={T.red} />
+                          </button>
+                        </div>
+                      </Td>
+                    )}
+                  </tr>
+                ))}
+                {filteredData.length === 0 && (
+                  <tr>
+                    <Td colSpan={statusFilter === "Inactive" ? 5 : 6}>
+                      {data.length === 0
+                        ? "No records yet — use Add zone to create one."
+                        : "No zones match the selected filters."}
+                    </Td>
+                  </tr>
+                )}
+              </>
             )}
           </tbody>
         </Table>

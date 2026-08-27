@@ -17,6 +17,7 @@ import { stationService } from "../../../api/organization/organizationManagement
 import { regionService } from "../../../api/organization/organizationManagement/regionService";
 import { divisionService } from "../../../api/organization/organizationManagement/divisionService";
 import { depotService } from "../../../api/organization/organizationManagement/depotService";
+import { useDebounce } from "../../../hooks/useDebounce";
 
 export interface BusStation {
   stationId: string;
@@ -106,6 +107,7 @@ export function BusStation({}: BusStationPageProps) {
 
   // Search & Filter States
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 500);
   const [filterRegion, setFilterRegion] = useState("");
   const [filterDivision, setFilterDivision] = useState("");
   const [filterDepot, setFilterDepot] = useState("");
@@ -115,10 +117,10 @@ export function BusStation({}: BusStationPageProps) {
 
   // Main Query
   const { data: stations = [], isLoading, error } = useQuery({
-    queryKey: ["stations", search, filterRegion, filterDivision, filterDepot, filterStatus],
+    queryKey: ["stations", debouncedSearch, filterRegion, filterDivision, filterDepot, filterStatus],
     queryFn: () =>
       stationService.getAll(
-        search || undefined,
+        debouncedSearch || undefined,
         filterRegion || undefined,
         filterDivision || undefined,
         filterDepot || undefined,
@@ -237,13 +239,7 @@ export function BusStation({}: BusStationPageProps) {
     setToDelete(null);
   };
 
-  if (isLoading) {
-    return <div style={{ padding: 20, textAlign: "center", color: "var(--text-soft)" }}>Loading bus stations...</div>;
-  }
 
-  if (error) {
-    return <div style={{ padding: 20, textAlign: "center", color: "var(--red)" }}>Error loading bus stations: {(error as Error).message}</div>;
-  }
 
   return (
     <div>
@@ -337,66 +333,82 @@ export function BusStation({}: BusStationPageProps) {
             </tr>
           </thead>
           <tbody>
-            {stations.map((b: BusStation) => (
-              <tr key={b.stationId} className="stc-row">
-                <Td mono>
-                  <RouteChip>{b.stationCode}</RouteChip>
-                </Td>
-                <Td>{b.stationName}</Td>
-                <Td mono>{b.regionCode}</Td>
-                <Td mono>{b.divisionCode}</Td>
-                <Td mono>{b.depotCode}</Td>
-                <Td>{b.platforms}</Td>
-                <Td>{b.dailyFootfall}</Td>
-                <Td>
-                  <StatusBadge status={b.isActive ? "Active" : "Inactive"} />
-                </Td>
-                {filterStatus !== "Inactive" && (
-                  <Td align="right">
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 10,
-                        justifyContent: "flex-end",
-                      }}
-                    >
-                      <button
-                        onClick={() => handleOpenEdit(b)}
-                        title="Edit"
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          padding: 2,
-                          display: "flex",
-                        }}
-                      >
-                        <Pencil size={14} color={T.textSoft} />
-                      </button>
-                      <button
-                        onClick={() => setToDelete(b)}
-                        title="Delete"
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          padding: 2,
-                          display: "flex",
-                        }}
-                      >
-                        <Trash2 size={14} color={T.red} />
-                      </button>
-                    </div>
-                  </Td>
-                )}
-              </tr>
-            ))}
-            {stations.length === 0 && (
+            {isLoading ? (
               <tr>
                 <Td colSpan={filterStatus !== "Inactive" ? 9 : 8}>
-                  No bus stations match the selected filters.
+                  <div style={{ textAlign: "center", color: "var(--text-soft)", padding: 10 }}>Loading bus stations...</div>
                 </Td>
               </tr>
+            ) : error ? (
+              <tr>
+                <Td colSpan={filterStatus !== "Inactive" ? 9 : 8}>
+                  <div style={{ textAlign: "center", color: "var(--red)", padding: 10 }}>Error loading bus stations: {(error as Error).message}</div>
+                </Td>
+              </tr>
+            ) : (
+              <>
+                {stations.map((b: BusStation) => (
+                  <tr key={b.stationId} className="stc-row">
+                    <Td mono>
+                      <RouteChip>{b.stationCode}</RouteChip>
+                    </Td>
+                    <Td>{b.stationName}</Td>
+                    <Td mono>{b.regionCode}</Td>
+                    <Td mono>{b.divisionCode}</Td>
+                    <Td mono>{b.depotCode}</Td>
+                    <Td>{b.platforms}</Td>
+                    <Td>{b.dailyFootfall}</Td>
+                    <Td>
+                      <StatusBadge status={b.isActive ? "Active" : "Inactive"} />
+                    </Td>
+                    {filterStatus !== "Inactive" && (
+                      <Td align="right">
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 10,
+                            justifyContent: "flex-end",
+                          }}
+                        >
+                          <button
+                            onClick={() => handleOpenEdit(b)}
+                            title="Edit"
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: 2,
+                              display: "flex",
+                            }}
+                          >
+                            <Pencil size={14} color={T.textSoft} />
+                          </button>
+                          <button
+                            onClick={() => setToDelete(b)}
+                            title="Delete"
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: 2,
+                              display: "flex",
+                            }}
+                          >
+                            <Trash2 size={14} color={T.red} />
+                          </button>
+                        </div>
+                      </Td>
+                    )}
+                  </tr>
+                ))}
+                {stations.length === 0 && (
+                  <tr>
+                    <Td colSpan={filterStatus !== "Inactive" ? 9 : 8}>
+                      No bus stations match the selected filters.
+                    </Td>
+                  </tr>
+                )}
+              </>
             )}
           </tbody>
         </Table>
