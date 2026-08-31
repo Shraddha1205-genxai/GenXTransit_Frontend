@@ -1947,14 +1947,8 @@ function TicketTypesTab() {
   );
 }
 function PaymentModesTab() {
-  const [paymentModesData, paymentModesCrud] = useCrud("paymentModes", "code");
   return (
-    <PaymentModes
-      data={paymentModesData}
-      onAdd={paymentModesCrud.add}
-      onUpdate={paymentModesCrud.update}
-      onDelete={paymentModesCrud.remove}
-    />
+    <PaymentModes />
   );
 }
 function VehicleCategoriesTab() {
@@ -1963,16 +1957,8 @@ function VehicleCategoriesTab() {
   );
 }
 function SeatLayoutsTab() {
-  const [vehicleCategoriesData] = useCrud("vehicleCategories", "code");
-  const [seatLayoutsData, seatLayoutsCrud] = useCrud("seatLayouts", "code");
   return (
-    <SeatLayouts
-      data={seatLayoutsData}
-      categoryOptions={vehicleCategoriesData}
-      onAdd={seatLayoutsCrud.add}
-      onUpdate={seatLayoutsCrud.update}
-      onDelete={seatLayoutsCrud.remove}
-    />
+    <SeatLayouts />
   );
 }
 function HolidayCalendarTab() {
@@ -1993,42 +1979,18 @@ function HolidayCalendarTab() {
   );
 }
 function NotificationTemplatesTab() {
-  const [notificationTemplatesData, notificationTemplatesCrud] = useCrud(
-    "notificationTemplates",
-    "code",
-  );
   return (
-    <NotificationTemplates
-      data={notificationTemplatesData}
-      onAdd={notificationTemplatesCrud.add}
-      onUpdate={notificationTemplatesCrud.update}
-      onDelete={notificationTemplatesCrud.remove}
-    />
+    <NotificationTemplates />
   );
 }
 function ComplaintCategoriesTab() {
-  const [complaintCategoriesData, complaintCategoriesCrud] = useCrud(
-    "complaintCategories",
-    "complaintId",
-  );
   return (
-    <ComplaintCategories
-      data={complaintCategoriesData}
-      onAdd={complaintCategoriesCrud.add}
-      onUpdate={complaintCategoriesCrud.update}
-      onDelete={complaintCategoriesCrud.remove}
-    />
+    <ComplaintCategories />
   );
 }
 function TaxConfigurationTab() {
-  const [taxConfigData, taxConfigCrud] = useCrud("taxConfig", "code");
   return (
-    <TaxConfiguration
-      data={taxConfigData}
-      onAdd={taxConfigCrud.add}
-      onUpdate={taxConfigCrud.update}
-      onDelete={taxConfigCrud.remove}
-    />
+    <TaxConfiguration />
   );
 }
 

@@ -159,9 +159,9 @@ export function Depots({
   // Mutations
   const addMutation = useMutation({
     mutationFn: depotService.insert,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["depots"] });
-      toast.success("Depot created successfully.");
+      toast.success(res.message || "Depot created successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to create depot");
@@ -170,9 +170,9 @@ export function Depots({
 
   const updateMutation = useMutation({
     mutationFn: depotService.update,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["depots"] });
-      toast.success("Depot updated successfully.");
+      toast.success(res.message || "Depot updated successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to update depot");
@@ -181,9 +181,9 @@ export function Depots({
 
   const deleteMutation = useMutation({
     mutationFn: depotService.delete,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["depots"] });
-      toast.success("Depot deleted successfully.");
+      toast.success(res.message || "Depot deleted successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to delete depot");

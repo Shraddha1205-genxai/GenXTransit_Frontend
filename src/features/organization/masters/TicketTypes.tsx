@@ -50,9 +50,9 @@ export function TicketTypes() {
 
   const addMutation = useMutation({
     mutationFn: ticketTypeService.insert,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["ticketTypes"] });
-      toast.success("Ticket type added successfully.");
+      toast.success(res.message || "Ticket type added successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to add ticket type");
@@ -61,9 +61,9 @@ export function TicketTypes() {
 
   const updateMutation = useMutation({
     mutationFn: ticketTypeService.update,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["ticketTypes"] });
-      toast.success("Ticket type updated successfully.");
+      toast.success(res.message || "Ticket type updated successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to update ticket type");
@@ -72,9 +72,9 @@ export function TicketTypes() {
 
   const deleteMutation = useMutation({
     mutationFn: ticketTypeService.delete,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["ticketTypes"] });
-      toast.success("Ticket type deleted successfully.");
+      toast.success(res.message || "Ticket type deleted successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to delete ticket type");

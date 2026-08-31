@@ -1,37 +1,35 @@
 import { apiClient } from "../../apiClient";
-import { Stop } from "../../../features/organization/masters/Stop";
 
-const PATH = "/stop";
+const PATH = "/notificationtemplate";
 
-export interface CreateStopDto {
-  stopName: string;
-  routeId: string;
-  stopOrder: number;
+export interface CreateNotificationTemplateDto {
+  notificationTitle: string;
+  channel: string;
+  description: string;
 }
 
-export interface UpdateStopDto {
-  stopId: string;
-  stopName: string;
-  routeId: string;
-  stopOrder: number;
-  isActive: boolean;
+export interface UpdateNotificationTemplateDto {
+  notificationId: string;
+  notificationTitle: string;
+  channel: string;
+  description: string;
 }
 
-export interface DeleteStopDto {
-  stopId: string;
+export interface DeleteNotificationTemplateDto {
+  notificationId: string;
 }
 
-export const stopService = {
+export const notificationTemplateService = {
   getAll: async (
     searchText?: string,
-    routeId?: number,
+    channel?: string,
     isActive?: boolean,
     pageNumber?: number,
     pageSize?: number
-  ): Promise<Stop[]> => {
+  ): Promise<any> => {
     const params = new URLSearchParams();
     if (searchText) params.append("searchText", searchText);
-    if (routeId !== undefined) params.append("routeId", String(routeId));
+    if (channel) params.append("channel", channel);
     if (isActive !== undefined) params.append("isActive", String(isActive));
     if (pageNumber !== undefined) params.append("pageNumber", String(pageNumber));
     if (pageSize !== undefined) params.append("pageSize", String(pageSize));
@@ -39,19 +37,19 @@ export const stopService = {
     const queryString = params.toString();
     const path = `${PATH}${queryString ? `?${queryString}` : ""}`;
 
-    const response = await apiClient.get<Stop[]>(path);
+    const response = await apiClient.get<any[]>(path);
     return response.data;
   },
 
-  insert: async (dto: CreateStopDto): Promise<any> => {
+  insert: async (dto: CreateNotificationTemplateDto): Promise<any> => {
     return apiClient.post(`${PATH}/insert`, dto);
   },
 
-  update: async (dto: UpdateStopDto): Promise<any> => {
+  update: async (dto: UpdateNotificationTemplateDto): Promise<any> => {
     return apiClient.post(`${PATH}/update`, dto);
   },
 
-  delete: async (dto: DeleteStopDto): Promise<any> => {
+  delete: async (dto: DeleteNotificationTemplateDto): Promise<any> => {
     return apiClient.post(`${PATH}/delete`, dto);
   },
 };

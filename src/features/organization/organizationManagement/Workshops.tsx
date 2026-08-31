@@ -152,9 +152,9 @@ export function Workshops({}: WorkshopPageProps) {
   // Mutations
   const addMutation = useMutation({
     mutationFn: workshopService.insert,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["workshops"] });
-      toast.success("Workshop created successfully.");
+      toast.success(res.message || "Workshop created successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to create workshop");
@@ -163,9 +163,9 @@ export function Workshops({}: WorkshopPageProps) {
 
   const updateMutation = useMutation({
     mutationFn: workshopService.update,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["workshops"] });
-      toast.success("Workshop updated successfully.");
+      toast.success(res.message || "Workshop updated successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to update workshop");
@@ -174,9 +174,9 @@ export function Workshops({}: WorkshopPageProps) {
 
   const deleteMutation = useMutation({
     mutationFn: workshopService.delete,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["workshops"] });
-      toast.success("Workshop deleted successfully.");
+      toast.success(res.message || "Workshop deleted successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to delete workshop");

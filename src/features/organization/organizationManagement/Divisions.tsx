@@ -68,9 +68,9 @@ export function Divisions() {
 
   const addMutation = useMutation({
     mutationFn: divisionService.insert,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["divisions"] });
-      toast.success("Division created successfully.");
+      toast.success(res.message || "Division created successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to create division");
@@ -79,9 +79,9 @@ export function Divisions() {
 
   const updateMutation = useMutation({
     mutationFn: divisionService.update,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["divisions"] });
-      toast.success("Division updated successfully.");
+      toast.success(res.message || "Division updated successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to update division");
@@ -90,9 +90,9 @@ export function Divisions() {
 
   const deleteMutation = useMutation({
     mutationFn: divisionService.delete,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["divisions"] });
-      toast.success("Division deleted successfully.");
+      toast.success(res.message || "Division deleted successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to delete division");

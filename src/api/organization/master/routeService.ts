@@ -54,18 +54,15 @@ export const routeService = {
     return response.data;
   },
 
-  insert: async (dto: CreateRouteDto): Promise<number> => {
-    const response = await apiClient.post<number>(`${PATH}/insert`, dto);
-    return response.data;
+  insert: async (dto: CreateRouteDto): Promise<any> => {
+    return apiClient.post(`${PATH}/insert`, dto);
   },
 
-  update: async (dto: UpdateRouteDto): Promise<boolean> => {
-    const response = await apiClient.post<boolean>(`${PATH}/update`, dto);
-    return response.data;
+  update: async (dto: UpdateRouteDto): Promise<any> => {
+    return apiClient.post(`${PATH}/update`, dto);
   },
 
-  delete: async (dto: DeleteRouteDto): Promise<boolean> => {
-    const response = await apiClient.post<boolean>(`${PATH}/delete`, dto);
-    return response.data;
+  delete: async (dto: DeleteRouteDto): Promise<any> => {
+    return apiClient.post(`${PATH}/delete`, dto);
   },
 };

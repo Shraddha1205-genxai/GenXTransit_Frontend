@@ -1,10 +1,22 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { T } from "../../../constants/theme";
-import { Card, Th, Td, Modal, Table } from "../../../components/common";
+import {
+  Card,
+  StatusBadge,
+  Th,
+  Td,
+  Modal,
+  Table,
+  TableToolbar,
+} from "../../../components/common";
+import { notificationTemplateService } from "../../../api/organization/master/notificationTemplateService";
+import { useDebounce } from "../../../hooks/useDebounce";
 
 export interface NotificationTemplate {
-  notificationId: string
+  notificationId: string;
   notificationCode: string;
   notificationTitle: string;
   channel: string;
@@ -12,29 +24,76 @@ export interface NotificationTemplate {
   isActive: boolean;
 }
 
-export interface NotificationTemplatesProps {
-  data?: NotificationTemplate[];
-  onAdd?: (item: NotificationTemplate) => void;
-  onUpdate?: (item: NotificationTemplate) => void;
-  onDelete?: (notificationId: string) => void;
-}
+const channels = ["Email", "SMS", "Push", "InApp"];
 
-const initialDefaultNotificationTemplates: NotificationTemplate[] = [
-  { notificationId: "NT-DELAY", notificationCode: "NT-DELAY", notificationTitle: "Trip delay alert", channel: "SMS + Push", isActive: true },
-  { notificationId: "NT-CONFIRM", notificationCode: "NT-CONFIRM", notificationTitle: "Booking confirmation", channel: "SMS + Email", isActive: true },
-  { notificationId: "NT-REFUND", notificationCode: "NT-REFUND", notificationTitle: "Refund processed", channel: "Push", isActive: true },
-];
+export function NotificationTemplates() {
+  const queryClient = useQueryClient();
 
-export function NotificationTemplates({ data: propData, onAdd, onUpdate, onDelete }: NotificationTemplatesProps) {
-  const [internalData, setInternalData] = useState<NotificationTemplate[]>(initialDefaultNotificationTemplates);
-  const data = propData ?? internalData;
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 500);
+  const [channelFilter, setChannelFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("Active");
 
   const [modal, setModal] = useState<{ mode: "add" | "edit"; record?: NotificationTemplate } | null>(null);
   const [toDelete, setToDelete] = useState<NotificationTemplate | null>(null);
   const [formData, setFormData] = useState<Partial<NotificationTemplate>>({});
 
+  const isActiveParam = statusFilter === "" ? undefined : statusFilter === "Active";
+
+  const { data: notificationTemplates = [], isLoading, error } = useQuery({
+    queryKey: ["notificationTemplates", debouncedSearch, channelFilter, statusFilter],
+    queryFn: () =>
+      notificationTemplateService.getAll(
+        debouncedSearch || undefined,
+        channelFilter || undefined,
+        isActiveParam,
+        1,
+        100
+      ),
+    staleTime: 0,
+  });
+
+  const addMutation = useMutation({
+    mutationFn: notificationTemplateService.insert,
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ["notificationTemplates"] });
+      toast.success(res?.message || "Notification template added successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to add notification template");
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: notificationTemplateService.update,
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ["notificationTemplates"] });
+      toast.success(res?.message || "Notification template updated successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to update notification template");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: notificationTemplateService.delete,
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ["notificationTemplates"] });
+      toast.success(res?.message || "Notification template deleted successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to delete notification template");
+    },
+  });
+
   const handleOpenAdd = () => {
-    setFormData({ notificationId: "", notificationCode: "", notificationTitle: "", channel: "", description:"", isActive: true });
+    setFormData({
+      notificationCode: "",
+      notificationTitle: "",
+      channel: channels[0],
+      description: "",
+      isActive: true,
+    });
     setModal({ mode: "add" });
   };
 
@@ -44,41 +103,29 @@ export function NotificationTemplates({ data: propData, onAdd, onUpdate, onDelet
   };
 
   const handleSave = () => {
-    if (!formData.notificationCode || !formData.notificationTitle) return;
+    if (!formData.notificationTitle) return;
 
-    const newRecord: NotificationTemplate = {
-      notificationId: formData.notificationId || "",
-      notificationCode: formData.notificationCode || "",
+    const payload = {
       notificationTitle: formData.notificationTitle || "",
-      channel: formData.channel || "",
+      channel: formData.channel || channels[0],
       description: formData.description || "",
-      isActive: formData.isActive ?? false,
     };
 
     if (modal?.mode === "add") {
-      if (onAdd) {
-        onAdd(newRecord);
-      } else {
-        setInternalData((prev) => [...prev]);
-      }
+      addMutation.mutate(payload);
     } else if (modal?.mode === "edit" && modal.record) {
-      if (onUpdate) {
-        onUpdate(newRecord);
-      } else {
-        setInternalData((prev) => prev.map((item: NotificationTemplate) => (item)));
-      }
+      updateMutation.mutate({
+        ...payload,
+        notificationId: formData.notificationId || "",
+      });
     }
 
     setModal(null);
   };
 
   const handleConfirmDelete = () => {
-    if (!toDelete) return;
-    if (onDelete) {
-      onDelete(toDelete.notificationId);
-    } else {
-      setInternalData((prev) => prev.filter((item: NotificationTemplate) => item.notificationId !== toDelete.notificationId));
-    }
+    if (!toDelete || !toDelete.notificationId) return;
+    deleteMutation.mutate({ notificationId: toDelete.notificationId });
     setToDelete(null);
   };
 
@@ -87,14 +134,40 @@ export function NotificationTemplates({ data: propData, onAdd, onUpdate, onDelet
       <Card
         title="Notification templates"
         action={
-          <button
-            onClick={handleOpenAdd}
-            style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: T.amberDeep, background: "none", border: "none", cursor: "pointer" }}
-          >
-            <Plus size={13} /> Add template
-          </button>
+          statusFilter !== "Inactive" && (
+            <button
+              onClick={handleOpenAdd}
+              style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: T.amberDeep, background: "none", border: "none", cursor: "pointer" }}
+            >
+              <Plus size={13} /> Add template
+            </button>
+          )
         }
       >
+        <TableToolbar
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search notification templates..."
+          filters={[
+            {
+              key: "channel",
+              label: "Channel",
+              value: channelFilter,
+              onChange: setChannelFilter,
+              options: channels.map((c) => ({ value: c, label: c })),
+            },
+            {
+              key: "status",
+              label: "Status",
+              value: statusFilter,
+              onChange: setStatusFilter,
+              options: [
+                { value: "Active", label: "Active" },
+                { value: "Inactive", label: "Inactive" },
+              ],
+            },
+          ]}
+        />
         <Table>
           <thead>
             <tr>
@@ -102,32 +175,52 @@ export function NotificationTemplates({ data: propData, onAdd, onUpdate, onDelet
               <Th>Title</Th>
               <Th>Channel</Th>
               <Th>Status</Th>
-              <Th align="right">Actions</Th>
+              {statusFilter !== "Inactive" && <Th align="right">Actions</Th>}
             </tr>
           </thead>
           <tbody>
-            {data.map((item: NotificationTemplate) => (
-              <tr key={item.notificationId} className="stc-row">
-                <Td mono>{item.notificationCode}</Td>
-                <Td>{item.notificationTitle}</Td>
-                <Td>{item.channel}</Td>
-                <Td>{item.isActive ? "Active" : "Inactive"}</Td>
-                <Td align="right">
-                  <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                    <button onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                      <Pencil size={14} color={T.textSoft} />
-                    </button>
-                    <button onClick={() => setToDelete(item)} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                      <Trash2 size={14} color={T.red} />
-                    </button>
-                  </div>
+            {isLoading ? (
+              <tr>
+                <Td colSpan={statusFilter === "Inactive" ? 4 : 5}>
+                  <div style={{ textAlign: "center", color: "var(--text-soft)", padding: 10 }}>Loading notification templates...</div>
                 </Td>
               </tr>
-            ))}
-            {data.length === 0 && (
+            ) : error ? (
               <tr>
-                <Td colSpan={5}>No records yet — use Add template to create one.</Td>
+                <Td colSpan={statusFilter === "Inactive" ? 4 : 5}>
+                  <div style={{ textAlign: "center", color: "var(--red)", padding: 10 }}>Error loading notification templates: {(error as Error).message}</div>
+                </Td>
               </tr>
+            ) : (
+              <>
+                {notificationTemplates.map((item: NotificationTemplate) => (
+                  <tr key={item.notificationId} className="stc-row">
+                    <Td mono>{item.notificationCode}</Td>
+                    <Td>{item.notificationTitle}</Td>
+                    <Td>{item.channel}</Td>
+                    <Td>
+                      <StatusBadge status={item.isActive ? "Active" : "Inactive"} />
+                    </Td>
+                    {statusFilter !== "Inactive" && (
+                      <Td align="right">
+                        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                          <button onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                            <Pencil size={14} color={T.textSoft} />
+                          </button>
+                          <button onClick={() => setToDelete(item)} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                            <Trash2 size={14} color={T.red} />
+                          </button>
+                        </div>
+                      </Td>
+                    )}
+                  </tr>
+                ))}
+                {notificationTemplates.length === 0 && (
+                  <tr>
+                    <Td colSpan={statusFilter === "Inactive" ? 4 : 5}>No records yet — use Add template to create one.</Td>
+                  </tr>
+                )}
+              </>
             )}
           </tbody>
         </Table>
@@ -146,15 +239,15 @@ export function NotificationTemplates({ data: propData, onAdd, onUpdate, onDelet
             }
           >
             <div className="stc-form-grid">
-              {modal.mode == "edit" && (
+              {modal.mode === "edit" && (
                 <div className="stc-field">
                   <label className="stc-field-label">Code</label>
                   <input
-                    disabled={modal.mode === "edit"}
+                    disabled
                     value={formData.notificationCode || ""}
-                    onChange={(e) => setFormData((s) => ({ ...s, notificationCode: e.target.value }))}
-                />
-              </div>)}
+                  />
+                </div>
+              )}
               <div className="stc-field">
                 <label className="stc-field-label">Title</label>
                 <input
@@ -164,10 +257,19 @@ export function NotificationTemplates({ data: propData, onAdd, onUpdate, onDelet
               </div>
               <div className="stc-field">
                 <label className="stc-field-label">Channel</label>
-                <input
-                  value={formData.channel || ""}
+                <select
+                  value={formData.channel || channels[0]}
                   onChange={(e) => setFormData((s) => ({ ...s, channel: e.target.value }))}
-                />
+                >
+                   <option key="" value="">
+                      Select Channel
+                    </option>
+                  {channels.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="stc-field" style={{ gridColumn: "1 / -1" }}>
                 <label className="stc-field-label">Description</label>
@@ -176,18 +278,6 @@ export function NotificationTemplates({ data: propData, onAdd, onUpdate, onDelet
                   onChange={(e) => setFormData((s) => ({ ...s, description: e.target.value }))}
                 />
               </div>
-              {/* {modal.mode === "edit" && (
-                <div className="stc-field">
-                  <label className="stc-field-label">Status</label>
-                  <select
-                    value={formData.isActive ? "Active" : "Inactive"}
-                    onChange={(e) => setFormData((s) => ({ ...s, isActive: e.target.value === "Active" }))}
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                  </select>
-                </div>
-              )} */}
             </div>
           </Modal>
         )}

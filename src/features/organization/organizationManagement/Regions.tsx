@@ -58,9 +58,9 @@ export function Regions() {
 
   const addMutation = useMutation({
     mutationFn: regionService.insert,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["regions"] });
-      toast.success("Region created successfully.");
+      toast.success(res.message || "Region created successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to create region");
@@ -69,9 +69,9 @@ export function Regions() {
 
   const updateMutation = useMutation({
     mutationFn: regionService.update,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["regions"] });
-      toast.success("Region updated successfully.");
+      toast.success(res.message || "Region updated successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to update region");
@@ -80,9 +80,9 @@ export function Regions() {
 
   const deleteMutation = useMutation({
     mutationFn: regionService.delete,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["regions"] });
-      toast.success("Region deleted successfully.");
+      toast.success(res.message || "Region deleted successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to delete region");

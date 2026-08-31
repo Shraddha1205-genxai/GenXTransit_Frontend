@@ -76,9 +76,9 @@ export function RouteMaster() {
 
   const addMutation = useMutation({
     mutationFn: routeService.insert,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["routes"] });
-      toast.success("Route added successfully.");
+      toast.success(res.message || "Route added successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to add route");
@@ -87,9 +87,9 @@ export function RouteMaster() {
 
   const updateMutation = useMutation({
     mutationFn: routeService.update,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["routes"] });
-      toast.success("Route updated successfully.");
+      toast.success(res.message || "Route updated successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to update route");
@@ -98,9 +98,9 @@ export function RouteMaster() {
 
   const deleteMutation = useMutation({
     mutationFn: routeService.delete,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["routes"] });
-      toast.success("Route deleted successfully.");
+      toast.success(res.message || "Route deleted successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to delete route");

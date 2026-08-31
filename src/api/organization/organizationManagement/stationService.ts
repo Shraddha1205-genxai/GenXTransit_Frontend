@@ -50,18 +50,15 @@ export const stationService = {
     return response.data;
   },
 
-  insert: async (dto: CreateStationDto): Promise<number> => {
-    const response = await apiClient.post<number>(`${PATH}/insert`, dto);
-    return response.data;
+  insert: async (dto: CreateStationDto): Promise<any> => {
+    return apiClient.post(`${PATH}/insert`, dto);
   },
 
-  update: async (dto: UpdateStationDto): Promise<boolean> => {
-    const response = await apiClient.post<boolean>(`${PATH}/update`, dto);
-    return response.data;
+  update: async (dto: UpdateStationDto): Promise<any> => {
+    return apiClient.post(`${PATH}/update`, dto);
   },
 
-  delete: async (dto: DeleteStationDto): Promise<boolean> => {
-    const response = await apiClient.post<boolean>(`${PATH}/delete`, dto);
-    return response.data;
+  delete: async (dto: DeleteStationDto): Promise<any> => {
+    return apiClient.post(`${PATH}/delete`, dto);
   },
 };

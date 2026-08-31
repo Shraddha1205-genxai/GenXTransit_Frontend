@@ -46,18 +46,15 @@ export const stageService = {
     return response.data;
   },
 
-  insert: async (dto: CreateStageDto): Promise<number> => {
-    const response = await apiClient.post<number>(`${PATH}/insert`, dto);
-    return response.data;
+  insert: async (dto: CreateStageDto): Promise<any> => {
+    return apiClient.post(`${PATH}/insert`, dto);
   },
 
-  update: async (dto: UpdateStageDto): Promise<boolean> => {
-    const response = await apiClient.post<boolean>(`${PATH}/update`, dto);
-    return response.data;
+  update: async (dto: UpdateStageDto): Promise<any> => {
+    return apiClient.post(`${PATH}/update`, dto);
   },
 
-  delete: async (dto: DeleteStageDto): Promise<boolean> => {
-    const response = await apiClient.post<boolean>(`${PATH}/delete`, dto);
-    return response.data;
+  delete: async (dto: DeleteStageDto): Promise<any> => {
+    return apiClient.post(`${PATH}/delete`, dto);
   },
 };

@@ -64,9 +64,9 @@ export function Stop() {
 
   const addMutation = useMutation({
     mutationFn: stopService.insert,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["stops"] });
-      toast.success("Stop added successfully.");
+      toast.success(res.message || "Stop added successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to add stop");
@@ -75,9 +75,9 @@ export function Stop() {
 
   const updateMutation = useMutation({
     mutationFn: stopService.update,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["stops"] });
-      toast.success("Stop updated successfully.");
+      toast.success(res.message || "Stop updated successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to update stop");
@@ -86,9 +86,9 @@ export function Stop() {
 
   const deleteMutation = useMutation({
     mutationFn: stopService.delete,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["stops"] });
-      toast.success("Stop deleted successfully.");
+      toast.success(res.message || "Stop deleted successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to delete stop");

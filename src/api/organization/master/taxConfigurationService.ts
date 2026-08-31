@@ -1,32 +1,39 @@
 import { apiClient } from "../../apiClient";
-import { TicketType } from "../../../features/organization/masters/TicketTypes";
 
-const PATH = "/tickettype";
+const PATH = "/taxconfiguration";
 
-export interface CreateTicketTypeDto {
-  ticketName: string;
+export interface CreateTaxConfigurationDto {
+  taxType: string;
   description: string;
+  rate: number;
 }
 
-export interface UpdateTicketTypeDto {
-  ticketId: string;
-  ticketName: string;
+export interface UpdateTaxConfigurationDto {
+  taxId: string;
+  taxType: string;
   description: string;
+  rate: number;
 }
 
-export interface DeleteTicketTypeDto {
-  ticketId: string;
+export interface DeleteTaxConfigurationDto {
+  taxId: string;
 }
 
-export const ticketTypeService = {
+export const taxConfigurationService = {
   getAll: async (
     searchText?: string,
+    taxType?: string,
+    rateFrom?: number,
+    rateTo?: number,
     isActive?: boolean,
     pageNumber?: number,
     pageSize?: number
-  ): Promise<TicketType[]> => {
+  ): Promise<any> => {
     const params = new URLSearchParams();
     if (searchText) params.append("searchText", searchText);
+    if (taxType) params.append("taxType", taxType);
+    if (rateFrom !== undefined) params.append("rateFrom", String(rateFrom));
+    if (rateTo !== undefined) params.append("rateTo", String(rateTo));
     if (isActive !== undefined) params.append("isActive", String(isActive));
     if (pageNumber !== undefined) params.append("pageNumber", String(pageNumber));
     if (pageSize !== undefined) params.append("pageSize", String(pageSize));
@@ -34,19 +41,19 @@ export const ticketTypeService = {
     const queryString = params.toString();
     const path = `${PATH}${queryString ? `?${queryString}` : ""}`;
 
-    const response = await apiClient.get<TicketType[]>(path);
+    const response = await apiClient.get<any[]>(path);
     return response.data;
   },
 
-  insert: async (dto: CreateTicketTypeDto): Promise<any> => {
+  insert: async (dto: CreateTaxConfigurationDto): Promise<any> => {
     return apiClient.post(`${PATH}/insert`, dto);
   },
 
-  update: async (dto: UpdateTicketTypeDto): Promise<any> => {
+  update: async (dto: UpdateTaxConfigurationDto): Promise<any> => {
     return apiClient.post(`${PATH}/update`, dto);
   },
 
-  delete: async (dto: DeleteTicketTypeDto): Promise<any> => {
+  delete: async (dto: DeleteTaxConfigurationDto): Promise<any> => {
     return apiClient.post(`${PATH}/delete`, dto);
   },
 };

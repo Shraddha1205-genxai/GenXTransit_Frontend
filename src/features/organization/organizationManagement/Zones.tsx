@@ -333,9 +333,9 @@ export function Zones() {
 
   const addMutation = useMutation({
     mutationFn: zoneService.insert,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["zones"] });
-      toast.success("Zone created successfully.");
+      toast.success(res.message || "Zone created successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to create zone");
@@ -344,9 +344,9 @@ export function Zones() {
 
   const updateMutation = useMutation({
     mutationFn: zoneService.update,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["zones"] });
-      toast.success("Zone updated successfully.");
+      toast.success(res.message || "Zone updated successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to update zone");
@@ -355,9 +355,9 @@ export function Zones() {
 
   const deleteMutation = useMutation({
     mutationFn: zoneService.delete,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["zones"] });
-      toast.success("Zone deleted successfully.");
+      toast.success(res.message || "Zone deleted successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to delete zone");

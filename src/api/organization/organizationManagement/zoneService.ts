@@ -36,18 +36,15 @@ export const zoneService = {
     return response.data;
   },
 
-  insert: async (dto: CreateZoneDto): Promise<number> => {
-    const response = await apiClient.post<number>(`${PATH}/insert`, dto);
-    return response.data;
+  insert: async (dto: CreateZoneDto): Promise<any> => {
+    return apiClient.post(`${PATH}/insert`, dto);
   },
 
-  update: async (dto: UpdateZoneDto): Promise<boolean> => {
-    const response = await apiClient.post<boolean>(`${PATH}/update`, dto);
-    return response.data;
+  update: async (dto: UpdateZoneDto): Promise<any> => {
+    return apiClient.post(`${PATH}/update`, dto);
   },
 
-  delete: async (dto: DeleteZoneDto): Promise<boolean> => {
-    const response = await apiClient.post<boolean>(`${PATH}/delete`, dto);
-    return response.data;
+  delete: async (dto: DeleteZoneDto): Promise<any> => {
+    return apiClient.post(`${PATH}/delete`, dto);
   },
 };

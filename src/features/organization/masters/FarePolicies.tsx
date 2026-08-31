@@ -86,9 +86,9 @@ export function FarePolicies() {
 
   const addMutation = useMutation({
     mutationFn: farePolicyService.insert,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["farePolicies"] });
-      toast.success("Fare policy added successfully.");
+      toast.success(res.message || "Fare policy added successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to add fare policy");
@@ -97,9 +97,9 @@ export function FarePolicies() {
 
   const updateMutation = useMutation({
     mutationFn: farePolicyService.update,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["farePolicies"] });
-      toast.success("Fare policy updated successfully.");
+      toast.success(res.message || "Fare policy updated successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to update fare policy");
@@ -108,9 +108,9 @@ export function FarePolicies() {
 
   const deleteMutation = useMutation({
     mutationFn: farePolicyService.delete,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["farePolicies"] });
-      toast.success("Fare policy deleted successfully.");
+      toast.success(res.message || "Fare policy deleted successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to delete fare policy");
@@ -151,7 +151,7 @@ export function FarePolicies() {
     } else if (modal?.mode === "edit" && modal.record) {
       updateMutation.mutate({
         ...payload,
-        policyId: Number(formData.policyId) || 0,
+        policyId: formData.policyId || "0",
       });
     }
 
@@ -160,7 +160,7 @@ export function FarePolicies() {
 
   const handleConfirmDelete = () => {
     if (!toDelete || !toDelete.policyId) return;
-    deleteMutation.mutate({ policyId: Number(toDelete.policyId) });
+    deleteMutation.mutate({ policyId: toDelete.policyId});
     setToDelete(null);
   };
 

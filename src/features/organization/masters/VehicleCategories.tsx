@@ -56,9 +56,9 @@ export function VehicleCategories() {
 
   const addMutation = useMutation({
     mutationFn: vehicleCategoryService.insert,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["vehicleCategories"] });
-      toast.success("Vehicle category added successfully.");
+      toast.success(res.message || "Vehicle category added successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to add vehicle category");
@@ -67,9 +67,9 @@ export function VehicleCategories() {
 
   const updateMutation = useMutation({
     mutationFn: vehicleCategoryService.update,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["vehicleCategories"] });
-      toast.success("Vehicle category updated successfully.");
+      toast.success(res.message || "Vehicle category updated successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to update vehicle category");
@@ -78,9 +78,9 @@ export function VehicleCategories() {
 
   const deleteMutation = useMutation({
     mutationFn: vehicleCategoryService.delete,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["vehicleCategories"] });
-      toast.success("Vehicle category deleted successfully.");
+      toast.success(res.message || "Vehicle category deleted successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to delete vehicle category");

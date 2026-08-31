@@ -95,9 +95,9 @@ export function ParkingYards({}: ParkingYardPageProps) {
   // Mutations
   const addMutation = useMutation({
     mutationFn: parkingYardService.insert,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["parkingYards"] });
-      toast.success("Parking yard created successfully.");
+      toast.success(res.message || "Parking yard created successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to create parking yard");
@@ -106,9 +106,9 @@ export function ParkingYards({}: ParkingYardPageProps) {
 
   const updateMutation = useMutation({
     mutationFn: parkingYardService.update,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["parkingYards"] });
-      toast.success("Parking yard updated successfully.");
+      toast.success(res.message || "Parking yard updated successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to update parking yard");
@@ -117,9 +117,9 @@ export function ParkingYards({}: ParkingYardPageProps) {
 
   const deleteMutation = useMutation({
     mutationFn: parkingYardService.delete,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["parkingYards"] });
-      toast.success("Parking yard deleted successfully.");
+      toast.success(res.message || "Parking yard deleted successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to delete parking yard");

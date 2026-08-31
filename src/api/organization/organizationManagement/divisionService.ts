@@ -34,18 +34,15 @@ export const divisionService = {
     return response.data;
   },
 
-  insert: async (dto: CreateDivisionDto): Promise<number> => {
-    const response = await apiClient.post<number>(`${PATH}/insert`, dto);
-    return response.data;
+  insert: async (dto: CreateDivisionDto): Promise<any> => {
+    return apiClient.post(`${PATH}/insert`, dto);
   },
 
-  update: async (dto: UpdateDivisionDto): Promise<boolean> => {
-    const response = await apiClient.post<boolean>(`${PATH}/update`, dto);
-    return response.data;
+  update: async (dto: UpdateDivisionDto): Promise<any> => {
+    return apiClient.post(`${PATH}/update`, dto);
   },
 
-  delete: async (dto: DeleteDivisionDto): Promise<boolean> => {
-    const response = await apiClient.post<boolean>(`${PATH}/delete`, dto);
-    return response.data;
+  delete: async (dto: DeleteDivisionDto): Promise<any> => {
+    return apiClient.post(`${PATH}/delete`, dto);
   },
 };

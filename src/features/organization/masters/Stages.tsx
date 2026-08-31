@@ -76,9 +76,9 @@ export function Stages() {
 
   const addMutation = useMutation({
     mutationFn: stageService.insert,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["stages"] });
-      toast.success("Stage added successfully.");
+      toast.success(res.message || "Stage added successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to add stage");
@@ -87,9 +87,9 @@ export function Stages() {
 
   const updateMutation = useMutation({
     mutationFn: stageService.update,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["stages"] });
-      toast.success("Stage updated successfully.");
+      toast.success(res.message || "Stage updated successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to update stage");
@@ -98,9 +98,9 @@ export function Stages() {
 
   const deleteMutation = useMutation({
     mutationFn: stageService.delete,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["stages"] });
-      toast.success("Stage deleted successfully.");
+      toast.success(res.message || "Stage deleted successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to delete stage");

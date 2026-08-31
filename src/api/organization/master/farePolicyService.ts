@@ -13,7 +13,7 @@ export interface CreateFarePolicyDto {
 }
 
 export interface UpdateFarePolicyDto {
-  policyId: number;
+  policyId: string;
   model: string;
   policyStatus: string;
   categoryId: string;
@@ -23,7 +23,7 @@ export interface UpdateFarePolicyDto {
 }
 
 export interface DeleteFarePolicyDto {
-  policyId: number;
+  policyId: string;
 }
 
 export const farePolicyService = {
@@ -54,18 +54,15 @@ export const farePolicyService = {
     return response.data;
   },
 
-  insert: async (dto: CreateFarePolicyDto): Promise<number> => {
-    const response = await apiClient.post<number>(`${PATH}/insert`, dto);
-    return response.data;
+  insert: async (dto: CreateFarePolicyDto): Promise<any> => {
+    return apiClient.post(`${PATH}/insert`, dto);
   },
 
-  update: async (dto: UpdateFarePolicyDto): Promise<boolean> => {
-    const response = await apiClient.post<boolean>(`${PATH}/update`, dto);
-    return response.data;
+  update: async (dto: UpdateFarePolicyDto): Promise<any> => {
+    return apiClient.post(`${PATH}/update`, dto);
   },
 
-  delete: async (dto: DeleteFarePolicyDto): Promise<boolean> => {
-    const response = await apiClient.post<boolean>(`${PATH}/delete`, dto);
-    return response.data;
+  delete: async (dto: DeleteFarePolicyDto): Promise<any> => {
+    return apiClient.post(`${PATH}/delete`, dto);
   },
 };

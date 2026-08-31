@@ -219,9 +219,9 @@ export function Corporations() {
 
   const addMutation = useMutation({
     mutationFn: corporationService.insert,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["corporations"] });
-      toast.success("Corporation created successfully.");
+      toast.success(res?.message || "Corporation created successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to create corporation");
@@ -230,9 +230,9 @@ export function Corporations() {
 
   const updateMutation = useMutation({
     mutationFn: corporationService.update,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["corporations"] });
-      toast.success("Corporation updated successfully.");
+      toast.success(res?.message || "Corporation updated successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to update corporation");
@@ -241,9 +241,9 @@ export function Corporations() {
 
   const deleteMutation = useMutation({
     mutationFn: corporationService.delete,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["corporations"] });
-      toast.success("Corporation deleted successfully.");
+      toast.success(res?.message || "Corporation deleted successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to delete corporation");

@@ -16,18 +16,15 @@ export const regionService = {
     return response.data;
   },
 
-  insert: async (dto: Omit<RegionPayload, "regionId" | "regionCode">): Promise<number> => {
-    const response = await apiClient.post<number>(`${PATH}/insert`, dto);
-    return response.data;
+  insert: async (dto: Omit<RegionPayload, "regionId" | "regionCode">): Promise<any> => {
+    return apiClient.post(`${PATH}/insert`, dto);
   },
 
-  update: async (dto: Omit<RegionPayload, "regionCode">): Promise<boolean> => {
-    const response = await apiClient.post<boolean>(`${PATH}/update`, dto);
-    return response.data;
+  update: async (dto: Omit<RegionPayload, "regionCode">): Promise<any> => {
+    return apiClient.post(`${PATH}/update`, dto);
   },
 
-  delete: async (dto: Pick<RegionPayload, "regionId">): Promise<boolean> => {
-    const response = await apiClient.post<boolean>(`${PATH}/delete`, dto);
-    return response.data;
+  delete: async (dto: Pick<RegionPayload, "regionId">): Promise<any> => {
+    return apiClient.post(`${PATH}/delete`, dto);
   },
 };

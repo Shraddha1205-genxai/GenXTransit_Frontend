@@ -151,9 +151,9 @@ export function BusStation({}: BusStationPageProps) {
   // Mutations
   const addMutation = useMutation({
     mutationFn: stationService.insert,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["stations"] });
-      toast.success("Bus station created successfully.");
+      toast.success(res.message || "Bus station created successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to create bus station");
@@ -162,9 +162,9 @@ export function BusStation({}: BusStationPageProps) {
 
   const updateMutation = useMutation({
     mutationFn: stationService.update,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["stations"] });
-      toast.success("Bus station updated successfully.");
+      toast.success(res.message || "Bus station updated successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to update bus station");
@@ -173,9 +173,9 @@ export function BusStation({}: BusStationPageProps) {
 
   const deleteMutation = useMutation({
     mutationFn: stationService.delete,
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["stations"] });
-      toast.success("Bus station deleted successfully.");
+      toast.success(res.message || "Bus station deleted successfully.");
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to delete bus station");

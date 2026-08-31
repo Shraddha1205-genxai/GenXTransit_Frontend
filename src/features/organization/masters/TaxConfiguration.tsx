@@ -1,40 +1,101 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { T } from "../../../constants/theme";
-import { Card, Th, Td, Modal, Table } from "../../../components/common";
+import {
+  Card,
+  StatusBadge,
+  Th,
+  Td,
+  Modal,
+  Table,
+  TableToolbar,
+} from "../../../components/common";
+import { taxConfigurationService } from "../../../api/organization/master/taxConfigurationService";
+import { useDebounce } from "../../../hooks/useDebounce";
 
 export interface TaxConfiguration {
-  textId: string
-  textCode: string;
-  textType: string;
-  rate: string;
+  taxId: string;
+  taxCode: string;
+  taxType: string;
+  rate: number;
   description?: string;
   isActive: boolean;
 }
 
-export interface TaxConfigurationProps {
-  data?: TaxConfiguration[];
-  onAdd?: (item: TaxConfiguration) => void;
-  onUpdate?: (item: TaxConfiguration) => void;
-  onDelete?: (textId: string) => void;
-}
+const taxTypes = ["GST", "Service Tax", "VAT", "Cess", "Others"];
 
-const initialDefaultTaxConfigurations: TaxConfiguration[] = [
-  { textId: "TX-GST5", textCode: "TX-GST5", textType: "GST — Local city service", rate: "5%", description: "GST for local city service", isActive: true },
-  { textId: "TX-GST12", textCode: "TX-GST12", textType: "GST — AC / Luxury service", rate: "12%", description: "GST for AC / Luxury service", isActive: true },
-  { textId: "TX-CESS", textCode: "TX-CESS", textType: "State road cess", rate: "1%", description: "State road cess", isActive: true },
-];
+export function TaxConfiguration() {
+  const queryClient = useQueryClient();
 
-export function TaxConfiguration({ data: propData, onAdd, onUpdate, onDelete }: TaxConfigurationProps) {
-  const [internalData, setInternalData] = useState<TaxConfiguration[]>(initialDefaultTaxConfigurations);
-  const data = propData ?? internalData;
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 500);
+  const [taxTypeFilter, setTaxTypeFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("Active");
 
   const [modal, setModal] = useState<{ mode: "add" | "edit"; record?: TaxConfiguration } | null>(null);
   const [toDelete, setToDelete] = useState<TaxConfiguration | null>(null);
   const [formData, setFormData] = useState<Partial<TaxConfiguration>>({});
 
+  const isActiveParam = statusFilter === "" ? undefined : statusFilter === "Active";
+
+  const { data: taxConfigurations = [], isLoading, error } = useQuery({
+    queryKey: ["taxConfigurations", debouncedSearch, taxTypeFilter, statusFilter],
+    queryFn: () =>
+      taxConfigurationService.getAll(
+        debouncedSearch || undefined,
+        taxTypeFilter || undefined,
+        undefined, // rateFrom
+        undefined, // rateTo
+        isActiveParam,
+        1,
+        100
+      ),
+    staleTime: 0,
+  });
+
+  const addMutation = useMutation({
+    mutationFn: taxConfigurationService.insert,
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ["taxConfigurations"] });
+      toast.success(res?.message || "Tax configuration added successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to add tax configuration");
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: taxConfigurationService.update,
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ["taxConfigurations"] });
+      toast.success(res?.message || "Tax configuration updated successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to update tax configuration");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: taxConfigurationService.delete,
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ["taxConfigurations"] });
+      toast.success(res?.message || "Tax configuration deleted successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to delete tax configuration");
+    },
+  });
+
   const handleOpenAdd = () => {
-    setFormData({ textId: "", textCode: "", textType: "", rate: "" });
+    setFormData({
+      taxCode: "",
+      taxType: taxTypes[0],
+      rate: 0,
+      description: "",
+      isActive: true,
+    });
     setModal({ mode: "add" });
   };
 
@@ -44,41 +105,29 @@ export function TaxConfiguration({ data: propData, onAdd, onUpdate, onDelete }: 
   };
 
   const handleSave = () => {
-    if (!formData.textId || !formData.textType) return;
+    if (!formData.taxType) return;
 
-    const newRecord: TaxConfiguration = {
-      textId: formData.textId || "",
-      textCode: formData.textCode || "",
-      textType: formData.textType || "",
-      rate: formData.rate || "",
+    const payload = {
+      taxType: formData.taxType || taxTypes[0],
+      rate: Number(formData.rate) || 0,
       description: formData.description || "",
-      isActive: formData.isActive || true
     };
 
     if (modal?.mode === "add") {
-      if (onAdd) {
-        onAdd(newRecord);
-      } else {
-        setInternalData((prev) => [...prev, newRecord]);
-      }
+      addMutation.mutate(payload);
     } else if (modal?.mode === "edit" && modal.record) {
-      if (onUpdate) {
-        onUpdate(newRecord);
-      } else {
-        setInternalData((prev) => prev.map((item: TaxConfiguration) => (item.textId === modal.record!.textId ? newRecord : item)));
-      }
+      updateMutation.mutate({
+        ...payload,
+        taxId: formData.taxId || "",
+      });
     }
 
     setModal(null);
   };
 
   const handleConfirmDelete = () => {
-    if (!toDelete) return;
-    if (onDelete) {
-      onDelete(toDelete.textId);
-    } else {
-      setInternalData((prev) => prev.filter((item: TaxConfiguration) => item.textId !== toDelete.textId));
-    }
+    if (!toDelete || !toDelete.taxId) return;
+    deleteMutation.mutate({ taxId: toDelete.taxId });
     setToDelete(null);
   };
 
@@ -87,47 +136,93 @@ export function TaxConfiguration({ data: propData, onAdd, onUpdate, onDelete }: 
       <Card
         title="Tax configuration"
         action={
-          <button
-            onClick={handleOpenAdd}
-            style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: T.amberDeep, background: "none", border: "none", cursor: "pointer" }}
-          >
-            <Plus size={13} /> Add tax
-          </button>
+          statusFilter !== "Inactive" && (
+            <button
+              onClick={handleOpenAdd}
+              style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: T.amberDeep, background: "none", border: "none", cursor: "pointer" }}
+            >
+              <Plus size={13} /> Add tax
+            </button>
+          )
         }
       >
+        <TableToolbar
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search tax configurations..."
+          filters={[
+            {
+              key: "taxType",
+              label: "Tax Type",
+              value: taxTypeFilter,
+              onChange: setTaxTypeFilter,
+              options: taxTypes.map((t) => ({ value: t, label: t })),
+            },
+            {
+              key: "status",
+              label: "Status",
+              value: statusFilter,
+              onChange: setStatusFilter,
+              options: [
+                { value: "Active", label: "Active" },
+                { value: "Inactive", label: "Inactive" },
+              ],
+            },
+          ]}
+        />
         <Table>
           <thead>
             <tr>
               <Th>Code</Th>
-              <Th>Name</Th>
-              <Th align="right">Rate</Th>
+              <Th>Type</Th>
+              <Th>Rate</Th>
               <Th>Status</Th>
-              <Th align="right">Actions</Th>
+              {statusFilter !== "Inactive" && <Th align="right">Actions</Th>}
             </tr>
           </thead>
           <tbody>
-            {data.map((item: TaxConfiguration) => (
-              <tr key={item.textId} className="stc-row">
-                <Td mono>{item.textCode}</Td>
-                <Td>{item.textType}</Td>
-                <Td align="right">{item.rate}</Td>
-                <Td>{item.isActive ? "Active" : "Inactive"}</Td>
-                <Td align="right">
-                  <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                    <button onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                      <Pencil size={14} color={T.textSoft} />
-                    </button>
-                    <button onClick={() => setToDelete(item)} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                      <Trash2 size={14} color={T.red} />
-                    </button>
-                  </div>
+            {isLoading ? (
+              <tr>
+                <Td colSpan={statusFilter === "Inactive" ? 4 : 5}>
+                  <div style={{ textAlign: "center", color: "var(--text-soft)", padding: 10 }}>Loading tax configurations...</div>
                 </Td>
               </tr>
-            ))}
-            {data.length === 0 && (
+            ) : error ? (
               <tr>
-                <Td colSpan={4}>No records yet — use Add tax to create one.</Td>
+                <Td colSpan={statusFilter === "Inactive" ? 4 : 5}>
+                  <div style={{ textAlign: "center", color: "var(--red)", padding: 10 }}>Error loading tax configurations: {(error as Error).message}</div>
+                </Td>
               </tr>
+            ) : (
+              <>
+                {taxConfigurations.map((item: TaxConfiguration) => (
+                  <tr key={item.taxId} className="stc-row">
+                    <Td mono>{item.taxCode}</Td>
+                    <Td>{item.taxType}</Td>
+                    <Td>{item.rate}%</Td>
+                    <Td>
+                      <StatusBadge status={item.isActive ? "Active" : "Inactive"} />
+                    </Td>
+                    {statusFilter !== "Inactive" && (
+                      <Td align="right">
+                        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                          <button onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                            <Pencil size={14} color={T.textSoft} />
+                          </button>
+                          <button onClick={() => setToDelete(item)} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                            <Trash2 size={14} color={T.red} />
+                          </button>
+                        </div>
+                      </Td>
+                    )}
+                  </tr>
+                ))}
+                {taxConfigurations.length === 0 && (
+                  <tr>
+                    <Td colSpan={statusFilter === "Inactive" ? 4 : 5}>No records yet — use Add tax to create one.</Td>
+                  </tr>
+                )}
+              </>
             )}
           </tbody>
         </Table>
@@ -146,29 +241,38 @@ export function TaxConfiguration({ data: propData, onAdd, onUpdate, onDelete }: 
             }
           >
             <div className="stc-form-grid">
-              {modal.mode === "edit" && (<div className="stc-field">
-                <label className="stc-field-label">Code</label>
-                <input
-                  disabled={modal.mode === "edit"}
-                  value={formData.textCode || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, textCode: e.target.value }))}
-                />
-              </div>)}
+              {modal.mode === "edit" && (
+                <div className="stc-field">
+                  <label className="stc-field-label">Code</label>
+                  <input
+                    disabled
+                    value={formData.taxCode || ""}
+                  />
+                </div>
+              )}
               <div className="stc-field">
                 <label className="stc-field-label">Type</label>
-                <input
-                  value={formData.textType || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, textType: e.target.value }))}
-                />
+                <select
+                  value={formData.taxType || taxTypes[0]}
+                  onChange={(e) => setFormData((s) => ({ ...s, taxType: e.target.value }))}
+                >
+                  <option value="">Select TAX Type</option>
+                  {taxTypes.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Rate</label>
+                <label className="stc-field-label">Rate (%)</label>
                 <input
-                  value={formData.rate || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, rate: e.target.value }))}
+                  type="number"
+                  value={formData.rate ?? 0}
+                  onChange={(e) => setFormData((s) => ({ ...s, rate: Number(e.target.value) }))}
                 />
               </div>
-              <div className="stc-field">
+              <div className="stc-field" style={{ gridColumn: "1 / -1" }}>
                 <label className="stc-field-label">Description</label>
                 <input
                   value={formData.description || ""}
@@ -187,7 +291,7 @@ export function TaxConfiguration({ data: propData, onAdd, onUpdate, onDelete }: 
             </>
           }>
             <p style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.7, margin: 0 }}>
-              This will permanently remove {toDelete.textCode} from the list. This can't be undone.
+              This will permanently remove {toDelete.taxCode} from the list. This can't be undone.
             </p>
           </Modal>
         )}
