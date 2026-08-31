@@ -1,8 +1,18 @@
 /* ─── Reset & Base ─────────────────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 :root {
-  font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  font-family:
+    "IBM Plex Sans",
+    system-ui,
+    -apple-system,
+    sans-serif;
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -10,7 +20,11 @@
   text-rendering: optimizeLegibility;
 }
 
-body { margin: 0; background: var(--canvas); color: var(--text); }
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--text);
+}
 
 #root {
   width: 100%;
@@ -20,8 +34,13 @@ body { margin: 0; background: var(--canvas); color: var(--text); }
 }
 
 /* ─── Scrollbar ────────────────────────────────────────────────────────────── */
-.stc-no-scrollbar::-webkit-scrollbar { display: none !important; }
-.stc-no-scrollbar { -ms-overflow-style: none !important; scrollbar-width: none !important; }
+.stc-no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+}
+.stc-no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
 
 /* ─── Modal ────────────────────────────────────────────────────────────────── */
 .stc-modal-backdrop {
@@ -50,10 +69,10 @@ body { margin: 0; background: var(--canvas); color: var(--text); }
   position: relative;
   animation: stcSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow:
-    0 0 0 1px rgba(255,255,255,0.05),
-    0 20px 40px rgba(0,0,0,0.3),
-    0 40px 80px rgba(0,0,0,0.4),
-    0 80px 160px rgba(0,0,0,0.3);
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 20px 40px rgba(0, 0, 0, 0.3),
+    0 40px 80px rgba(0, 0, 0, 0.4),
+    0 80px 160px rgba(0, 0, 0, 0.3);
 }
 
 /* ── Header ── */
@@ -83,12 +102,12 @@ body { margin: 0; background: var(--canvas); color: var(--text); }
   justify-content: center;
   flex-shrink: 0;
   background: var(--amber-fill);
-  border: 1px solid rgba(229,163,57,0.2);
+  border: 1px solid rgba(229, 163, 57, 0.2);
 }
 
 .stc-modal-icon.danger {
   background: var(--red-fill);
-  border: 1px solid rgba(248,81,73,0.2);
+  border: 1px solid rgba(248, 81, 73, 0.2);
 }
 
 .stc-modal-titles {
@@ -105,7 +124,7 @@ body { margin: 0; background: var(--canvas); color: var(--text); }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-family: 'IBM Plex Sans', sans-serif;
+  font-family: "IBM Plex Sans", sans-serif;
   letter-spacing: -0.02em;
   line-height: 1.3;
 }
@@ -190,10 +209,14 @@ body { margin: 0; background: var(--canvas); color: var(--text); }
   font-family: inherit !important;
   outline: none !important;
   width: 100% !important;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.04) !important;
-  transition: border-color 0.15s, box-shadow 0.15s !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s !important;
 }
-.stc-field input::placeholder { color: var(--text-faint) !important; }
+.stc-field input::placeholder {
+  color: var(--text-faint) !important;
+}
 
 .stc-field input:hover,
 .stc-field select:hover {
@@ -203,7 +226,9 @@ body { margin: 0; background: var(--canvas); color: var(--text); }
 .stc-field input:focus,
 .stc-field select:focus {
   border-color: var(--amber) !important;
-  box-shadow: 0 0 0 3px var(--amber-fill), inset 0 1px 2px rgba(0,0,0,0.04) !important;
+  box-shadow:
+    0 0 0 3px var(--amber-fill),
+    inset 0 1px 2px rgba(0, 0, 0, 0.04) !important;
 }
 
 .stc-field input:disabled,
@@ -242,27 +267,130 @@ body { margin: 0; background: var(--canvas); color: var(--text); }
   font: inherit;
   font-size: 13px;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
 }
 
-.stc-table-search::placeholder { color: var(--text-faint); }
-.stc-table-filter { cursor: pointer; }
+.stc-table-search::placeholder {
+  color: var(--text-faint);
+}
+.stc-table-filter {
+  cursor: pointer;
+}
 .stc-table-search:hover,
-.stc-table-filter:hover { border-color: var(--text-soft); }
+.stc-table-filter:hover {
+  border-color: var(--text-soft);
+}
 .stc-table-search:focus,
 .stc-table-filter:focus {
   border-color: var(--amber);
   box-shadow: 0 0 0 3px var(--amber-fill);
 }
-.stc-table-filter:disabled { opacity: 0.45; cursor: not-allowed; background: var(--hover); }
+.stc-table-filter:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: var(--hover);
+}
+
+/* ─── Authorization permission grid ──────────────────────────────────────── */
+.authorization-role-panel {
+  background: var(--hover) !important;
+  border-color: var(--border) !important;
+  column-gap: 32px !important;
+}
+.authorization-role-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 280px;
+  flex: 0 0 280px;
+}
+.authorization-role-select {
+  height: 42px !important;
+  min-width: 0 !important;
+  padding: 0 38px 0 13px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  background-color: var(--panel) !important;
+  color: var(--text) !important;
+  font: inherit !important;
+  font-size: 13px !important;
+  outline: none !important;
+  cursor: pointer !important;
+  appearance: none !important;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238B949E' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
+  background-size: 15px !important;
+}
+.authorization-role-select:hover {
+  border-color: var(--text-soft) !important;
+}
+.authorization-role-select:focus {
+  border-color: var(--amber) !important;
+  box-shadow: 0 0 0 3px var(--amber-fill) !important;
+}
+.authorization-table-shell {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--panel);
+}
+.authorization-table-shell > .stc-table-scroll {
+  max-height: 520px !important;
+}
+.authorization-table-shell table {
+  min-width: 820px;
+  table-layout: fixed;
+}
+.authorization-table-shell th,
+.authorization-table-shell td {
+  vertical-align: middle;
+}
+.authorization-table-shell th:nth-child(1),
+.authorization-table-shell td:nth-child(1) {
+  width: 17%;
+}
+.authorization-table-shell th:nth-child(2),
+.authorization-table-shell td:nth-child(2) {
+  width: 23%;
+}
+.authorization-table-shell th:nth-child(3),
+.authorization-table-shell td:nth-child(3) {
+  width: 25%;
+}
+.authorization-table-shell th:nth-child(n + 4),
+.authorization-table-shell td:nth-child(n + 4) {
+  width: 7%;
+  min-width: 58px;
+}
+.authorization-table-shell th:nth-child(n + 4) {
+  text-align: center !important;
+}
+.authorization-table-shell td:nth-child(n + 4) {
+  text-align: center !important;
+}
+.authorization-table-shell td:nth-child(-n + 3) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 @media (max-width: 900px) {
-  .stc-table-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .stc-table-search { grid-column: 1 / -1; }
+  .stc-table-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .stc-table-search {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 520px) {
-  .stc-table-toolbar { grid-template-columns: 1fr; }
+  .stc-table-toolbar {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ─── Buttons ───────────────────────────────────────────────────────────────── */
@@ -295,45 +423,63 @@ body { margin: 0; background: var(--canvas); color: var(--text); }
 }
 .stc-btn-primary {
   background: var(--amber);
-  color: #0F1117;
+  color: #0f1117;
   border-color: transparent;
 }
 .stc-btn-primary:hover {
   filter: brightness(1.08);
   box-shadow: 0 0 0 3px var(--amber-fill);
 }
-.stc-btn-primary:active { filter: brightness(0.95); }
+.stc-btn-primary:active {
+  filter: brightness(0.95);
+}
 .stc-btn-danger {
   background: var(--red);
-  color: #FFFFFF;
+  color: #ffffff;
   border-color: transparent;
 }
 .stc-btn-danger:hover {
   filter: brightness(1.1);
   box-shadow: 0 0 0 3px var(--red-fill);
 }
-.stc-btn-danger:active { filter: brightness(0.95); }
+.stc-btn-danger:active {
+  filter: brightness(0.95);
+}
 
 @keyframes stcFadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 @keyframes stcSlideUp {
-  from { opacity: 0; transform: translateY(20px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* ─── KPI Card hover ───────────────────────────────────────────────────────── */
 .stc-kpi-card {
-  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease !important;
 }
 .stc-kpi-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.1) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
 }
 
 /* ─── Table row ────────────────────────────────────────────────────────────── */
-.stc-row td { transition: background 0.1s ease; }
+.stc-row td {
+  transition: background 0.1s ease;
+}
 
 /* ─── Form grid inside modal ────────────────────────────────────────────────── */
 .stc-form-grid {

@@ -55,6 +55,7 @@ export const initialRoles: RoleRecord[] = [
 export default function RoleMaster() {
   const [data, setData] = useState<RoleRecord[]>(initialRoles);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [modal, setModal] = useState<{
     mode: "add" | "edit";
     record?: RoleRecord;
@@ -62,11 +63,15 @@ export default function RoleMaster() {
   const [toDelete, setToDelete] = useState<RoleRecord | null>(null);
   const [formData, setFormData] = useState<Partial<RolePayload>>({});
 
-  const filteredData = data.filter((role) =>
-    `${role.roleName} ${role.description}`
+  const filteredData = data.filter((role) => {
+    const matchesSearch = `${role.roleName} ${role.description}`
       .toLowerCase()
-      .includes(search.toLowerCase()),
-  );
+      .includes(search.toLowerCase());
+    const matchesStatus =
+      !statusFilter ||
+      (statusFilter === "Active" ? role.isActive : !role.isActive);
+    return matchesSearch && matchesStatus;
+  });
 
   const handleOpenAdd = () => {
     setFormData({ roleId: "", roleName: "", description: "", isActive: true });
@@ -133,6 +138,18 @@ export default function RoleMaster() {
         search={search}
         onSearchChange={setSearch}
         searchPlaceholder="Search roles..."
+        filters={[
+          {
+            key: "status",
+            label: "Status",
+            value: statusFilter,
+            options: [
+              { value: "Active", label: "Active" },
+              { value: "Inactive", label: "Inactive" },
+            ],
+            onChange: setStatusFilter,
+          },
+        ]}
       />
       <Table>
         <thead>
@@ -244,23 +261,6 @@ export default function RoleMaster() {
                 }
               />
             </div>
-            {modal.mode === "edit" && (
-              <div className="stc-field">
-                <label className="stc-field-label">Status</label>
-                <select
-                  value={formData.isActive ? "Active" : "Inactive"}
-                  onChange={(event) =>
-                    setFormData((state) => ({
-                      ...state,
-                      isActive: event.target.value === "Active",
-                    }))
-                  }
-                >
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                </select>
-              </div>
-            )}
           </div>
         </Modal>
       )}
