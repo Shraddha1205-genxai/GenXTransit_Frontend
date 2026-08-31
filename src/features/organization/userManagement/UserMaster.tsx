@@ -96,6 +96,7 @@ const initialUsers: UserRecord[] = [
 export default function UserMaster() {
   const [data, setData] = useState<UserRecord[]>(initialUsers);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [modal, setModal] = useState<{
     mode: "add" | "edit";
     record?: UserRecord;
@@ -103,11 +104,16 @@ export default function UserMaster() {
   const [toDelete, setToDelete] = useState<UserRecord | null>(null);
   const [formData, setFormData] = useState<Partial<UserPayload>>({});
 
-  const filteredData = data.filter((user) =>
-    `${user.code} ${user.username} ${user.email} ${user.roleName} ${user.firstName} ${user.lastName} ${user.mobileNo}`
-      .toLowerCase()
-      .includes(search.toLowerCase()),
-  );
+  const filteredData = data.filter((user) => {
+    const matchesSearch =
+      `${user.code} ${user.username} ${user.email} ${user.roleName} ${user.firstName} ${user.lastName} ${user.mobileNo}`
+        .toLowerCase()
+        .includes(search.toLowerCase());
+    const matchesStatus =
+      !statusFilter ||
+      (statusFilter === "Active" ? user.isActive : !user.isActive);
+    return matchesSearch && matchesStatus;
+  });
 
   const handleOpenAdd = () => {
     setFormData({
@@ -202,6 +208,18 @@ export default function UserMaster() {
         search={search}
         onSearchChange={setSearch}
         searchPlaceholder="Search users..."
+        filters={[
+          {
+            key: "status",
+            label: "Status",
+            value: statusFilter,
+            options: [
+              { value: "Active", label: "Active" },
+              { value: "Inactive", label: "Inactive" },
+            ],
+            onChange: setStatusFilter,
+          },
+        ]}
       />
       <Table>
         <thead>
@@ -356,20 +374,6 @@ export default function UserMaster() {
                 ))}
               </select>
             </div>
-            {modal.mode === "edit" && (
-              <div className="stc-field">
-                <label className="stc-field-label">Status</label>
-                <select
-                  value={formData.isActive ? "Active" : "Inactive"}
-                  onChange={(event) =>
-                    updateField("isActive", event.target.value === "Active")
-                  }
-                >
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                </select>
-              </div>
-            )}
           </div>
         </Modal>
       )}
