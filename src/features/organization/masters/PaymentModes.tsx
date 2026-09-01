@@ -69,6 +69,7 @@ export function PaymentModes() {
       toast.success(res?.message || "Payment mode updated successfully.");
     },
     onError: (err: any) => {
+      console.log("Dfsdfsd", err);
       toast.error(err.message || "Failed to update payment mode");
     },
   });
@@ -88,7 +89,7 @@ export function PaymentModes() {
     setFormData({
       modeCode: "",
       modeName: "",
-      modeStatus: "Enabled",
+      modeStatus: "",
       description: "",
       isActive: true,
     });
@@ -105,7 +106,7 @@ export function PaymentModes() {
 
     const payload = {
       modeName: formData.modeName || "",
-      modeStatus: formData.modeStatus || "Enabled",
+      modeStatus: formData.modeStatus || "",
       description: formData.description || "",
     };
 
@@ -153,7 +154,8 @@ export function PaymentModes() {
               value: modeStatusFilter,
               onChange: setModeStatusFilter,
               options: [
-                { value: "Enabled", label: "Enabled" },
+                { value: "Live", label: "Live" },
+                { value: "Under Maintenance", label: "Under Maintenance" },
                 { value: "Disabled", label: "Disabled" },
               ],
             },
@@ -261,10 +263,12 @@ export function PaymentModes() {
               <div className="stc-field">
                 <label className="stc-field-label">Mode Status</label>
                 <select
-                  value={formData.modeStatus || "Enabled"}
+                  value={formData.modeStatus}
                   onChange={(e) => setFormData((s) => ({ ...s, modeStatus: e.target.value }))}
                 >
-                  <option value="Enabled">Enabled</option>
+                  <option value="">Select Mode Status</option>
+                  <option value="Live">Live</option>
+                  <option value="Under Maintenance">Under Maintenance</option>
                   <option value="Disabled">Disabled</option>
                 </select>
               </div>

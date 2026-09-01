@@ -20,7 +20,16 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<ApiR
   });
 
   if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
+    let errorMessage = `HTTP error! status: ${response.status}`;
+    try {
+      const errorData = await response.json();
+      if (errorData && errorData.message) {
+        errorMessage = errorData.message;
+      }
+    } catch (e) {
+      // Fallback to default message if response isn't valid JSON
+    }
+    throw new Error(errorMessage);
   }
 
   const result: ApiResponse<T> = await response.json();
