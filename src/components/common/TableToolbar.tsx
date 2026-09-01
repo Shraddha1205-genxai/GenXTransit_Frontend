@@ -22,7 +22,13 @@ interface TableToolbarProps {
   style?: React.CSSProperties;
 }
 
-export function TableToolbar({ search, onSearchChange, searchPlaceholder = "Search...", filters = [], style }: TableToolbarProps) {
+export function TableToolbar({
+  search,
+  onSearchChange,
+  searchPlaceholder = "Search...",
+  filters = [],
+  style,
+}: TableToolbarProps) {
   return (
     <div className="stc-table-toolbar" style={style}>
       <input
@@ -40,11 +46,12 @@ export function TableToolbar({ search, onSearchChange, searchPlaceholder = "Sear
           value={filter.value}
           disabled={filter.disabled}
           onChange={(event) => filter.onChange(event.target.value)}
-          aria-label={filter.label}
+          aria-label={filter.label || "Select filter option"}
         >
-          <option value="">{filter.label}</option>
           {filter.options.map((option) => (
-            <option key={option.value} value={option.value}>{option.label}</option>
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
           ))}
         </select>
       ))}
