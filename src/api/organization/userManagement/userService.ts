@@ -101,8 +101,18 @@ const normalizeUser = (user: Partial<User>): User => ({
 });
 
 export const userService = {
-  getAll: async (_params: GetAllUsersParams = {}): Promise<User[]> => {
-    const response = await apiClient.get<GetAllUsersResponse>(PATH);
+  getAll: async (params: GetAllUsersParams = {}): Promise<User[]> => {
+    const query = new URLSearchParams();
+
+    if (params.searchText) query.append("searchText", params.searchText);
+    if (params.isActive !== undefined)
+      query.append("isActive", String(params.isActive));
+    if (params.pageNumber)
+      query.append("pageNumber", String(params.pageNumber));
+    if (params.pageSize) query.append("pageSize", String(params.pageSize));
+
+    const path = `${PATH}${query.toString() ? `?${query.toString()}` : ""}`;
+    const response = await apiClient.get<GetAllUsersResponse>(path);
 
     const payload = response.data;
     if (Array.isArray(payload)) return payload.map(normalizeUser);

@@ -64,24 +64,26 @@ export default function RoleMaster() {
   const [toDelete, setToDelete] = useState<RoleRecord | null>(null);
   const [formData, setFormData] = useState<Partial<RolePayload>>({});
 
+  const isActiveParam =
+    statusFilter === "Active"
+      ? true
+      : statusFilter === "Inactive"
+        ? false
+        : undefined;
+
   const {
     data: roles = [],
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["roles"],
-    queryFn: () => roleService.getAll(),
+    queryKey: ["roles", search, statusFilter],
+    queryFn: () => roleService.getAll(isActiveParam, search || undefined),
     staleTime: 0,
   });
 
-  const filteredData = roles.filter((role) => {
-    const matchesSearch = `${role.roleName} ${role.description}`
-      .toLowerCase()
-      .includes(search.toLowerCase());
-    const matchesStatus =
-      statusFilter === "Active" ? role.isActive : !role.isActive;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredData = roles;
+  const showActionsColumn =
+    statusFilter === "Active" || statusFilter === "Both";
 
   const addMutation = useMutation({
     mutationFn: (payload: CreateRoleDto) => roleService.insert(payload),
@@ -198,6 +200,7 @@ export default function RoleMaster() {
             options: [
               { value: "Active", label: "Active" },
               { value: "Inactive", label: "Inactive" },
+              { value: "Both", label: "Both" },
             ],
             onChange: setStatusFilter,
           },
@@ -214,14 +217,14 @@ export default function RoleMaster() {
             <Th>Role Name</Th>
             <Th>Description</Th>
             <Th>Status</Th>
-            {statusFilter === "Active" && <Th align="right">Actions</Th>}
+            {showActionsColumn && <Th align="right">Actions</Th>}
           </tr>
         </thead>
         <tbody>
           {isLoading ? (
             <tr>
               <Td
-                colSpan={statusFilter === "Active" ? 4 : 3}
+                colSpan={showActionsColumn ? 4 : 3}
                 style={{ textAlign: "center", color: T.textSoft }}
               >
                 Loading roles...
@@ -229,9 +232,7 @@ export default function RoleMaster() {
             </tr>
           ) : filteredData.length === 0 ? (
             <tr>
-              <Td colSpan={statusFilter === "Active" ? 4 : 3}>
-                No roles found.
-              </Td>
+              <Td colSpan={showActionsColumn ? 4 : 3}>No roles found.</Td>
             </tr>
           ) : (
             filteredData.map((role) => (
@@ -241,7 +242,7 @@ export default function RoleMaster() {
                 <Td>
                   <StatusBadge status={role.isActive ? "Active" : "Inactive"} />
                 </Td>
-                {statusFilter === "Active" && (
+                {showActionsColumn && (
                   <Td align="right">
                     <div
                       style={{
@@ -251,27 +252,31 @@ export default function RoleMaster() {
                       }}
                     >
                       <button
-                        onClick={() => handleOpenEdit(role)}
+                        onClick={() => role.isActive && handleOpenEdit(role)}
                         title="Edit"
+                        disabled={!role.isActive}
                         style={{
                           background: "none",
                           border: "none",
-                          cursor: "pointer",
+                          cursor: role.isActive ? "pointer" : "not-allowed",
                           padding: 2,
                           display: "flex",
+                          opacity: role.isActive ? 1 : 0.35,
                         }}
                       >
                         <Pencil size={14} color={T.textSoft} />
                       </button>
                       <button
-                        onClick={() => setToDelete(role)}
+                        onClick={() => role.isActive && setToDelete(role)}
                         title="Delete"
+                        disabled={!role.isActive}
                         style={{
                           background: "none",
                           border: "none",
-                          cursor: "pointer",
+                          cursor: role.isActive ? "pointer" : "not-allowed",
                           padding: 2,
                           display: "flex",
+                          opacity: role.isActive ? 1 : 0.35,
                         }}
                       >
                         <Trash2 size={14} color={T.red} />

@@ -38,8 +38,16 @@ const normalizeRole = (role: Partial<RoleRecord>): RoleRecord => ({
 });
 
 export const roleService = {
-  getAll: async (): Promise<RoleRecord[]> => {
-    const response = await apiClient.get<GetAllRolesResponse>(PATH);
+  getAll: async (
+    isActive?: boolean,
+    searchText?: string,
+  ): Promise<RoleRecord[]> => {
+    const params = new URLSearchParams();
+    if (searchText) params.append("searchText", searchText);
+    if (isActive !== undefined) params.append("isActive", String(isActive));
+
+    const path = `${PATH}${params.toString() ? `?${params.toString()}` : ""}`;
+    const response = await apiClient.get<GetAllRolesResponse>(path);
     const payload = response.data;
 
     if (Array.isArray(payload)) return payload.map(normalizeRole);
