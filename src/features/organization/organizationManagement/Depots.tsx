@@ -93,7 +93,7 @@ export function Depots({
   // Selection state
   const [selCode, setSelCode] = useState<string>("");
 
-  const isActiveParam = filterStatus === "" ? undefined : filterStatus === "Active";
+  const isActiveParam = filterStatus === "Both" ? undefined : filterStatus === "Active";
 
   // Main Query
   const { data: rawDepotsData = [], isLoading, error } = useQuery({
@@ -303,6 +303,7 @@ export function Depots({
             options: [
               { value: "Active", label: "Active" },
               { value: "Inactive", label: "Inactive" },
+                { value: "Both", label: "Both" },
             ],
           },
         ]}
@@ -311,12 +312,10 @@ export function Depots({
         <Card
           title="Depots"
           action={
-            filterStatus !== "Inactive" && (
-              <button onClick={handleOpenAdd} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: T.amberDeep, background: "none", border: "none", cursor: "pointer" }}>
+          <button onClick={handleOpenAdd} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: T.amberDeep, background: "none", border: "none", cursor: "pointer" }}>
                 <Plus size={13} /> Add depot
               </button>
-            )
-          }
+        }
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             {isLoading ? (

@@ -34,7 +34,7 @@ export function TicketTypes() {
   const [toDelete, setToDelete] = useState<TicketType | null>(null);
   const [formData, setFormData] = useState<Partial<TicketType>>({});
 
-  const isActiveParam = statusFilter === "" ? undefined : statusFilter === "Active";
+  const isActiveParam = statusFilter === "Both" ? undefined : statusFilter === "Active";
 
   const { data: ticketTypes = [], isLoading, error } = useQuery({
     queryKey: ["ticketTypes", debouncedSearch, statusFilter],
@@ -127,14 +127,12 @@ export function TicketTypes() {
       <Card
         title="Ticket types"
         action={
-          statusFilter !== "Inactive" && (
-            <button
+          <button
               onClick={handleOpenAdd}
               style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: T.amberDeep, background: "none", border: "none", cursor: "pointer" }}
             >
               <Plus size={13} /> Add type
             </button>
-          )
         }
       >
         <TableToolbar
@@ -150,6 +148,7 @@ export function TicketTypes() {
               options: [
                 { value: "Active", label: "Active" },
                 { value: "Inactive", label: "Inactive" },
+                { value: "Both", label: "Both" },
               ],
             },
           ]}
@@ -190,10 +189,10 @@ export function TicketTypes() {
                     {statusFilter !== "Inactive" && (
                       <Td align="right">
                         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                          <button onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                          <button disabled={statusFilter === "Both" && !item.isActive} onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: statusFilter === "Both" && !item.isActive ? "not-allowed" : "pointer", padding: 2, display: "flex", opacity: statusFilter === "Both" && !item.isActive ? 0.5 : 1 }}>
                             <Pencil size={14} color={T.textSoft} />
                           </button>
-                          <button onClick={() => setToDelete(item)} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                          <button disabled={statusFilter === "Both" && !item.isActive} onClick={() => setToDelete(item)} title="Delete" style={{ background: "none", border: "none", cursor: statusFilter === "Both" && !item.isActive ? "not-allowed" : "pointer", padding: 2, display: "flex", opacity: statusFilter === "Both" && !item.isActive ? 0.5 : 1 }}>
                             <Trash2 size={14} color={T.red} />
                           </button>
                         </div>

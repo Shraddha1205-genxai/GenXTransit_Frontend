@@ -1,92 +1,119 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import toast from "react-hot-toast";
+
 import { T } from "../../../constants/theme";
-import { Card, Th, Td, Modal, Table } from "../../../components/common";
+import { Card } from "../../../components/common/Card";
+import { Table, Th, Td } from "../../../components/common/Table";
+import { Modal } from "../../../components/common/Modal";
+import { TableToolbar } from "../../../components/common/TableToolbar";
+import { useDebounce } from "../../../hooks/useDebounce";
 
-export interface HolidayItem {
-  holidayId: string;
-  holidayCode: string;
-  holidayName: string;
-  occasion: string;
-  date: string;
-  description: string;
-  type: string;
-  isActive: boolean;
-}
+import { holidayService, Holiday, CreateHolidayDto, UpdateHolidayDto } from "../../../api/organization/master/holidayService";
 
-export interface HolidayCalendarProps {
-  data?: HolidayItem[];
-  onAdd?: (item: HolidayItem) => void;
-  onUpdate?: (item: HolidayItem) => void;
-  onDelete?: (holidayId: string) => void;
-}
+const typeOptions = ["National", "Regional", "Local", "Other"];
 
-const initialDefaultHolidays: HolidayItem[] = [
-  { holidayId: "001", holidayCode: "h-001", holidayName: "Republic Day", occasion: "Republic Day", date: "2026-01-26", description: "Republic Day", type: "National", isActive: true },
-  { holidayId: "002", holidayCode: "h-002", holidayName: "Independence Day", occasion: "Independence Day", date: "2026-08-15", description: "Independence Day", type: "National", isActive: true },
-  { holidayId: "003", holidayCode: "h-003", holidayName: "Gandhi Jayanti", occasion: "Gandhi Jayanti", date: "2026-10-02", description: "Gandhi Jayanti", type: "National", isActive: true },
-];
+export function HolidayCalendar() {
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
+  const [typeFilter, setTypeFilter] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [statusFilter, setStatusFilter] = useState("Active");
 
-const typeOptions = ["National", "Regional"];
+  const [modal, setModal] = useState<{ mode: "add" | "edit"; record?: Holiday } | null>(null);
+  const [toDelete, setToDelete] = useState<Holiday | null>(null);
+  const [formData, setFormData] = useState<Partial<Holiday>>({});
 
-export function HolidayCalendar({ data: propData, onAdd, onUpdate, onDelete }: HolidayCalendarProps) {
-  const [internalData, setInternalData] = useState<HolidayItem[]>(initialDefaultHolidays);
-  const data = propData ?? internalData;
+  const isActiveParam = statusFilter === "Both" ? undefined : statusFilter === "Active";
 
-  const [modal, setModal] = useState<{ mode: "add" | "edit"; record?: HolidayItem } | null>(null);
-  const [toDelete, setToDelete] = useState<HolidayItem | null>(null);
-  const [formData, setFormData] = useState<Partial<HolidayItem>>({});
+  const { data: holidays = [], isLoading, error } = useQuery({
+    queryKey: ["holidays", debouncedSearch, typeFilter, startDate, endDate, statusFilter],
+    queryFn: () => holidayService.getAll({
+      searchText: debouncedSearch || undefined,
+      type: typeFilter || undefined,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+      isActive: isActiveParam,
+      pageNumber: 1,
+      pageSize: 1000
+    })
+  });
+
+  const addMutation = useMutation({
+    mutationFn: (dto: CreateHolidayDto) => holidayService.insert(dto),
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ["holidays"] });
+      toast.success(res?.message || "Holiday added successfully");
+      setModal(null);
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (dto: UpdateHolidayDto) => holidayService.update(dto),
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ["holidays"] });
+      toast.success(res?.message || "Holiday updated successfully");
+      setModal(null);
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => holidayService.delete(id),
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ["holidays"] });
+      toast.success(res?.message || "Holiday deleted successfully");
+      setToDelete(null);
+    }
+  });
 
   const handleOpenAdd = () => {
-    setFormData({ holidayId: "", holidayCode: "", holidayName: "", occasion: "", date: "", description: "", type: typeOptions[0] });
+    setFormData({ holidayName: "", occasion: "", date: "", description: "", type: typeOptions[0] });
     setModal({ mode: "add" });
   };
 
-  const handleOpenEdit = (record: HolidayItem) => {
+  const handleOpenEdit = (record: Holiday) => {
     setFormData(record);
     setModal({ mode: "edit", record });
   };
 
   const handleSave = () => {
-    if (!formData.date || !formData.description) return;
-
-    const newRecord: HolidayItem = {
-      holidayId: modal?.mode === "edit" && modal.record ? modal.record.holidayId : "",
-      holidayCode: modal?.mode === "edit" && modal.record ? modal.record.holidayCode : "",
-      holidayName: modal?.mode === "edit" && modal.record ? modal.record.holidayName : "",
-      occasion: modal?.mode === "edit" && modal.record ? modal.record.occasion : "",
-      date: formData.date,
-      description: formData.description,
-      type: formData.type || typeOptions[0],
-      isActive: true,
-    };
-
-    if (modal?.mode === "add") {
-      if (onAdd) {
-        onAdd({ holidayId: newRecord.holidayId, holidayCode: newRecord.holidayCode, holidayName: newRecord.holidayName, occasion: newRecord.occasion, date: newRecord.date, description: newRecord.description, type: newRecord.type, isActive: newRecord.isActive });
-      } else {
-        setInternalData((prev) => [...prev, newRecord]);
-      }
-    } else if (modal?.mode === "edit" && modal.record) {
-      if (onUpdate) {
-        onUpdate(newRecord);
-      } else {
-        setInternalData((prev) => prev.map((item: HolidayItem) => (item.holidayId === modal.record!.holidayId ? newRecord : item)));
-      }
+    if (!formData.holidayName || !formData.date || !formData.description) {
+      toast.error("Please fill required fields.");
+      return;
     }
 
-    setModal(null);
+    if (modal?.mode === "add") {
+      addMutation.mutate({
+        holidayName: formData.holidayName!,
+        occasion: formData.occasion || "",
+        date: formData.date!,
+        description: formData.description!,
+        type: formData.type || typeOptions[0],
+      });
+    } else if (modal?.mode === "edit" && modal.record) {
+      updateMutation.mutate({
+        holidayId: modal.record.holidayId,
+        holidayName: formData.holidayName!,
+        occasion: formData.occasion || "",
+        date: formData.date!,
+        description: formData.description!,
+        type: formData.type || typeOptions[0],
+      });
+    }
   };
 
   const handleConfirmDelete = () => {
-    if (!toDelete) return;
-    if (onDelete) {
-      onDelete(toDelete.holidayId);
-    } else {
-      setInternalData((prev) => prev.filter((item: HolidayItem) => item.holidayId !== toDelete.holidayId));
+    if (toDelete) {
+      deleteMutation.mutate(toDelete.holidayId);
     }
-    setToDelete(null);
   };
+
+  if (error) {
+    toast.error(error.message || "Failed to load holidays");
+  }
 
   return (
     <div>
@@ -101,6 +128,45 @@ export function HolidayCalendar({ data: propData, onAdd, onUpdate, onDelete }: H
           </button>
         }
       >
+        <TableToolbar
+          searchPlaceholder="Search holidays..."
+          search={search}
+          onSearchChange={setSearch}
+          filters={[
+            {
+              key: "type",
+              label: "All Types",
+              value: typeFilter,
+              onChange: setTypeFilter,
+              options: typeOptions.map((opt) => ({ value: opt, label: opt })),
+            },
+            {
+              key: "startDate",
+              label: "Start Date",
+              value: startDate,
+              onChange: setStartDate,
+              type: "date"
+            },
+            {
+              key: "endDate",
+              label: "End Date",
+              value: endDate,
+              onChange: setEndDate,
+              type: "date"
+            },
+            {
+              key: "status",
+              label: "Status",
+              value: statusFilter,
+              onChange: setStatusFilter,
+              options: [
+                { value: "Active", label: "Active" },
+                { value: "Inactive", label: "Inactive" },
+                { value: "Both", label: "Both" },
+              ],
+            },
+          ]}
+        />
         <Table>
           <thead>
             <tr>
@@ -109,33 +175,40 @@ export function HolidayCalendar({ data: propData, onAdd, onUpdate, onDelete }: H
               <Th>Date</Th>
               <Th>Occasion</Th>
               <Th>Type</Th>
-              <Th align="right">Actions</Th>
+              {statusFilter !== "Inactive" && <Th align="right">Actions</Th>}
             </tr>
           </thead>
           <tbody>
-            {data.map((item: HolidayItem) => (
-              <tr key={item.holidayId} className="stc-row">
-                <Td>{item.holidayCode}</Td>
-                <Td>{item.holidayName}</Td>
-                <Td mono>{item.date}</Td>
-                <Td>{item.occasion}</Td>
-                <Td>{item.type}</Td>
-                <Td align="right">
-                  <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                    <button onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                      <Pencil size={14} color={T.textSoft} />
-                    </button>
-                    <button onClick={() => setToDelete(item)} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                      <Trash2 size={14} color={T.red} />
-                    </button>
-                  </div>
-                </Td>
-              </tr>
-            ))}
-            {data.length === 0 && (
+            {isLoading ? (
               <tr>
-                <Td colSpan={4}>No records yet — use Add holiday to create one.</Td>
+                <Td colSpan={statusFilter === "Inactive" ? 5 : 6}>Loading...</Td>
               </tr>
+            ) : holidays.length === 0 ? (
+              <tr>
+                <Td colSpan={statusFilter === "Inactive" ? 5 : 6}>No records yet — use Add holiday to create one.</Td>
+              </tr>
+            ) : (
+              holidays.map((item: Holiday) => (
+                <tr key={item.holidayId} className="stc-row">
+                  <Td>{item.holidayCode || "-"}</Td>
+                  <Td>{item.holidayName}</Td>
+                  <Td mono>{item.date}</Td>
+                  <Td>{item.occasion}</Td>
+                  <Td>{item.type}</Td>
+                  {statusFilter !== "Inactive" && (
+                    <Td align="right">
+                      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                        <button disabled={statusFilter === "Both" && !item.isActive} onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: statusFilter === "Both" && !item.isActive ? "not-allowed" : "pointer", padding: 2, display: "flex", opacity: statusFilter === "Both" && !item.isActive ? 0.5 : 1 }}>
+                          <Pencil size={14} color={T.textSoft} />
+                        </button>
+                        <button disabled={statusFilter === "Both" && !item.isActive} onClick={() => setToDelete(item)} title="Delete" style={{ background: "none", border: "none", cursor: statusFilter === "Both" && !item.isActive ? "not-allowed" : "pointer", padding: 2, display: "flex", opacity: statusFilter === "Both" && !item.isActive ? 0.5 : 1 }}>
+                          <Trash2 size={14} color={T.red} />
+                        </button>
+                      </div>
+                    </Td>
+                  )}
+                </tr>
+              ))
             )}
           </tbody>
         </Table>
@@ -148,19 +221,22 @@ export function HolidayCalendar({ data: propData, onAdd, onUpdate, onDelete }: H
             width={520}
             footer={
               <>
-                <button className="stc-btn stc-btn-ghost" onClick={() => setModal(null)}>Cancel</button>
-                <button className="stc-btn stc-btn-primary" onClick={handleSave}>Save changes</button>
+                <button className="stc-btn stc-btn-ghost" onClick={() => setModal(null)} disabled={addMutation.isPending || updateMutation.isPending}>Cancel</button>
+                <button className="stc-btn stc-btn-primary" onClick={handleSave} disabled={addMutation.isPending || updateMutation.isPending}>Save changes</button>
               </>
             }
           >
             <div className="stc-form-grid">
-              {modal.mode == "edit" && (<div className="stc-field">
-                <label className="stc-field-label">Code</label>
-                <input
-                  value={formData.holidayCode || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, holidayCode: e.target.value }))}
-                />
-              </div>)}
+              {modal.mode === "edit" && (
+                <div className="stc-field">
+                  <label className="stc-field-label">Code</label>
+                  <input
+                    value={formData.holidayCode || ""}
+                    disabled
+                    style={{ background: "#f5f5f5", cursor: "not-allowed" }}
+                  />
+                </div>
+              )}
               <div className="stc-field">
                 <label className="stc-field-label">Holiday Name</label>
                 <input
@@ -176,14 +252,15 @@ export function HolidayCalendar({ data: propData, onAdd, onUpdate, onDelete }: H
                 />
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Date</label>
+                <label className="stc-field-label">Date (YYYY-MM-DD)</label>
                 <input
+                  type="date"
                   value={formData.date || ""}
                   onChange={(e) => setFormData((s) => ({ ...s, date: e.target.value }))}
                 />
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">description</label>
+                <label className="stc-field-label">Description</label>
                 <input
                   value={formData.description || ""}
                   onChange={(e) => setFormData((s) => ({ ...s, description: e.target.value }))}
@@ -198,31 +275,27 @@ export function HolidayCalendar({ data: propData, onAdd, onUpdate, onDelete }: H
                   {typeOptions.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
               </div>
-              {/* {modal.mode === "edit" && (
-                <div className="stc-field">
-                  <label className="stc-field-label">Status</label>
-                  <select
-                    value={formData.isActive ? "Active" : "Inactive"}
-                    onChange={(e) => setFormData((s) => ({ ...s, isActive: e.target.value === "Active" }))}
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                  </select>
-                </div>
-              )} */}
             </div>
           </Modal>
         )}
 
         {toDelete && (
-          <Modal title="Delete — Holiday Calendar" subtitle="This action cannot be undone" icon={<Trash2 size={20} color={T.red} />} iconVariant="danger" onClose={() => setToDelete(null)} width={420} footer={
-            <>
-              <button className="stc-btn stc-btn-ghost" onClick={() => setToDelete(null)}>Cancel</button>
-              <button className="stc-btn stc-btn-danger" onClick={handleConfirmDelete}>Delete</button>
-            </>
-          }>
+          <Modal 
+            title="Delete — Holiday Calendar" 
+            subtitle="This action cannot be undone" 
+            icon={<Trash2 size={20} color={T.red} />} 
+            iconVariant="danger" 
+            onClose={() => setToDelete(null)} 
+            width={420} 
+            footer={
+              <>
+                <button className="stc-btn stc-btn-ghost" onClick={() => setToDelete(null)} disabled={deleteMutation.isPending}>Cancel</button>
+                <button className="stc-btn stc-btn-danger" onClick={handleConfirmDelete} disabled={deleteMutation.isPending}>Delete</button>
+              </>
+            }
+          >
             <p style={{ fontSize: 14, color: T.textSoft, lineHeight: 1.7, margin: 0 }}>
-              This will permanently remove {toDelete.description} from the list. This can't be undone.
+              This will permanently remove {toDelete.holidayName} from the list. This can't be undone.
             </p>
           </Modal>
         )}

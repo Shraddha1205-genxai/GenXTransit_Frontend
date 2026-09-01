@@ -202,7 +202,7 @@ export function Corporations() {
   const [filterCity, setFilterCity] = useState("");
   const [filterStatus, setFilterStatus] = useState("Active");
 
-  const isActiveParam = filterStatus === "" ? undefined : filterStatus === "Active";
+  const isActiveParam = filterStatus === "Both" ? undefined : filterStatus === "Active";
 
   const { data = [], isLoading, error } = useQuery({
     queryKey: ["corporations", debouncedSearch, filterState, filterDistrict, filterCity, filterStatus],
@@ -507,6 +507,7 @@ export function Corporations() {
               options: [
                 { value: "Active", label: "Active" },
                 { value: "Inactive", label: "Inactive" },
+                { value: "Both", label: "Both" },
               ],
             },
           ]}
@@ -549,10 +550,10 @@ export function Corporations() {
                     {filterStatus !== "Inactive" && (
                       <Td align="right">
                         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                          <button onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                          <button disabled={filterStatus === "Both" && !item.isActive} onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: filterStatus === "Both" && !item.isActive ? "not-allowed" : "pointer", padding: 2, display: "flex", opacity: filterStatus === "Both" && !item.isActive ? 0.5 : 1 }}>
                             <Pencil size={14} color={T.textSoft} />
                           </button>
-                          <button onClick={() => setToDelete(item)} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                          <button disabled={filterStatus === "Both" && !item.isActive} onClick={() => setToDelete(item)} title="Delete" style={{ background: "none", border: "none", cursor: filterStatus === "Both" && !item.isActive ? "not-allowed" : "pointer", padding: 2, display: "flex", opacity: filterStatus === "Both" && !item.isActive ? 0.5 : 1 }}>
                             <Trash2 size={14} color={T.red} />
                           </button>
                         </div>

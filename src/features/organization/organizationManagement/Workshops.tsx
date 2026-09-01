@@ -114,7 +114,7 @@ export function Workshops({}: WorkshopPageProps) {
   const [filterDepot, setFilterDepot] = useState("");
   const [filterStatus, setFilterStatus] = useState("Active");
 
-  const isActiveParam = filterStatus === "" ? undefined : filterStatus === "Active";
+  const isActiveParam = filterStatus === "Both" ? undefined : filterStatus === "Active";
 
   // Main Query
   const { data: workshops = [], isLoading, error } = useQuery({
@@ -247,8 +247,7 @@ export function Workshops({}: WorkshopPageProps) {
       <Card
         title="Workshops"
         action={
-          filterStatus !== "Inactive" && (
-            <button
+          <button
               onClick={handleOpenAdd}
               style={{
                 display: "flex",
@@ -264,7 +263,6 @@ export function Workshops({}: WorkshopPageProps) {
             >
               <Plus size={13} /> Add workshop
             </button>
-          )
         }
       >
         <TableToolbar
@@ -315,6 +313,7 @@ export function Workshops({}: WorkshopPageProps) {
               options: [
                 { value: "Active", label: "Active" },
                 { value: "Inactive", label: "Inactive" },
+                { value: "Both", label: "Both" },
               ],
             },
           ]}

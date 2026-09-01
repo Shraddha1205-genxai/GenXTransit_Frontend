@@ -302,7 +302,7 @@ export function Zones() {
   const [regionFilter, setRegionFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("Active");
 
-  const isActiveParam = statusFilter === "" ? undefined : statusFilter === "Active";
+  const isActiveParam = statusFilter === "Both" ? undefined : statusFilter === "Active";
 
   const { data = [], isLoading: isLoadingZones, error: errorZones } = useQuery({
     queryKey: ["zones", debouncedSearch, regionFilter, statusFilter],
@@ -464,6 +464,7 @@ export function Zones() {
               options: [
                 { value: "Active", label: "Active" },
                 { value: "Inactive", label: "Inactive" },
+                { value: "Both", label: "Both" },
               ],
             },
           ]}

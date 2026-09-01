@@ -113,7 +113,7 @@ export function BusStation({}: BusStationPageProps) {
   const [filterDepot, setFilterDepot] = useState("");
   const [filterStatus, setFilterStatus] = useState("Active");
 
-  const isActiveParam = filterStatus === "" ? undefined : filterStatus === "Active";
+  const isActiveParam = filterStatus === "Both" ? undefined : filterStatus === "Active";
 
   // Main Query
   const { data: stations = [], isLoading, error } = useQuery({
@@ -246,8 +246,7 @@ export function BusStation({}: BusStationPageProps) {
       <Card
         title="Bus Stations"
         action={
-          filterStatus !== "Inactive" && (
-            <button
+          <button
               onClick={handleOpenAdd}
               style={{
                 display: "flex",
@@ -263,7 +262,6 @@ export function BusStation({}: BusStationPageProps) {
             >
               <Plus size={13} /> Add bus station
             </button>
-          )
         }
       >
         <TableToolbar
@@ -314,6 +312,7 @@ export function BusStation({}: BusStationPageProps) {
               options: [
                 { value: "Active", label: "Active" },
                 { value: "Inactive", label: "Inactive" },
+                { value: "Both", label: "Both" },
               ],
             },
           ]}

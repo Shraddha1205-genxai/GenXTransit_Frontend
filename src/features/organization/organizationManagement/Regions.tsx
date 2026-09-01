@@ -48,7 +48,7 @@ export function Regions() {
   const debouncedSearch = useDebounce(search, 500);
   const [statusFilter, setStatusFilter] = useState("Active");
 
-  const isActiveParam = statusFilter === "" ? undefined : statusFilter === "Active";
+  const isActiveParam = statusFilter === "Both" ? undefined : statusFilter === "Active";
 
   const { data = [], isLoading, error } = useQuery({
     queryKey: ["regions", debouncedSearch, statusFilter],
@@ -166,6 +166,7 @@ export function Regions() {
               options: [
                 { value: "Active", label: "Active" },
                 { value: "Inactive", label: "Inactive" },
+                { value: "Both", label: "Both" },
               ],
             },
           ]}

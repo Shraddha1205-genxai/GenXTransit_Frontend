@@ -1961,23 +1961,7 @@ function SeatLayoutsTab() {
     <SeatLayouts />
   );
 }
-function HolidayCalendarTab() {
-  const [holidaysData, holidaysCrud] = useCrud("holidays", "id");
-  // const [, dispatch] = useContext(DataContext);
-  return (
-    <HolidayCalendar
-      data={holidaysData}
-      onAdd={(v) =>
-        holidaysCrud.add({
-          id: `HOL-${Math.floor(Math.random() * 9000) + 1000}`,
-          ...v,
-        })
-      }
-      onUpdate={holidaysCrud.update}
-      onDelete={holidaysCrud.remove}
-    />
-  );
-}
+
 function NotificationTemplatesTab() {
   return (
     <NotificationTemplates />
@@ -2500,7 +2484,7 @@ function AuthGate() {
               element={<VehicleCategoriesTab />}
             />
             <Route path="SeatLayouts" element={<SeatLayoutsTab />} />
-            <Route path="HolidayCalendar" element={<HolidayCalendarTab />} />
+            <Route path="HolidayCalendar" element={<HolidayCalendar />} />
             <Route
               path="NotificationTemplates"
               element={<NotificationTemplatesTab />}

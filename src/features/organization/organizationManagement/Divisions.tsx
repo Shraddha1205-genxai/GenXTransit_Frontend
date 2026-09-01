@@ -53,7 +53,7 @@ export function Divisions() {
   const [regionFilter, setRegionFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("Active");
 
-  const isActiveParam = statusFilter === "" ? undefined : statusFilter === "Active";
+  const isActiveParam = statusFilter === "Both" ? undefined : statusFilter === "Active";
 
   const { data = [], isLoading: isLoadingDivisions, error: errorDivisions } = useQuery({
     queryKey: ["divisions", debouncedSearch, regionFilter, statusFilter],
@@ -191,6 +191,7 @@ export function Divisions() {
               options: [
                 { value: "Active", label: "Active" },
                 { value: "Inactive", label: "Inactive" },
+                { value: "Both", label: "Both" },
               ],
             },
           ]}
