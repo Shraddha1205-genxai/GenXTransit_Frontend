@@ -111,9 +111,9 @@ export function Stages() {
     setFormData({
       stageCode: "",
       stageName: "",
-      routeId: routeOptions[0]?.routeId || "",
-      sectionFromId: stopOptions[0]?.stopId || "",
-      sectionToId: stopOptions[1]?.stopId || stopOptions[0]?.stopId || "",
+      routeId: "",
+      sectionFromId: "",
+      sectionToId: "",
       distance: 0,
       isActive: true,
     });
@@ -126,23 +126,26 @@ export function Stages() {
   };
 
   const handleSave = () => {
-    if (!formData.stageName) return;
+    if (!formData.stageName || !formData.routeId || !formData.sectionFromId || !formData.sectionToId) {
+      toast.error("Please fill required fields.");
+      return;
+    }
 
     if (modal?.mode === "add") {
       addMutation.mutate({
         stageName: formData.stageName || "",
-        routeId: formData.routeId || routeOptions[0]?.routeId || "",
-        sectionFromId: formData.sectionFromId || stopOptions[0]?.stopId || "",
-        sectionToId: formData.sectionToId || stopOptions[1]?.stopId || stopOptions[0]?.stopId || "",
+        routeId: formData.routeId,
+        sectionFromId: formData.sectionFromId,
+        sectionToId: formData.sectionToId,
         distance: Number(formData.distance) || 0,
       });
     } else if (modal?.mode === "edit" && modal.record) {
       updateMutation.mutate({
         stageId: formData.stageId || "",
         stageName: formData.stageName || "",
-        routeId: formData.routeId || routeOptions[0]?.routeId || "",
-        sectionFromId: formData.sectionFromId || stopOptions[0]?.stopId || "",
-        sectionToId: formData.sectionToId || stopOptions[1]?.stopId || stopOptions[0]?.stopId || "",
+        routeId: formData.routeId,
+        sectionFromId: formData.sectionFromId,
+        sectionToId: formData.sectionToId,
         distance: Number(formData.distance) || 0,
       });
     }

@@ -90,7 +90,7 @@ export function NotificationTemplates() {
     setFormData({
       notificationCode: "",
       notificationTitle: "",
-      channel: channels[0],
+      channel: "",
       description: "",
       isActive: true,
     });
@@ -103,11 +103,14 @@ export function NotificationTemplates() {
   };
 
   const handleSave = () => {
-    if (!formData.notificationTitle) return;
+    if (!formData.notificationTitle || !formData.channel) {
+      toast.error("Please fill required fields.");
+      return;
+    }
 
     const payload = {
       notificationTitle: formData.notificationTitle || "",
-      channel: formData.channel || channels[0],
+      channel: formData.channel,
       description: formData.description || "",
     };
 
@@ -257,7 +260,7 @@ export function NotificationTemplates() {
               <div className="stc-field">
                 <label className="stc-field-label">Channel</label>
                 <select
-                  value={formData.channel || channels[0]}
+                  value={formData.channel || ""}
                   onChange={(e) => setFormData((s) => ({ ...s, channel: e.target.value }))}
                 >
                    <option key="" value="">

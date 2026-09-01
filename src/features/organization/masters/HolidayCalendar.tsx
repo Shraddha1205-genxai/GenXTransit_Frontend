@@ -11,6 +11,7 @@ import { TableToolbar } from "../../../components/common/TableToolbar";
 import { useDebounce } from "../../../hooks/useDebounce";
 
 import { holidayService, Holiday, CreateHolidayDto, UpdateHolidayDto } from "../../../api/organization/master/holidayService";
+import { StatusBadge } from "../../../components/common";
 
 const typeOptions = ["National", "Regional", "Local", "Other"];
 
@@ -70,7 +71,7 @@ export function HolidayCalendar() {
   });
 
   const handleOpenAdd = () => {
-    setFormData({ holidayName: "", occasion: "", date: "", description: "", type: typeOptions[0] });
+    setFormData({ holidayName: "", occasion: "", date: "", description: "", type: "" });
     setModal({ mode: "add" });
   };
 
@@ -80,7 +81,7 @@ export function HolidayCalendar() {
   };
 
   const handleSave = () => {
-    if (!formData.holidayName || !formData.date || !formData.description) {
+    if (!formData.holidayName || !formData.date || !formData.description || !formData.type) {
       toast.error("Please fill required fields.");
       return;
     }
@@ -91,7 +92,7 @@ export function HolidayCalendar() {
         occasion: formData.occasion || "",
         date: formData.date!,
         description: formData.description!,
-        type: formData.type || typeOptions[0],
+        type: formData.type!,
       });
     } else if (modal?.mode === "edit" && modal.record) {
       updateMutation.mutate({
@@ -100,7 +101,7 @@ export function HolidayCalendar() {
         occasion: formData.occasion || "",
         date: formData.date!,
         description: formData.description!,
-        type: formData.type || typeOptions[0],
+        type: formData.type!,
       });
     }
   };
@@ -175,6 +176,7 @@ export function HolidayCalendar() {
               <Th>Date</Th>
               <Th>Occasion</Th>
               <Th>Type</Th>
+              <Th>Status</Th>
               {statusFilter !== "Inactive" && <Th align="right">Actions</Th>}
             </tr>
           </thead>
@@ -195,6 +197,9 @@ export function HolidayCalendar() {
                   <Td mono>{item.date}</Td>
                   <Td>{item.occasion}</Td>
                   <Td>{item.type}</Td>
+                  <Td>
+                    <StatusBadge status={item.isActive ? "Active" : "Inactive"} />
+                  </Td>
                   {statusFilter !== "Inactive" && (
                     <Td align="right">
                       <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
@@ -269,9 +274,10 @@ export function HolidayCalendar() {
               <div className="stc-field">
                 <label className="stc-field-label">Type</label>
                 <select
-                  value={formData.type || typeOptions[0]}
+                  value={formData.type || ""}
                   onChange={(e) => setFormData((s) => ({ ...s, type: e.target.value }))}
                 >
+                  <option value="">Select Type</option>
                   {typeOptions.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
               </div>

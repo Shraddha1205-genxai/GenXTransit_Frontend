@@ -195,7 +195,7 @@ export function Depots({
   const [formData, setFormData] = useState<Partial<Depot>>({});
 
   const handleOpenAdd = () => {
-    setFormData({ depotCode: "", depotName: "", corpId: "", service: "ST", zoneId: "", regionId: "", divisionId: "" });
+    setFormData({ depotCode: "", depotName: "", corpId: "", service: "", zoneId: "", regionId: "", divisionId: "" });
     setModal({ mode: "add" });
   };
 
@@ -205,13 +205,16 @@ export function Depots({
   };
 
   const handleSave = () => {
-    if (!formData.depotName || !formData.corpId || !formData.regionId || !formData.divisionId || !formData.zoneId) return;
+    if (!formData.depotName || !formData.corpId || !formData.regionId || !formData.divisionId || !formData.zoneId || !formData.service) {
+      toast.error("Please fill required fields.");
+      return;
+    }
 
     if (modal?.mode === "add") {
       addMutation.mutate({
         depotName: formData.depotName.trim(),
         corpId: formData.corpId,
-        service: formData.service || "ST",
+        service: formData.service,
         regionId: formData.regionId,
         divisionId: formData.divisionId,
         zoneId: formData.zoneId,
@@ -222,7 +225,7 @@ export function Depots({
         depotId: modal.record.depotId,
         depotName: formData.depotName.trim(),
         corpId: formData.corpId,
-        service: formData.service || "ST",
+        service: formData.service,
         regionId: formData.regionId,
         divisionId: formData.divisionId,
         zoneId: formData.zoneId,

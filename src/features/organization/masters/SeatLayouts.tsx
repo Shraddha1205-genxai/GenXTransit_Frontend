@@ -96,7 +96,7 @@ export function SeatLayouts() {
   const handleOpenAdd = () => {
     setFormData({
       layoutCode: "",
-      categoryId: categoryOptions[0]?.categoryId || "",
+      categoryId: "",
       description: "",
       isActive: true,
     });
@@ -109,11 +109,14 @@ export function SeatLayouts() {
   };
 
   const handleSave = () => {
-    if (!formData.description) return;
+    if (!formData.description || !formData.categoryId) {
+      toast.error("Please fill required fields.");
+      return;
+    }
 
     const payload = {
       description: formData.description || "",
-      categoryId: formData.categoryId || categoryOptions[0]?.categoryId || "",
+      categoryId: formData.categoryId,
     };
 
     if (modal?.mode === "add") {

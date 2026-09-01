@@ -106,7 +106,7 @@ export function Divisions() {
       divisionId: "",
       divisionCode: "",
       divisionName: "",
-      regionId: regionOptions[0]?.regionId || "",
+      regionId: "",
       isActive: true,
     });
     setModal({ mode: "add" });
@@ -118,9 +118,16 @@ export function Divisions() {
   };
 
   const handleSave = () => {
-    if (!formData.divisionName) return;
+    if (!formData.divisionName) {
+      toast.error("Please enter a division name.");
+      return;
+    }
+    if (!formData.regionId) {
+      toast.error("Please select a Region.");
+      return;
+    }
 
-    const rId = formData.regionId || regionOptions[0]?.regionId || "";
+    const rId = formData.regionId;
 
     if (modal?.mode === "add") {
       addMutation.mutate({
@@ -346,6 +353,7 @@ export function Divisions() {
                     setFormData((s) => ({ ...s, regionId: e.target.value }))
                   }
                 >
+                  <option value="">Select Region</option>
                   {regionOptions.length > 0 &&
                     regionOptions.map((opt) => (
                       <option key={opt.regionId} value={opt.regionId}>
