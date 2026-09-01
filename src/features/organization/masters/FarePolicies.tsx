@@ -120,10 +120,10 @@ export function FarePolicies() {
   const handleOpenAdd = () => {
     setFormData({
       policyCode: "",
-      model: modelOptions[0],
-      policyStatus: statusOptions[0],
-      categoryId: categoryOptions[0]?.categoryId || "",
-      routeId: routeOptions[0]?.routeId || "",
+      model: "",
+      policyStatus: "",
+      categoryId: "",
+      routeId: "",
       baseFare: 0,
       rateDescription: "",
       isActive: true,
@@ -137,11 +137,16 @@ export function FarePolicies() {
   };
 
   const handleSave = () => {
+    if (!formData.model || !formData.categoryId || !formData.routeId) {
+      toast.error("Please fill required fields.");
+      return;
+    }
+
     const payload = {
-      model: formData.model || modelOptions[0],
+      model: formData.model,
       policyStatus: formData.policyStatus || "Draft",
-      categoryId: formData.categoryId || categoryOptions[0]?.categoryId || "",
-      routeId: formData.routeId || routeOptions[0]?.routeId || "",
+      categoryId: formData.categoryId,
+      routeId: formData.routeId,
       baseFare: String(formData.baseFare ?? 0),
       rateDescription: formData.rateDescription || "",
     };
@@ -317,9 +322,10 @@ export function FarePolicies() {
               <div className="stc-field">
                 <label className="stc-field-label">Model</label>
                 <select
-                  value={formData.model || modelOptions[0]}
+                  value={formData.model || ""}
                   onChange={(e) => setFormData((s) => ({ ...s, model: e.target.value }))}
                 >
+                  <option value="">Select Model</option>
                   {modelOptions.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
               </div>
@@ -336,9 +342,10 @@ export function FarePolicies() {
               <div className="stc-field">
                 <label className="stc-field-label">Status</label>
                 <select
-                  value={formData.policyStatus || statusOptions[0]}
+                  value={formData.policyStatus || ""}
                   onChange={(e) => setFormData((s) => ({ ...s, policyStatus: e.target.value }))}
                 >
+                  <option value="">Select Status</option>
                   {statusOptions.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
               </div>

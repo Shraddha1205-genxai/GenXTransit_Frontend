@@ -15,6 +15,7 @@ import {
 import { zoneService } from "../../../api/organization/organizationManagement/zoneService";
 import { regionService } from "../../../api/organization/organizationManagement/regionService";
 import { useDebounce } from "../../../hooks/useDebounce";
+import { getAllDistricts } from "../../../constants/indiaGeoData";
 
 const toTitleCase = (str: string) => {
   return str
@@ -42,6 +43,54 @@ function SearchableMultiSelect({
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [coords, setCoords] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
+  const [maxListHeight, setMaxListHeight] = useState(180);
+
+  const updateCoords = () => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom - 65;
+      const computedMaxHeight = Math.min(180, Math.max(90, spaceBelow));
+      setMaxListHeight(computedMaxHeight);
+
+      setCoords({
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      const modalBody = buttonRef.current?.closest(".stc-modal-body");
+      if (modalBody) {
+        modalBody.scrollTo({
+          top: modalBody.scrollHeight,
+          behavior: "smooth",
+        });
+      } else {
+        buttonRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+
+      updateCoords();
+
+      const timer1 = setTimeout(updateCoords, 50);
+      const timer2 = setTimeout(updateCoords, 150);
+      const timer3 = setTimeout(updateCoords, 300);
+
+      window.addEventListener("scroll", updateCoords, true);
+      window.addEventListener("resize", updateCoords);
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+        clearTimeout(timer3);
+        window.removeEventListener("scroll", updateCoords, true);
+        window.removeEventListener("resize", updateCoords);
+      };
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -96,8 +145,14 @@ function SearchableMultiSelect({
         }
       `}</style>
       <button
+        ref={buttonRef}
         type="button"
-        onClick={() => !disabled && setIsOpen(!isOpen)}
+        onClick={() => {
+          if (!disabled) {
+            updateCoords();
+            setIsOpen(!isOpen);
+          }
+        }}
         disabled={disabled}
         style={{
           minHeight: "48px",
@@ -175,17 +230,16 @@ function SearchableMultiSelect({
       {isOpen && (
         <div
           style={{
-            position: "absolute",
-            top: "100%",
-            left: 0,
-            right: 0,
-            marginTop: "6px",
+            position: "fixed",
+            top: coords.top,
+            left: coords.left,
+            width: coords.width,
+            zIndex: 999999,
             background: "var(--panel)",
             border: "1.5px solid var(--border)",
             borderRadius: "10px",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-            zIndex: 1000,
-            maxHeight: "220px",
+            boxShadow: "0 12px 32px rgba(0,0,0,0.25)",
+            maxHeight: `${maxListHeight + 60}px`,
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
@@ -315,21 +369,7 @@ export function Zones() {
     queryFn: () => regionService.getAll(undefined, true),
   });
 
-  // Fetch Maharashtra districts
-  const { data: districtsData } = useQuery({
-    queryKey: ["maharashtraDistricts"],
-    queryFn: async () => {
-      const res = await fetch("https://aniket-thapa.github.io/india-pincode-api/states/maharashtra.json");
-      if (!res.ok) throw new Error("Failed to fetch districts");
-      return res.json() as Promise<{ districts: { name: string; slug: string }[] }>;
-    },
-    staleTime: Infinity,
-  });
-
-  const districtsList = useMemo(() => {
-    if (!districtsData?.districts) return [];
-    return districtsData.districts.map((d) => toTitleCase(d.name)).sort();
-  }, [districtsData]);
+  const districtsList = useMemo(() => getAllDistricts(), []);
 
   const addMutation = useMutation({
     mutationFn: zoneService.insert,
@@ -369,7 +409,7 @@ export function Zones() {
   const handleOpenAdd = () => {
     setFormData({
       zoneName: "",
-      regionId: regionOptions?.[0]?.regionId || "",
+      regionId: "",
       districts: [],
     });
     setModal({ mode: "add" });
@@ -381,7 +421,10 @@ export function Zones() {
   };
 
   const handleSave = () => {
-    if (!formData.zoneName || !formData.regionId) return;
+    if (!formData.zoneName || !formData.regionId) {
+      toast.error("Please fill required fields.");
+      return;
+    }
 
     const districtsArray = Array.isArray(formData.districts)
       ? formData.districts
@@ -566,6 +609,7 @@ export function Zones() {
             }
             onClose={() => setModal(null)}
             width={620}
+            bodyStyle={{ maxHeight: "300px" }}
             footer={
               <>
                 <button
@@ -609,6 +653,7 @@ export function Zones() {
                     setFormData((s) => ({ ...s, regionId: e.target.value }))
                   }
                 >
+                  <option value="">Select Region</option>
                   {regionOptions &&
                     regionOptions.length > 0 &&
                     regionOptions.map((opt) => (
