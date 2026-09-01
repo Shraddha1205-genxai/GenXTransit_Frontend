@@ -72,19 +72,30 @@ export default function UserMaster() {
   const roleOptions = roles.filter((role) => role.isActive);
   const defaultRoleId = String(roleOptions[0]?.roleId ?? 1);
 
+  const isActiveParam =
+    statusFilter === "Active"
+      ? true
+      : statusFilter === "Inactive"
+        ? false
+        : undefined;
+
   const {
     data: users = [],
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["users"],
-    queryFn: () => userService.getAll(),
+    queryKey: ["users", debouncedSearch, statusFilter],
+    queryFn: () =>
+      userService.getAll({
+        searchText: debouncedSearch || undefined,
+        isActive: isActiveParam,
+      }),
     staleTime: 0,
   });
 
-  const filteredUsers = users.filter((user) =>
-    statusFilter === "Active" ? user.isActive : !user.isActive,
-  );
+  const filteredUsers = users;
+  const showActionsColumn =
+    statusFilter === "Active" || statusFilter === "Both";
 
   const addMutation = useMutation({
     mutationFn: (payload: AddUserPayload) => userService.add(payload),
@@ -243,6 +254,7 @@ export default function UserMaster() {
             options: [
               { value: "Active", label: "Active" },
               { value: "Inactive", label: "Inactive" },
+              { value: "Both", label: "Both" },
             ],
             onChange: setStatusFilter,
           },
@@ -263,14 +275,14 @@ export default function UserMaster() {
             <Th>Last Name</Th>
             <Th>Mobile No</Th>
             <Th>Status</Th>
-            {statusFilter === "Active" && <Th align="right">Actions</Th>}
+            {showActionsColumn && <Th align="right">Actions</Th>}
           </tr>
         </thead>
         <tbody>
           {isLoading ? (
             <tr>
               <Td
-                colSpan={statusFilter === "Active" ? 8 : 7}
+                colSpan={showActionsColumn ? 8 : 7}
                 style={{ textAlign: "center", color: T.textSoft }}
               >
                 Loading users...
@@ -278,9 +290,7 @@ export default function UserMaster() {
             </tr>
           ) : items.length === 0 ? (
             <tr>
-              <Td colSpan={statusFilter === "Active" ? 8 : 7}>
-                No users found.
-              </Td>
+              <Td colSpan={showActionsColumn ? 8 : 7}>No users found.</Td>
             </tr>
           ) : (
             items.map((user) => (
@@ -294,7 +304,7 @@ export default function UserMaster() {
                 <Td>
                   <StatusBadge status={user.isActive ? "Active" : "Inactive"} />
                 </Td>
-                {statusFilter === "Active" && (
+                {showActionsColumn && (
                   <Td align="right">
                     <div
                       style={{
@@ -304,27 +314,31 @@ export default function UserMaster() {
                       }}
                     >
                       <button
-                        onClick={() => handleOpenEdit(user)}
+                        onClick={() => user.isActive && handleOpenEdit(user)}
                         title="Edit"
+                        disabled={!user.isActive}
                         style={{
                           background: "none",
                           border: "none",
-                          cursor: "pointer",
+                          cursor: user.isActive ? "pointer" : "not-allowed",
                           padding: 2,
                           display: "flex",
+                          opacity: user.isActive ? 1 : 0.35,
                         }}
                       >
                         <Pencil size={14} color={T.textSoft} />
                       </button>
                       <button
-                        onClick={() => setToDelete(user)}
+                        onClick={() => user.isActive && setToDelete(user)}
                         title="Delete"
+                        disabled={!user.isActive}
                         style={{
                           background: "none",
                           border: "none",
-                          cursor: "pointer",
+                          cursor: user.isActive ? "pointer" : "not-allowed",
                           padding: 2,
                           display: "flex",
+                          opacity: user.isActive ? 1 : 0.35,
                         }}
                       >
                         <Trash2 size={14} color={T.red} />
