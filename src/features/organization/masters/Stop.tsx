@@ -99,7 +99,7 @@ export function Stop() {
     setFormData({
       stopCode: "",
       stopName: "",
-      routeId: routeOptions[0]?.routeId || "",
+      routeId: "",
       stopOrder: 0,
       isActive: true,
     });
@@ -112,19 +112,22 @@ export function Stop() {
   };
 
   const handleSave = () => {
-    if (!formData.stopName) return;
+    if (!formData.stopName || !formData.routeId) {
+      toast.error("Please fill required fields.");
+      return;
+    }
 
     if (modal?.mode === "add") {
       addMutation.mutate({
         stopName: formData.stopName || "",
-        routeId: formData.routeId || routeOptions[0]?.routeId || "",
+        routeId: formData.routeId,
         stopOrder: Number(formData.stopOrder) || 0,
       });
     } else if (modal?.mode === "edit" && modal.record) {
       updateMutation.mutate({
         stopId: formData.stopId || "",
         stopName: formData.stopName || "",
-        routeId: formData.routeId || routeOptions[0]?.routeId || "",
+        routeId: formData.routeId,
         stopOrder: Number(formData.stopOrder) || 0,
         isActive: formData.isActive !== undefined ? formData.isActive : true,
       });

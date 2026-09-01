@@ -91,7 +91,7 @@ export function TaxConfiguration() {
   const handleOpenAdd = () => {
     setFormData({
       taxCode: "",
-      taxType: taxTypes[0],
+      taxType: "",
       rate: 0,
       description: "",
       isActive: true,
@@ -105,10 +105,13 @@ export function TaxConfiguration() {
   };
 
   const handleSave = () => {
-    if (!formData.taxType) return;
+    if (!formData.taxType) {
+      toast.error("Please select a Tax Type.");
+      return;
+    }
 
     const payload = {
-      taxType: formData.taxType || taxTypes[0],
+      taxType: formData.taxType,
       rate: Number(formData.rate) || 0,
       description: formData.description || "",
     };
@@ -252,7 +255,7 @@ export function TaxConfiguration() {
               <div className="stc-field">
                 <label className="stc-field-label">Type</label>
                 <select
-                  value={formData.taxType || taxTypes[0]}
+                  value={formData.taxType || ""}
                   onChange={(e) => setFormData((s) => ({ ...s, taxType: e.target.value }))}
                 >
                   <option value="">Select TAX Type</option>

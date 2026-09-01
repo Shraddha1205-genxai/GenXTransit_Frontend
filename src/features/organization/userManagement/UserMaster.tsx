@@ -157,7 +157,7 @@ export default function UserMaster() {
       mobileNo: "",
       firstName: "",
       lastName: "",
-      roleId: defaultRoleId,
+      roleId: "",
     });
     setModal({ mode: "add" });
   };
@@ -170,7 +170,7 @@ export default function UserMaster() {
       mobileNo: record.mobileNo,
       firstName: record.firstName,
       lastName: record.lastName,
-      roleId: String(record.roleId || Number(defaultRoleId) || 1),
+      roleId: String(record.roleId || ""),
     });
     setModal({ mode: "edit", record });
   };
@@ -179,11 +179,14 @@ export default function UserMaster() {
     if (
       !formData.userName?.trim() ||
       !formData.email?.trim() ||
+      !formData.mobileNo?.trim() ||
       !formData.firstName?.trim() ||
-      !formData.lastName?.trim()
-    )
+      !formData.lastName?.trim() ||
+      !formData.roleId
+    ) {
+      toast.error("Please fill required fields.");
       return;
-
+    }
     const roleId = String(formData.roleId ?? defaultRoleId);
 
     if (modal?.mode === "edit" && formData.userId) {
@@ -429,11 +432,12 @@ export default function UserMaster() {
             <div className="stc-field">
               <label className="stc-field-label">Role</label>
               <select
-                value={String(formData.roleId ?? defaultRoleId)}
+                value={String(formData.roleId || "")}
                 onChange={(event) => updateField("roleId", event.target.value)}
               >
+                <option value="">Select Role</option>
                 {roleOptions.length === 0 ? (
-                  <option value="">No roles available</option>
+                  <option value="" disabled>No roles available</option>
                 ) : (
                   roleOptions.map((role: RoleRecord) => (
                     <option key={role.roleId} value={String(role.roleId)}>

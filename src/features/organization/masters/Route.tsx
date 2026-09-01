@@ -111,12 +111,12 @@ export function RouteMaster() {
     setFormData({
       routeCode: "",
       routeName: "",
-      fromStationId: stationOptions[0]?.stationId || "",
-      toStationId: stationOptions[1]?.stationId || stationOptions[0]?.stationId || "",
-      service: serviceOptions[0],
-      type: typeOptions[0],
+      fromStationId: "",
+      toStationId: "",
+      service: "",
+      type: "",
       distance: 0,
-      fareModel: fareModelOptions[0],
+      fareModel: "",
       duration: "00:00:00",
     });
     setModal({ mode: "add" });
@@ -128,16 +128,19 @@ export function RouteMaster() {
   };
 
   const handleSave = () => {
-    if (!formData.routeName) return;
+    if (!formData.routeName || !formData.fromStationId || !formData.toStationId || !formData.service || !formData.type || !formData.fareModel) {
+      toast.error("Please fill required fields.");
+      return;
+    }
 
     const payload = {
       routeName: formData.routeName || "",
-      service: formData.service || serviceOptions[0],
-      fromStationId: formData.fromStationId || "",
-      toStationId: formData.toStationId || "",
-      type: formData.type || typeOptions[0],
+      service: formData.service,
+      fromStationId: formData.fromStationId,
+      toStationId: formData.toStationId,
+      type: formData.type,
       distance: Number(formData.distance) || 0,
-      fareModel: formData.fareModel || fareModelOptions[0],
+      fareModel: formData.fareModel,
       duration: formData.duration || "00:00:00",
     };
 
@@ -309,9 +312,10 @@ export function RouteMaster() {
               <div className="stc-field">
                 <label className="stc-field-label">Service</label>
                 <select
-                  value={formData.service || serviceOptions[0]}
+                  value={formData.service || ""}
                   onChange={(e) => setFormData((s) => ({ ...s, service: e.target.value }))}
                 >
+                  <option value="">Select Service</option>
                   {serviceOptions.map((opt) => (
                     <option key={opt} value={opt}>{opt}</option>
                   ))}
@@ -344,9 +348,10 @@ export function RouteMaster() {
               <div className="stc-field">
                 <label className="stc-field-label">Type</label>
                 <select
-                  value={formData.type || typeOptions[0]}
+                  value={formData.type || ""}
                   onChange={(e) => setFormData((s) => ({ ...s, type: e.target.value }))}
                 >
+                  <option value="">Select Type</option>
                   {typeOptions.map((opt) => (
                     <option key={opt} value={opt}>{opt}</option>
                   ))}
@@ -363,9 +368,10 @@ export function RouteMaster() {
               <div className="stc-field">
                 <label className="stc-field-label">Fare model</label>
                 <select
-                  value={formData.fareModel || fareModelOptions[0]}
+                  value={formData.fareModel || ""}
                   onChange={(e) => setFormData((s) => ({ ...s, fareModel: e.target.value }))}
                 >
+                  <option value="">Select Fare Model</option>
                   {fareModelOptions.map((opt) => (
                     <option key={opt} value={opt}>{opt}</option>
                   ))}

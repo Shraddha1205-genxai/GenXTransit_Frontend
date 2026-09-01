@@ -94,8 +94,8 @@ export function ComplaintCategories() {
     setFormData({
       complaintCode: "",
       complaintTitle: "",
-      complaintCategory: categories[0],
-      sla: slas[0],
+      complaintCategory: "",
+      sla: "",
       description: "",
       isActive: true,
     });
@@ -108,12 +108,15 @@ export function ComplaintCategories() {
   };
 
   const handleSave = () => {
-    if (!formData.complaintTitle) return;
+    if (!formData.complaintTitle || !formData.complaintCategory || !formData.sla) {
+      toast.error("Please fill required fields.");
+      return;
+    }
 
     const payload = {
       complaintTitle: formData.complaintTitle || "",
-      complaintCategory: formData.complaintCategory || categories[0],
-      sla: formData.sla || slas[0],
+      complaintCategory: formData.complaintCategory,
+      sla: formData.sla,
       description: formData.description || "",
     };
 
@@ -265,7 +268,7 @@ export function ComplaintCategories() {
               <div className="stc-field">
                 <label className="stc-field-label">Category</label>
                 <select
-                  value={formData.complaintCategory || categories[0]}
+                  value={formData.complaintCategory || ""}
                   onChange={(e) => setFormData((s) => ({ ...s, complaintCategory: e.target.value }))}
                 >
                   <option value="">Select Category</option>
@@ -286,7 +289,7 @@ export function ComplaintCategories() {
               <div className="stc-field">
                 <label className="stc-field-label">SLA</label>
                 <select
-                  value={formData.sla || slas[0]}
+                  value={formData.sla || ""}
                   onChange={(e) => setFormData((s) => ({ ...s, sla: e.target.value }))}
                 >
                   <option value="">Select SLA</option>
