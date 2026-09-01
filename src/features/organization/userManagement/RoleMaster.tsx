@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { T } from "../../../constants/theme";
 import {
   Card,
@@ -10,16 +12,15 @@ import {
   Td,
   Th,
 } from "../../../components/common";
-
-export interface RoleRecord {
-  roleId: string;
-  roleName: string;
-  description: string;
-  isActive: boolean;
-}
+import {
+  roleService,
+  type RoleRecord,
+  type CreateRoleDto,
+  type UpdateRoleDto,
+} from "../../../api/organization/userManagement/roleService";
 
 export interface RolePayload {
-  roleId: string;
+  roleId?: number;
   roleName: string;
   description: string;
   isActive: boolean;
@@ -27,35 +28,35 @@ export interface RolePayload {
 
 export const initialRoles: RoleRecord[] = [
   {
-    roleId: "ROL-001",
+    roleId: 1,
     roleName: "Super Admin",
-    description: "Full access across the platform",
+    description: "Full access",
     isActive: true,
   },
   {
-    roleId: "ROL-002",
+    roleId: 2,
     roleName: "Depot Manager",
-    description: "Manages an assigned depot and staff",
+    description: "Manages depot operations",
     isActive: true,
   },
   {
-    roleId: "ROL-003",
+    roleId: 3,
     roleName: "Finance Officer",
-    description: "Reviews collections and wallet activity",
+    description: "Wallet and collection",
     isActive: true,
   },
   {
-    roleId: "ROL-004",
+    roleId: 4,
     roleName: "Route Planner",
-    description: "Maintains routes and operating schedules",
-    isActive: false,
+    description: "Routes and schedule",
+    isActive: true,
   },
 ];
 
 export default function RoleMaster() {
-  const [data, setData] = useState<RoleRecord[]>(initialRoles);
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("Active");
   const [modal, setModal] = useState<{
     mode: "add" | "edit";
     record?: RoleRecord;
@@ -63,53 +64,104 @@ export default function RoleMaster() {
   const [toDelete, setToDelete] = useState<RoleRecord | null>(null);
   const [formData, setFormData] = useState<Partial<RolePayload>>({});
 
-  const filteredData = data.filter((role) => {
+  const {
+    data: roles = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["roles"],
+    queryFn: () => roleService.getAll(),
+    staleTime: 0,
+  });
+
+  const filteredData = roles.filter((role) => {
     const matchesSearch = `${role.roleName} ${role.description}`
       .toLowerCase()
       .includes(search.toLowerCase());
     const matchesStatus =
-      !statusFilter ||
-      (statusFilter === "Active" ? role.isActive : !role.isActive);
+      statusFilter === "Active" ? role.isActive : !role.isActive;
     return matchesSearch && matchesStatus;
   });
 
+  const addMutation = useMutation({
+    mutationFn: (payload: CreateRoleDto) => roleService.insert(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["roles"] });
+      toast.success("Role added successfully.");
+      setModal(null);
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to add role");
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (payload: UpdateRoleDto) => roleService.update(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["roles"] });
+      toast.success("Role updated successfully.");
+      setModal(null);
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to update role");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (roleId: number) => roleService.delete({ roleId }),
+    onSuccess: (_, roleId) => {
+      queryClient.setQueryData<RoleRecord[]>(["roles"], (previous = []) =>
+        previous.map((role) =>
+          role.roleId === roleId ? { ...role, isActive: false } : role,
+        ),
+      );
+      queryClient.invalidateQueries({ queryKey: ["roles"] });
+      toast.success("Role deleted successfully.");
+      setToDelete(null);
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to delete role");
+    },
+  });
+
   const handleOpenAdd = () => {
-    setFormData({ roleId: "", roleName: "", description: "", isActive: true });
+    setFormData({ roleName: "", description: "", isActive: true });
     setModal({ mode: "add" });
   };
 
   const handleOpenEdit = (record: RoleRecord) => {
-    setFormData(record);
+    setFormData({
+      roleId: record.roleId,
+      roleName: record.roleName,
+      description: record.description,
+      isActive: record.isActive,
+    });
     setModal({ mode: "edit", record });
   };
 
   const handleSave = () => {
     if (!formData.roleName?.trim()) return;
 
-    const role: RolePayload = {
-      roleId:
-        formData.roleId || `ROL-${String(data.length + 1).padStart(3, "0")}`,
+    const basePayload = {
       roleName: formData.roleName.trim(),
       description: formData.description?.trim() || "",
-      isActive: formData.isActive ?? true,
     };
 
-    if (modal?.mode === "edit") {
-      setData((previous) =>
-        previous.map((item) => (item.roleId === role.roleId ? role : item)),
-      );
-    } else {
-      setData((previous) => [...previous, role]);
+    if (modal?.mode === "edit" && formData.roleId) {
+      updateMutation.mutate({
+        roleId: Number(formData.roleId),
+        ...basePayload,
+        isActive: formData.isActive ?? true,
+      });
+      return;
     }
-    setModal(null);
+
+    addMutation.mutate(basePayload);
   };
 
   const handleConfirmDelete = () => {
     if (!toDelete) return;
-    setData((previous) =>
-      previous.filter((item) => item.roleId !== toDelete.roleId),
-    );
-    setToDelete(null);
+    deleteMutation.mutate(toDelete.roleId);
   };
 
   return (
@@ -141,7 +193,7 @@ export default function RoleMaster() {
         filters={[
           {
             key: "status",
-            label: "Status",
+            label: "",
             value: statusFilter,
             options: [
               { value: "Active", label: "Active" },
@@ -151,65 +203,84 @@ export default function RoleMaster() {
           },
         ]}
       />
+      {error && (
+        <div style={{ color: T.red, padding: "12px 0", fontSize: 13 }}>
+          {error instanceof Error ? error.message : "Failed to load roles"}
+        </div>
+      )}
       <Table>
         <thead>
           <tr>
             <Th>Role Name</Th>
             <Th>Description</Th>
             <Th>Status</Th>
-            <Th align="right">Actions</Th>
+            {statusFilter === "Active" && <Th align="right">Actions</Th>}
           </tr>
         </thead>
         <tbody>
-          {filteredData.map((role) => (
-            <tr className="stc-row" key={role.roleId}>
-              <Td>{role.roleName}</Td>
-              <Td>{role.description}</Td>
-              <Td>
-                <StatusBadge status={role.isActive ? "Active" : "Inactive"} />
-              </Td>
-              <Td align="right">
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 10,
-                    justifyContent: "flex-end",
-                  }}
-                >
-                  <button
-                    onClick={() => handleOpenEdit(role)}
-                    title="Edit"
-                    style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      padding: 2,
-                      display: "flex",
-                    }}
-                  >
-                    <Pencil size={14} color={T.textSoft} />
-                  </button>
-                  <button
-                    onClick={() => setToDelete(role)}
-                    title="Delete"
-                    style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      padding: 2,
-                      display: "flex",
-                    }}
-                  >
-                    <Trash2 size={14} color={T.red} />
-                  </button>
-                </div>
-              </Td>
-            </tr>
-          ))}
-          {filteredData.length === 0 && (
+          {isLoading ? (
             <tr>
-              <Td colSpan={4}>No roles found.</Td>
+              <Td
+                colSpan={statusFilter === "Active" ? 4 : 3}
+                style={{ textAlign: "center", color: T.textSoft }}
+              >
+                Loading roles...
+              </Td>
             </tr>
+          ) : filteredData.length === 0 ? (
+            <tr>
+              <Td colSpan={statusFilter === "Active" ? 4 : 3}>
+                No roles found.
+              </Td>
+            </tr>
+          ) : (
+            filteredData.map((role) => (
+              <tr className="stc-row" key={role.roleId}>
+                <Td>{role.roleName}</Td>
+                <Td>{role.description}</Td>
+                <Td>
+                  <StatusBadge status={role.isActive ? "Active" : "Inactive"} />
+                </Td>
+                {statusFilter === "Active" && (
+                  <Td align="right">
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 10,
+                        justifyContent: "flex-end",
+                      }}
+                    >
+                      <button
+                        onClick={() => handleOpenEdit(role)}
+                        title="Edit"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: 2,
+                          display: "flex",
+                        }}
+                      >
+                        <Pencil size={14} color={T.textSoft} />
+                      </button>
+                      <button
+                        onClick={() => setToDelete(role)}
+                        title="Delete"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: 2,
+                          display: "flex",
+                        }}
+                      >
+                        <Trash2 size={14} color={T.red} />
+                      </button>
+                    </div>
+                  </Td>
+                )}
+              </tr>
+            ))
           )}
         </tbody>
       </Table>
@@ -227,11 +298,18 @@ export default function RoleMaster() {
               <button
                 className="stc-btn stc-btn-ghost"
                 onClick={() => setModal(null)}
+                disabled={addMutation.isPending || updateMutation.isPending}
               >
                 Cancel
               </button>
-              <button className="stc-btn stc-btn-primary" onClick={handleSave}>
-                Save changes
+              <button
+                className="stc-btn stc-btn-primary"
+                onClick={handleSave}
+                disabled={addMutation.isPending || updateMutation.isPending}
+              >
+                {addMutation.isPending || updateMutation.isPending
+                  ? "Saving..."
+                  : "Save changes"}
               </button>
             </>
           }
@@ -278,14 +356,16 @@ export default function RoleMaster() {
               <button
                 className="stc-btn stc-btn-ghost"
                 onClick={() => setToDelete(null)}
+                disabled={deleteMutation.isPending}
               >
                 Cancel
               </button>
               <button
                 className="stc-btn stc-btn-danger"
                 onClick={handleConfirmDelete}
+                disabled={deleteMutation.isPending}
               >
-                Delete
+                {deleteMutation.isPending ? "Deleting..." : "Delete"}
               </button>
             </>
           }

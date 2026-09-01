@@ -1,5 +1,8 @@
 import React, { useState } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
+import { useDebounce } from "../../../hooks/useDebounce";
 import { T } from "../../../constants/theme";
 import {
   Card,
@@ -10,176 +13,200 @@ import {
   Td,
   Th,
 } from "../../../components/common";
+import {
+  userService,
+  type User,
+  type AddUserPayload,
+  type UpdateUserPayload,
+} from "../../../api/organization/userManagement/userService";
+import {
+  roleService,
+  type RoleRecord,
+} from "../../../api/organization/userManagement/roleService";
 
-export interface UserRecord {
-  userId: string;
-  code: string;
-  username: string;
+const PAGE_SIZE = 10;
+
+interface UserFormData {
+  userId?: number;
+  userName?: string;
+  email?: string;
+  mobileNo?: string;
+  firstName?: string;
+  lastName?: string;
+  roleId?: string;
+}
+
+interface UserRow {
+  userId: number;
+  userName: string;
   email: string;
-  roleId: string;
+  mobileNo: string;
+  firstName: string;
+  lastName: string;
+  roleId: number;
   roleName: string;
-  firstName: string;
-  lastName: string;
-  mobileNo: string;
   isActive: boolean;
+  isFirstLogin: boolean;
+  createdDate: string;
 }
-
-export interface UserPayload {
-  userId: string;
-  username: string;
-  email: string;
-  mobileNo: string;
-  firstName: string;
-  lastName: string;
-  roleId: string;
-  isActive: boolean;
-}
-
-const roleOptions = [
-  { roleId: "ROL-001", roleName: "Super Admin" },
-  { roleId: "ROL-002", roleName: "Depot Manager" },
-  { roleId: "ROL-003", roleName: "Finance Officer" },
-  { roleId: "ROL-004", roleName: "Route Planner" },
-];
-
-const initialUsers: UserRecord[] = [
-  {
-    userId: "USR-ID-001",
-    code: "USR-001",
-    username: "amit.kulkarni",
-    email: "amit.kulkarni@genxtransit.com",
-    roleId: "ROL-001",
-    roleName: "Super Admin",
-    firstName: "Amit",
-    lastName: "Kulkarni",
-    mobileNo: "9876543210",
-    isActive: true,
-  },
-  {
-    userId: "USR-ID-002",
-    code: "USR-002",
-    username: "neha.jadhav",
-    email: "neha.jadhav@genxtransit.com",
-    roleId: "ROL-002",
-    roleName: "Depot Manager",
-    firstName: "Neha",
-    lastName: "Jadhav",
-    mobileNo: "9876543211",
-    isActive: true,
-  },
-  {
-    userId: "USR-ID-003",
-    code: "USR-003",
-    username: "rohan.more",
-    email: "rohan.more@genxtransit.com",
-    roleId: "ROL-003",
-    roleName: "Finance Officer",
-    firstName: "Rohan",
-    lastName: "More",
-    mobileNo: "9876543212",
-    isActive: true,
-  },
-  {
-    userId: "USR-ID-004",
-    code: "USR-004",
-    username: "priya.sawant",
-    email: "priya.sawant@genxtransit.com",
-    roleId: "ROL-004",
-    roleName: "Route Planner",
-    firstName: "Priya",
-    lastName: "Sawant",
-    mobileNo: "9876543213",
-    isActive: false,
-  },
-];
 
 export default function UserMaster() {
-  const [data, setData] = useState<UserRecord[]>(initialUsers);
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("Active");
   const [modal, setModal] = useState<{
     mode: "add" | "edit";
-    record?: UserRecord;
+    record?: UserRow;
   } | null>(null);
-  const [toDelete, setToDelete] = useState<UserRecord | null>(null);
-  const [formData, setFormData] = useState<Partial<UserPayload>>({});
+  const [toDelete, setToDelete] = useState<UserRow | null>(null);
+  const [formData, setFormData] = useState<UserFormData>({});
 
-  const filteredData = data.filter((user) => {
-    const matchesSearch =
-      `${user.code} ${user.username} ${user.email} ${user.roleName} ${user.firstName} ${user.lastName} ${user.mobileNo}`
-        .toLowerCase()
-        .includes(search.toLowerCase());
-    const matchesStatus =
-      !statusFilter ||
-      (statusFilter === "Active" ? user.isActive : !user.isActive);
-    return matchesSearch && matchesStatus;
+  const debouncedSearch = useDebounce(search, 500);
+
+  const { data: roles = [] } = useQuery({
+    queryKey: ["roles"],
+    queryFn: () => roleService.getAll(),
+    staleTime: 0,
+  });
+
+  const roleOptions = roles.filter((role) => role.isActive);
+  const defaultRoleId = String(roleOptions[0]?.roleId ?? 1);
+
+  const {
+    data: users = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["users"],
+    queryFn: () => userService.getAll(),
+    staleTime: 0,
+  });
+
+  const filteredUsers = users.filter((user) =>
+    statusFilter === "Active" ? user.isActive : !user.isActive,
+  );
+
+  const addMutation = useMutation({
+    mutationFn: (payload: AddUserPayload) => userService.add(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      toast.success("User added successfully.");
+      setModal(null);
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to add user");
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (payload: UpdateUserPayload) => userService.update(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      toast.success("User updated successfully.");
+      setModal(null);
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to update user");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (userId: number) => userService.delete({ userId }),
+    onSuccess: (_, userId) => {
+      queryClient.setQueryData<User[]>(["users"], (previous = []) =>
+        previous.map((user) =>
+          user.userId === userId ? { ...user, isActive: false } : user,
+        ),
+      );
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      toast.success("User deleted successfully.");
+      setToDelete(null);
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to delete user");
+    },
+  });
+
+  const items: UserRow[] = filteredUsers.map((user) => {
+    const parsedRoleId = Number(user.roleId ?? 0);
+    const matchedRole = roles.find((role) => role.roleId === parsedRoleId);
+
+    return {
+      ...user,
+      roleId: parsedRoleId,
+      roleName:
+        matchedRole?.roleName || user.roleName || `Role ${parsedRoleId}`,
+    };
   });
 
   const handleOpenAdd = () => {
     setFormData({
-      userId: "",
-      username: "",
+      userName: "",
       email: "",
       mobileNo: "",
       firstName: "",
       lastName: "",
-      roleId: roleOptions[0].roleId,
-      isActive: true,
+      roleId: defaultRoleId,
     });
     setModal({ mode: "add" });
   };
 
-  const handleOpenEdit = (record: UserRecord) => {
-    setFormData(record);
+  const handleOpenEdit = (record: UserRow) => {
+    setFormData({
+      userId: record.userId,
+      userName: record.userName,
+      email: record.email,
+      mobileNo: record.mobileNo,
+      firstName: record.firstName,
+      lastName: record.lastName,
+      roleId: String(record.roleId || Number(defaultRoleId) || 1),
+    });
     setModal({ mode: "edit", record });
   };
 
   const handleSave = () => {
     if (
-      !formData.username?.trim() ||
+      !formData.userName?.trim() ||
       !formData.email?.trim() ||
-      !formData.roleId
+      !formData.firstName?.trim() ||
+      !formData.lastName?.trim()
     )
       return;
-    const selectedRole = roleOptions.find(
-      (role) => role.roleId === formData.roleId,
-    );
-    const user: UserRecord = {
-      userId:
-        formData.userId || `USR-ID-${String(data.length + 1).padStart(3, "0")}`,
-      code:
-        modal?.record?.code ||
-        `USR-${String(data.length + 1).padStart(3, "0")}`,
-      username: formData.username.trim(),
-      email: formData.email.trim(),
-      mobileNo: formData.mobileNo?.trim() || "",
-      firstName: formData.firstName?.trim() || "",
-      lastName: formData.lastName?.trim() || "",
-      roleId: formData.roleId,
-      roleName: selectedRole?.roleName || "",
-      isActive: formData.isActive ?? true,
-    };
 
-    if (modal?.mode === "edit") {
-      setData((previous) =>
-        previous.map((item) => (item.userId === user.userId ? user : item)),
-      );
+    const roleId = String(formData.roleId ?? defaultRoleId);
+
+    if (modal?.mode === "edit" && formData.userId) {
+      updateMutation.mutate({
+        userId: formData.userId,
+        userName: formData.userName.trim(),
+        email: formData.email.trim(),
+        mobileNo: formData.mobileNo?.trim() || "",
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        roleId,
+      });
     } else {
-      setData((previous) => [...previous, user]);
+      addMutation.mutate({
+        userName: formData.userName.trim(),
+        email: formData.email.trim(),
+        mobileNo: formData.mobileNo?.trim() || "",
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        roleId,
+      });
     }
-    setModal(null);
   };
 
   const handleConfirmDelete = () => {
     if (!toDelete) return;
-    setData((previous) =>
-      previous.filter((item) => item.userId !== toDelete.userId),
-    );
-    setToDelete(null);
+    deleteMutation.mutate(toDelete.userId);
   };
 
-  const updateField = (field: keyof UserPayload, value: string | boolean) => {
-    setFormData((state) => ({ ...state, [field]: value }));
+  const updateField = (field: keyof UserFormData, value: string | number) => {
+    setFormData((state) => ({
+      ...state,
+      [field]: field === "roleId" ? String(value) : value,
+    }));
   };
 
   return (
@@ -211,7 +238,7 @@ export default function UserMaster() {
         filters={[
           {
             key: "status",
-            label: "Status",
+            label: "",
             value: statusFilter,
             options: [
               { value: "Active", label: "Active" },
@@ -221,10 +248,14 @@ export default function UserMaster() {
           },
         ]}
       />
+      {error && (
+        <div style={{ color: T.red, padding: "12px 0", fontSize: 13 }}>
+          {error instanceof Error ? error.message : "Failed to load users"}
+        </div>
+      )}
       <Table>
         <thead>
           <tr>
-            <Th>Code</Th>
             <Th>Username</Th>
             <Th>Email</Th>
             <Th>Role</Th>
@@ -232,64 +263,77 @@ export default function UserMaster() {
             <Th>Last Name</Th>
             <Th>Mobile No</Th>
             <Th>Status</Th>
-            <Th align="right">Actions</Th>
+            {statusFilter === "Active" && <Th align="right">Actions</Th>}
           </tr>
         </thead>
         <tbody>
-          {filteredData.map((user) => (
-            <tr className="stc-row" key={user.userId}>
-              <Td mono>{user.code}</Td>
-              <Td>{user.username}</Td>
-              <Td>{user.email}</Td>
-              <Td>{user.roleName}</Td>
-              <Td>{user.firstName}</Td>
-              <Td>{user.lastName}</Td>
-              <Td mono>{user.mobileNo}</Td>
-              <Td>
-                <StatusBadge status={user.isActive ? "Active" : "Inactive"} />
-              </Td>
-              <Td align="right">
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 10,
-                    justifyContent: "flex-end",
-                  }}
-                >
-                  <button
-                    onClick={() => handleOpenEdit(user)}
-                    title="Edit"
-                    style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      padding: 2,
-                      display: "flex",
-                    }}
-                  >
-                    <Pencil size={14} color={T.textSoft} />
-                  </button>
-                  <button
-                    onClick={() => setToDelete(user)}
-                    title="Delete"
-                    style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      padding: 2,
-                      display: "flex",
-                    }}
-                  >
-                    <Trash2 size={14} color={T.red} />
-                  </button>
-                </div>
-              </Td>
-            </tr>
-          ))}
-          {filteredData.length === 0 && (
+          {isLoading ? (
             <tr>
-              <Td colSpan={9}>No users found.</Td>
+              <Td
+                colSpan={statusFilter === "Active" ? 8 : 7}
+                style={{ textAlign: "center", color: T.textSoft }}
+              >
+                Loading users...
+              </Td>
             </tr>
+          ) : items.length === 0 ? (
+            <tr>
+              <Td colSpan={statusFilter === "Active" ? 8 : 7}>
+                No users found.
+              </Td>
+            </tr>
+          ) : (
+            items.map((user) => (
+              <tr className="stc-row" key={user.userId}>
+                <Td>{user.userName}</Td>
+                <Td>{user.email}</Td>
+                <Td>{user.roleName}</Td>
+                <Td>{user.firstName}</Td>
+                <Td>{user.lastName}</Td>
+                <Td mono>{user.mobileNo}</Td>
+                <Td>
+                  <StatusBadge status={user.isActive ? "Active" : "Inactive"} />
+                </Td>
+                {statusFilter === "Active" && (
+                  <Td align="right">
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 10,
+                        justifyContent: "flex-end",
+                      }}
+                    >
+                      <button
+                        onClick={() => handleOpenEdit(user)}
+                        title="Edit"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: 2,
+                          display: "flex",
+                        }}
+                      >
+                        <Pencil size={14} color={T.textSoft} />
+                      </button>
+                      <button
+                        onClick={() => setToDelete(user)}
+                        title="Delete"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: 2,
+                          display: "flex",
+                        }}
+                      >
+                        <Trash2 size={14} color={T.red} />
+                      </button>
+                    </div>
+                  </Td>
+                )}
+              </tr>
+            ))
           )}
         </tbody>
       </Table>
@@ -307,11 +351,18 @@ export default function UserMaster() {
               <button
                 className="stc-btn stc-btn-ghost"
                 onClick={() => setModal(null)}
+                disabled={addMutation.isPending || updateMutation.isPending}
               >
                 Cancel
               </button>
-              <button className="stc-btn stc-btn-primary" onClick={handleSave}>
-                Save changes
+              <button
+                className="stc-btn stc-btn-primary"
+                onClick={handleSave}
+                disabled={addMutation.isPending || updateMutation.isPending}
+              >
+                {addMutation.isPending || updateMutation.isPending
+                  ? "Saving..."
+                  : "Save changes"}
               </button>
             </>
           }
@@ -320,9 +371,9 @@ export default function UserMaster() {
             <div className="stc-field">
               <label className="stc-field-label">Username</label>
               <input
-                value={formData.username || ""}
+                value={formData.userName || ""}
                 onChange={(event) =>
-                  updateField("username", event.target.value)
+                  updateField("userName", event.target.value)
                 }
               />
             </div>
@@ -364,14 +415,18 @@ export default function UserMaster() {
             <div className="stc-field">
               <label className="stc-field-label">Role</label>
               <select
-                value={formData.roleId || ""}
+                value={String(formData.roleId ?? defaultRoleId)}
                 onChange={(event) => updateField("roleId", event.target.value)}
               >
-                {roleOptions.map((role) => (
-                  <option key={role.roleId} value={role.roleId}>
-                    {role.roleName} ({role.roleId})
-                  </option>
-                ))}
+                {roleOptions.length === 0 ? (
+                  <option value="">No roles available</option>
+                ) : (
+                  roleOptions.map((role: RoleRecord) => (
+                    <option key={role.roleId} value={String(role.roleId)}>
+                      {role.roleName}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
           </div>
@@ -391,14 +446,16 @@ export default function UserMaster() {
               <button
                 className="stc-btn stc-btn-ghost"
                 onClick={() => setToDelete(null)}
+                disabled={deleteMutation.isPending}
               >
                 Cancel
               </button>
               <button
                 className="stc-btn stc-btn-danger"
                 onClick={handleConfirmDelete}
+                disabled={deleteMutation.isPending}
               >
-                Delete
+                {deleteMutation.isPending ? "Deleting..." : "Delete"}
               </button>
             </>
           }
@@ -411,7 +468,7 @@ export default function UserMaster() {
               margin: 0,
             }}
           >
-            This will permanently remove {toDelete.username} from the list. This
+            This will permanently remove {toDelete.userName} from the list. This
             cannot be undone.
           </p>
         </Modal>
