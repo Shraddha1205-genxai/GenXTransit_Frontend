@@ -6,6 +6,7 @@ import { T } from "../../../constants/theme";
 import { Card, StatusBadge, Th, Td, Modal, Table, TableToolbar } from "../../../components/common";
 import { corporationService } from "../../../api/organization/organizationManagement/corporationService";
 import { useDebounce } from "../../../hooks/useDebounce";
+import { getStates, getDistrictsByState, getAllDistricts, INDIA_GEO_DATA } from "../../../constants/indiaGeoData";
 
 export interface Corporation {
   corpId: string | false | undefined;
@@ -35,6 +36,54 @@ function SearchableSelect({
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [coords, setCoords] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
+  const [maxListHeight, setMaxListHeight] = useState(180);
+
+  const updateCoords = () => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom - 65;
+      const computedMaxHeight = Math.min(180, Math.max(90, spaceBelow));
+      setMaxListHeight(computedMaxHeight);
+
+      setCoords({
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      const modalBody = buttonRef.current?.closest(".stc-modal-body");
+      if (modalBody) {
+        modalBody.scrollTo({
+          top: modalBody.scrollHeight,
+          behavior: "smooth",
+        });
+      } else {
+        buttonRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+
+      updateCoords();
+
+      const timer1 = setTimeout(updateCoords, 50);
+      const timer2 = setTimeout(updateCoords, 150);
+      const timer3 = setTimeout(updateCoords, 300);
+
+      window.addEventListener("scroll", updateCoords, true);
+      window.addEventListener("resize", updateCoords);
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+        clearTimeout(timer3);
+        window.removeEventListener("scroll", updateCoords, true);
+        window.removeEventListener("resize", updateCoords);
+      };
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -61,8 +110,14 @@ function SearchableSelect({
   return (
     <div ref={containerRef} style={{ position: "relative", width: "100%" }}>
       <button
+        ref={buttonRef}
         type="button"
-        onClick={() => !disabled && setIsOpen(!isOpen)}
+        onClick={() => {
+          if (!disabled) {
+            updateCoords();
+            setIsOpen(!isOpen);
+          }
+        }}
         disabled={disabled}
         style={{
           height: "48px",
@@ -110,15 +165,15 @@ function SearchableSelect({
       {isOpen && (
         <div
           style={{
-            position: "absolute",
-            top: "105%",
-            left: 0,
-            right: 0,
-            zIndex: 1000,
+            position: "fixed",
+            top: coords.top,
+            left: coords.left,
+            width: coords.width,
+            zIndex: 999999,
             border: "1.5px solid var(--border)",
             borderRadius: "10px",
             background: "var(--panel)",
-            boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+            boxShadow: "0 12px 32px rgba(0,0,0,0.25)",
             padding: "8px",
             display: "flex",
             flexDirection: "column",
@@ -145,7 +200,7 @@ function SearchableSelect({
           />
           <div
             style={{
-              maxHeight: "180px",
+              maxHeight: `${maxListHeight}px`,
               overflowY: "auto",
               display: "flex",
               flexDirection: "column",
@@ -261,145 +316,130 @@ export function Corporations() {
     );
   };
 
-  const { data: statesData = [] } = useQuery({
-    queryKey: ["indiaStates"],
-    queryFn: async () => {
-      const res = await fetch("https://aniket-thapa.github.io/india-pincode-api/states.json");
-      if (!res.ok) throw new Error("Failed to fetch states");
-      return res.json() as Promise<{ name: string; slug: string }[]>;
-    },
-    staleTime: Infinity,
-  });
-
-  const statesList = useMemo(() => {
-    return statesData.map((s) => toTitleCase(s.name)).sort();
-  }, [statesData]);
-
-  const selectedStateObj = useMemo(() => {
-    if (!formData.stateName) return null;
-    return statesData.find(
-      (s) => s.name.toLowerCase() === formData.stateName?.toLowerCase()
-    );
-  }, [statesData, formData.stateName]);
-
-  const stateSlug = selectedStateObj?.slug;
-
-  const { data: districtsData } = useQuery({
-    queryKey: ["indiaDistricts", stateSlug],
-    queryFn: async () => {
-      if (!stateSlug) return null;
-      const res = await fetch(`https://aniket-thapa.github.io/india-pincode-api/states/${stateSlug}.json`);
-      if (!res.ok) throw new Error("Failed to fetch districts");
-      return res.json() as Promise<{ districts: { name: string; slug: string }[] }>;
-    },
-    enabled: !!stateSlug,
-    staleTime: Infinity,
-  });
+  const statesList = useMemo(() => getStates(), []);
 
   const districtsList = useMemo(() => {
-    if (!districtsData?.districts) return [];
-    return districtsData.districts.map((d) => toTitleCase(d.name)).sort();
-  }, [districtsData]);
+    if (formData.stateName) {
+      return getDistrictsByState(formData.stateName);
+    }
+    return getAllDistricts();
+  }, [formData.stateName]);
 
-  const selectedDistrictObj = useMemo(() => {
-    if (!districtsData?.districts || !formData.districtName) return null;
-    return districtsData.districts.find(
-      (d) => d.name.toLowerCase() === formData.districtName?.toLowerCase()
-    );
-  }, [districtsData, formData.districtName]);
+  const stateSlug = useMemo(() => {
+    if (!formData.stateName) return "";
+    return formData.stateName.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-");
+  }, [formData.stateName]);
 
-  const districtSlug = selectedDistrictObj?.slug;
+  const districtSlug = useMemo(() => {
+    if (!formData.districtName) return "";
+    return formData.districtName.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-");
+  }, [formData.districtName]);
 
-  const { data: officesData, isLoading: isLoadingCities } = useQuery({
-    queryKey: ["indiaOffices", stateSlug, districtSlug],
+  const { data: districtOfficesData, isLoading: isLoadingCities } = useQuery({
+    queryKey: ["districtOffices", stateSlug, districtSlug, formData.districtName],
     queryFn: async () => {
-      if (!stateSlug || !districtSlug) return null;
-      const res = await fetch(`https://aniket-thapa.github.io/india-pincode-api/districts/${stateSlug}/${districtSlug}.json`);
-      if (!res.ok) throw new Error("Failed to fetch offices");
+      if (!formData.districtName || !districtSlug) return null;
+
+      let sSlug = stateSlug;
+      if (!sSlug) {
+        const foundState = Object.entries(INDIA_GEO_DATA).find(([_, dists]) =>
+          dists.some((d) => d.toLowerCase() === formData.districtName?.toLowerCase())
+        );
+        if (foundState) {
+          sSlug = foundState[0].toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-");
+        }
+      }
+
+      if (!sSlug) return null;
+      const res = await fetch(`https://aniket-thapa.github.io/india-pincode-api/districts/${sSlug}/${districtSlug}.json`);
+      if (!res.ok) return null;
       return res.json() as Promise<{ offices: { officeName: string }[] }>;
     },
-    enabled: !!stateSlug && !!districtSlug,
+    enabled: !!formData.districtName,
     staleTime: Infinity,
   });
-
-  const citiesList = useMemo(() => {
-    if (!officesData?.offices) return [];
-    const names = officesData.offices.map((office) => {
-      return toTitleCase(
-        office.officeName
-          .replace(/\s+(B\.O|S\.O|H\.O)(\s*\(.*?\))?$/i, "")
-          .replace(/\s+\(.*?\)$/i, "")
-          .trim()
-      );
-    });
-    return Array.from(new Set(names)).sort();
-  }, [officesData]);
 
   const finalCities = useMemo(() => {
-    return citiesList.length > 0 ? citiesList : [formData.districtName || ""];
-  }, [citiesList, formData.districtName]);
+    if (!formData.districtName) return [];
 
-  const filterStateObj = useMemo(() => {
-    if (!filterState) return null;
-    return statesData.find((s) => s.name.toLowerCase() === filterState.toLowerCase());
-  }, [statesData, filterState]);
+    if (districtOfficesData?.offices && districtOfficesData.offices.length > 0) {
+      const cleanedNames = districtOfficesData.offices.map((office) => {
+        return toTitleCase(
+          office.officeName
+            .replace(/\s+(B\.O|S\.O|H\.O)(\s*\(.*?\))?$/i, "")
+            .replace(/\s+\(.*?\)$/i, "")
+            .trim()
+        );
+      });
+      const uniqueCities = Array.from(new Set(cleanedNames)).sort();
+      const formattedDistrict = toTitleCase(formData.districtName);
+      if (!uniqueCities.includes(formattedDistrict)) {
+        uniqueCities.unshift(formattedDistrict);
+      }
+      return uniqueCities;
+    }
 
-  const filterStateSlug = filterStateObj?.slug;
-
-  const { data: filterDistrictsData } = useQuery({
-    queryKey: ["filterDistricts", filterStateSlug],
-    queryFn: async () => {
-      if (!filterStateSlug) return null;
-      const res = await fetch(`https://aniket-thapa.github.io/india-pincode-api/states/${filterStateSlug}.json`);
-      if (!res.ok) throw new Error("Failed to fetch districts");
-      return res.json() as Promise<{ districts: { name: string; slug: string }[] }>;
-    },
-    enabled: !!filterStateSlug,
-    staleTime: Infinity,
-  });
+    return [toTitleCase(formData.districtName)];
+  }, [districtOfficesData, formData.districtName]);
 
   const filterDistrictsList = useMemo(() => {
-    if (!filterDistrictsData?.districts) return [];
-    return filterDistrictsData.districts.map((d) => toTitleCase(d.name)).sort();
-  }, [filterDistrictsData]);
+    if (filterState) {
+      return getDistrictsByState(filterState);
+    }
+    return getAllDistricts();
+  }, [filterState]);
 
-  const selectedFilterDistrictObj = useMemo(() => {
-    if (!filterDistrictsData?.districts || !filterDistrict) return null;
-    return filterDistrictsData.districts.find(
-      (d) => d.name.toLowerCase() === filterDistrict.toLowerCase()
-    );
-  }, [filterDistrictsData, filterDistrict]);
-
-  const filterDistrictSlug = selectedFilterDistrictObj?.slug;
+  const filterDistrictSlug = useMemo(() => {
+    if (!filterDistrict) return "";
+    return filterDistrict.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-");
+  }, [filterDistrict]);
 
   const { data: filterOfficesData, isLoading: isLoadingFilterCities } = useQuery({
-    queryKey: ["filterOffices", filterStateSlug, filterDistrictSlug],
+    queryKey: ["filterOffices", filterDistrictSlug, filterDistrict],
     queryFn: async () => {
-      if (!filterStateSlug || !filterDistrictSlug) return null;
-      const res = await fetch(`https://aniket-thapa.github.io/india-pincode-api/districts/${filterStateSlug}/${filterDistrictSlug}.json`);
-      if (!res.ok) throw new Error("Failed to fetch offices");
+      if (!filterDistrict || !filterDistrictSlug) return null;
+
+      let sSlug = filterState ? filterState.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-") : "";
+      if (!sSlug) {
+        const foundState = Object.entries(INDIA_GEO_DATA).find(([_, dists]) =>
+          dists.some((d) => d.toLowerCase() === filterDistrict.toLowerCase())
+        );
+        if (foundState) {
+          sSlug = foundState[0].toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-");
+        }
+      }
+
+      if (!sSlug) return null;
+      const res = await fetch(`https://aniket-thapa.github.io/india-pincode-api/districts/${sSlug}/${filterDistrictSlug}.json`);
+      if (!res.ok) return null;
       return res.json() as Promise<{ offices: { officeName: string }[] }>;
     },
-    enabled: !!filterStateSlug && !!filterDistrictSlug,
+    enabled: !!filterDistrict,
     staleTime: Infinity,
   });
 
-  const filterCitiesList = useMemo(() => {
-    if (!filterOfficesData?.offices) return [];
-    const names = filterOfficesData.offices.map((office) => {
-      return toTitleCase(
-        office.officeName
-          .replace(/\s+(B\.O|S\.O|H\.O)(\s*\(.*?\))?$/i, "")
-          .replace(/\s+\(.*?\)$/i, "")
-          .trim()
-      );
-    });
-    return Array.from(new Set(names)).sort();
-  }, [filterOfficesData]);
-
   const finalFilterCities = useMemo(() => {
-    return filterCitiesList.length > 0 ? filterCitiesList : [filterDistrict || ""];
-  }, [filterCitiesList, filterDistrict]);
+    if (!filterDistrict) return [];
+
+    if (filterOfficesData?.offices && filterOfficesData.offices.length > 0) {
+      const cleanedNames = filterOfficesData.offices.map((office) => {
+        return toTitleCase(
+          office.officeName
+            .replace(/\s+(B\.O|S\.O|H\.O)(\s*\(.*?\))?$/i, "")
+            .replace(/\s+\(.*?\)$/i, "")
+            .trim()
+        );
+      });
+      const uniqueCities = Array.from(new Set(cleanedNames)).sort();
+      const formattedDistrict = toTitleCase(filterDistrict);
+      if (!uniqueCities.includes(formattedDistrict)) {
+        uniqueCities.unshift(formattedDistrict);
+      }
+      return uniqueCities;
+    }
+
+    return [toTitleCase(filterDistrict)];
+  }, [filterOfficesData, filterDistrict]);
 
   const handleOpenAdd = () => {
     setFormData({
@@ -473,6 +513,7 @@ export function Corporations() {
               key: "state",
               label: "All States",
               value: filterState,
+              searchable: true,
               onChange: (val) => {
                 setFilterState(val);
                 setFilterDistrict("");
@@ -484,17 +525,18 @@ export function Corporations() {
               key: "district",
               label: "All Districts",
               value: filterDistrict,
+              searchable: true,
               onChange: (val) => {
                 setFilterDistrict(val);
                 setFilterCity("");
               },
               options: filterDistrictsList.map((d) => ({ value: d, label: d })),
-              disabled: !filterState,
             },
             {
               key: "city",
               label: isLoadingFilterCities ? "Loading cities..." : "All Cities",
               value: filterCity,
+              searchable: true,
               onChange: setFilterCity,
               options: finalFilterCities.map((c) => ({ value: c, label: c })),
               disabled: !filterDistrict || isLoadingFilterCities,
@@ -577,6 +619,7 @@ export function Corporations() {
             subtitle={modal.mode === "add" ? "Add a new corporation" : "Update corporation details"}
             onClose={() => setModal(null)}
             width={640}
+            bodyStyle={{ maxHeight: "300px" }}
             footer={
               <>
                 <button className="stc-btn stc-btn-ghost" onClick={() => setModal(null)}>Cancel</button>

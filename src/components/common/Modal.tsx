@@ -11,9 +11,10 @@ interface ModalProps {
   children: React.ReactNode;
   footer?: React.ReactNode;
   width?: number;
+  bodyStyle?: React.CSSProperties;
 }
 
-export function Modal({ title, subtitle, icon, iconVariant = "default", onClose, children, footer, width }: ModalProps) {
+export function Modal({ title, subtitle, icon, iconVariant = "default", onClose, children, footer, width, bodyStyle }: ModalProps) {
   return (
     <div className="stc-modal-backdrop" onClick={onClose}>
       <div
@@ -36,7 +37,7 @@ export function Modal({ title, subtitle, icon, iconVariant = "default", onClose,
         </div>
 
         {/* ── Body ── */}
-        <div className="stc-modal-body">{children}</div>
+        <div className="stc-modal-body" style={bodyStyle}>{children}</div>
 
         {/* ── Footer ── */}
         {footer && <div className="stc-modal-footer">{footer}</div>}

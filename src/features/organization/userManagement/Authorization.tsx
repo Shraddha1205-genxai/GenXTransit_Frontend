@@ -30,7 +30,7 @@ export interface AuthorizationRecord {
 const initialAuthorizations: AuthorizationRecord[] = initialScreens.map(
   (screen, index) => ({
     id: `AUT-${String(index + 1).padStart(3, "0")}`,
-    roleId: roleOptions[index % roleOptions.length]?.roleId || "",
+    roleId: String(roleOptions[index % roleOptions.length]?.roleId || ""),
     roleName: roleOptions[index % roleOptions.length]?.roleName || "",
     sectionId: screen.sectionId,
     sectionName: screen.sectionName,
