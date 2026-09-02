@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Plus, Trash2 } from "lucide-react";
+import toast from "react-hot-toast";
 import { T } from "../../../constants/theme";
 import {
   Card,
@@ -10,6 +12,24 @@ import {
   Td,
   Th,
 } from "../../../components/common";
+import {
+  menuService,
+  type MenuInsertPayload,
+  type MenuRecordApi,
+  type MenuUpdatePayload,
+} from "../../../api/organization/userManagement/menuService";
+import {
+  sectionService,
+  type SectionInsertPayload,
+  type SectionRecordApi,
+  type SectionUpdatePayload,
+} from "../../../api/organization/userManagement/sectionService";
+import {
+  tabService,
+  type TabInsertPayload,
+  type TabRecordApi,
+  type TabUpdatePayload,
+} from "../../../api/organization/userManagement/tabService";
 
 export interface SectionRecord {
   sectionId: string;
@@ -41,13 +61,21 @@ export interface ScreenRecord {
   isActive: boolean;
 }
 
-export const sectionOptions: SectionRecord[] = [
-  { sectionId: "ORG", sectionName: "Organization", isActive: true },
-  { sectionId: "OPS", sectionName: "Operations", isActive: true },
-  { sectionId: "COM", sectionName: "Commercial", isActive: true },
-  { sectionId: "SYS", sectionName: "Systems", isActive: true },
-  { sectionId: "SUP", sectionName: "Support", isActive: true },
-];
+const MENU_SECTION_MAP: Record<number, string> = {
+  1: "ORG",
+  2: "OPS",
+  3: "COM",
+  4: "SYS",
+  5: "SUP",
+};
+
+const MENU_SECTION_ID_MAP: Record<string, number> = {
+  ORG: 1,
+  OPS: 2,
+  COM: 3,
+  SYS: 4,
+  SUP: 5,
+};
 
 const initialMenus: MenuRecord[] = [
   {
@@ -445,22 +473,210 @@ function Field({
 }
 
 export default function ScreenMaster() {
-  const [sections, setSections] = useState(sectionOptions);
-  const [menus, setMenus] = useState(initialMenus);
-  const [screens, setScreens] = useState(initialScreens);
+  const queryClient = useQueryClient();
+  const [screens, setScreens] = useState<ScreenRecord[]>(initialScreens);
   const [search, setSearch] = useState("");
   const [formType, setFormType] = useState<FormType | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<
     Record<string, boolean>
-  >(() =>
-    Object.fromEntries(
-      sectionOptions
-        .filter((item) => item.isActive)
-        .map((item) => [item.sectionId, true]),
-    ),
-  );
+  >({});
   const [sectionName, setSectionName] = useState("");
+  const { data: apiSections = [] } = useQuery({
+    queryKey: ["section"],
+    queryFn: () => sectionService.getAll(),
+    staleTime: 0,
+  });
+
+  const mappedSections = useMemo<SectionRecord[]>(() => {
+    if (!apiSections.length) return [];
+
+    return apiSections.map((section: SectionRecordApi) => ({
+      sectionId: String(section.sectionId),
+      sectionName: section.sectionName,
+      isActive: section.isActive,
+    }));
+  }, [apiSections]);
+
+  const [sections, setSections] = useState<SectionRecord[]>(mappedSections);
+  React.useEffect(() => {
+    setSections(mappedSections);
+    setExpandedSections((current) => {
+      const nextState: Record<string, boolean> = {};
+      mappedSections.forEach((section) => {
+        nextState[section.sectionId] =
+          current[section.sectionId] ?? section.isActive;
+      });
+      return nextState;
+    });
+  }, [mappedSections]);
+
+  const { data: apiMenus = [] } = useQuery({
+    queryKey: ["menu"],
+    queryFn: () => menuService.getAll(),
+    staleTime: 0,
+  });
+
+  const mappedMenus = useMemo<MenuRecord[]>(() => {
+    if (!apiMenus.length) return [];
+
+    return apiMenus.map((menu: MenuRecordApi) => {
+      const backendSectionId = String(menu.sectionId);
+      const sectionFromApi = sections.find(
+        (item) => String(item.sectionId) === backendSectionId,
+      );
+
+      return {
+        menuId: String(menu.id),
+        menuName: menu.menuName,
+        iconName: menu.iconName,
+        sectionId: String(sectionFromApi?.sectionId ?? backendSectionId),
+        sectionName: sectionFromApi?.sectionName ?? "",
+        sortOrder: menu.sortOrder,
+        isActive: menu.isActive,
+      };
+    });
+  }, [apiMenus, sections]);
+
+  const [menus, setMenus] = useState<MenuRecord[]>(mappedMenus);
+  React.useEffect(() => {
+    setMenus(mappedMenus);
+  }, [mappedMenus]);
+
+  const { data: apiTabs = [] } = useQuery({
+    queryKey: ["tab"],
+    queryFn: () => tabService.getAll(),
+    staleTime: 0,
+  });
+
+  const mappedTabs = useMemo<ScreenRecord[]>(() => {
+    if (!apiTabs.length) return [];
+
+    return apiTabs.map((tab: TabRecordApi) => {
+      const section = sections.find(
+        (item) => item.sectionId === String(tab.sectionId),
+      );
+      const menu = menus.find((item) => item.menuId === String(tab.menuId));
+
+      return {
+        screenId: String(tab.tabId),
+        pageKey: tab.tabName.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        tabName: tab.tabName,
+        menuLabel: menu?.menuName || "",
+        menuId: String(tab.menuId),
+        sectionId: String(tab.sectionId),
+        sectionName: section?.sectionName || "",
+        iconName: menu?.iconName || "",
+        sortOrder: tab.sortOrder,
+        frontendUrl: tab.url,
+        isActive: tab.isActive,
+      };
+    });
+  }, [apiTabs, sections, menus]);
+
+  React.useEffect(() => {
+    if (apiTabs.length) {
+      setScreens(mappedTabs);
+    }
+  }, [apiTabs, mappedTabs]);
+
+  const sectionInsertMutation = useMutation({
+    mutationFn: (payload: SectionInsertPayload) =>
+      sectionService.insert(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["section"] });
+      toast.success("Section added successfully.");
+      closeForm();
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to add section");
+    },
+  });
+
+  const sectionUpdateMutation = useMutation({
+    mutationFn: (payload: SectionUpdatePayload) =>
+      sectionService.update(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["section"] });
+      toast.success("Section updated successfully.");
+      closeForm();
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to update section");
+    },
+  });
+
+  const sectionDeleteMutation = useMutation({
+    mutationFn: (payload: { sectionId: number }) =>
+      sectionService.delete(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["section"] });
+      toast.success("Section deleted successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to delete section");
+    },
+  });
+
+  const menuInsertMutation = useMutation({
+    mutationFn: (payload: MenuInsertPayload) => menuService.insert(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["menu"] });
+      toast.success("Menu added successfully.");
+      closeForm();
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to add menu");
+    },
+  });
+
+  const menuUpdateMutation = useMutation({
+    mutationFn: (payload: MenuUpdatePayload) => menuService.update(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["menu"] });
+      toast.success("Menu updated successfully.");
+      closeForm();
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to update menu");
+    },
+  });
+
+  const tabInsertMutation = useMutation({
+    mutationFn: (payload: TabInsertPayload) => tabService.insert(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tab"] });
+      toast.success("Tab added successfully.");
+      closeForm();
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to add tab");
+    },
+  });
+
+  const tabUpdateMutation = useMutation({
+    mutationFn: (payload: TabUpdatePayload) => tabService.update(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tab"] });
+      toast.success("Tab updated successfully.");
+      closeForm();
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to update tab");
+    },
+  });
+
+  const tabDeleteMutation = useMutation({
+    mutationFn: (payload: { tabId: number }) => tabService.delete(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tab"] });
+      toast.success("Tab deleted successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to delete tab");
+    },
+  });
+
   const [menuForm, setMenuForm] = useState({
     menuName: "",
     iconName: "",
@@ -550,51 +766,43 @@ export default function ScreenMaster() {
     if (formType === "section") {
       const name = sectionName.trim();
       if (!name) return;
-      if (editingId)
-        setSections((items) =>
-          items.map((item) =>
-            item.sectionId === editingId
-              ? { ...item, sectionName: name }
-              : item,
-          ),
-        );
-      else
-        setSections((items) => [
-          ...items,
-          {
-            sectionId: name
-              .toUpperCase()
-              .replace(/[^A-Z0-9]+/g, "-")
-              .slice(0, 12),
-            sectionName: name,
-            isActive: true,
-          },
-        ]);
+
+      if (editingId) {
+        sectionUpdateMutation.mutate({
+          sectionId: Number(editingId),
+          sectionName: name,
+          isActive: true,
+        });
+        return;
+      }
+
+      sectionInsertMutation.mutate({
+        sectionName: name,
+        isActive: true,
+      });
+      return;
     }
     if (formType === "menu") {
       if (!menuForm.menuName.trim() || !menuForm.sectionId) return;
-      const section = sections.find(
-        (item) => item.sectionId === menuForm.sectionId,
-      );
-      const menu: MenuRecord = {
-        menuId:
-          editingId ||
-          menuForm.menuName
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, "-")
-            .replace(/^-|-$/g, ""),
-        menuName: menuForm.menuName.trim(),
+
+      const payload = {
         iconName: menuForm.iconName.trim(),
-        sectionId: menuForm.sectionId,
-        sectionName: section?.sectionName || "",
+        sectionId: MENU_SECTION_ID_MAP[menuForm.sectionId] ?? 1,
         sortOrder: Number(menuForm.sortOrder) || 1,
+        menuName: menuForm.menuName.trim(),
         isActive: true,
       };
-      if (editingId)
-        setMenus((items) =>
-          items.map((item) => (item.menuId === editingId ? menu : item)),
-        );
-      else setMenus((items) => [...items, menu]);
+
+      if (editingId) {
+        menuUpdateMutation.mutate({
+          id: Number(editingId),
+          ...payload,
+        });
+        return;
+      }
+
+      menuInsertMutation.mutate(payload);
+      return;
     }
     if (formType === "tab") {
       if (
@@ -603,29 +811,26 @@ export default function ScreenMaster() {
         !tabForm.frontendUrl.trim()
       )
         return;
-      const menu = menus.find((item) => item.menuId === tabForm.menuId);
-      const section = sections.find(
-        (item) => item.sectionId === tabForm.sectionId,
-      );
-      const screen = makeScreen(
-        screens.length + 1,
-        tabForm.sectionId,
-        section?.sectionName || "",
-        tabForm.menuId,
-        menu?.menuName || "",
-        tabForm.tabName.trim(),
-        tabForm.frontendUrl.trim(),
-        Number(tabForm.sortOrder) || 1,
-      );
-      if (editingId)
-        setScreens((items) =>
-          items.map((item) =>
-            item.screenId === editingId
-              ? { ...screen, screenId: editingId }
-              : item,
-          ),
-        );
-      else setScreens((items) => [...items, screen]);
+
+      const payload = {
+        sectionId: Number(tabForm.sectionId || sections[0]?.sectionId || 1),
+        menuId: Number(tabForm.menuId),
+        tabName: tabForm.tabName.trim(),
+        sortOrder: Number(tabForm.sortOrder) || 1,
+        url: tabForm.frontendUrl.trim(),
+        isActive: true,
+      };
+
+      if (editingId) {
+        tabUpdateMutation.mutate({
+          tabId: Number(editingId),
+          ...payload,
+        });
+        return;
+      }
+
+      tabInsertMutation.mutate(payload);
+      return;
     }
     closeForm();
   };
@@ -889,6 +1094,24 @@ export default function ScreenMaster() {
                         >
                           <Pencil size={14} color={T.textSoft} />
                         </button>
+                        <button
+                          onClick={() => {
+                            const sectionId = Number(section.sectionId);
+                            if (sectionId) {
+                              sectionDeleteMutation.mutate({ sectionId });
+                            }
+                          }}
+                          title="Delete section"
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: 3,
+                            color: T.red,
+                          }}
+                        >
+                          <Trash2 size={14} color={T.red} />
+                        </button>
                       </Td>
                     </tr>
                     {isExpanded &&
@@ -1018,13 +1241,12 @@ export default function ScreenMaster() {
                       <Pencil size={14} color={T.textSoft} />
                     </button>
                     <button
-                      onClick={() =>
-                        setScreens((items) =>
-                          items.filter(
-                            (item) => item.screenId !== screen.screenId,
-                          ),
-                        )
-                      }
+                      onClick={() => {
+                        const tabId = Number(screen.screenId);
+                        if (tabId) {
+                          tabDeleteMutation.mutate({ tabId });
+                        }
+                      }}
                       title="Delete tab"
                       style={{
                         background: "none",
