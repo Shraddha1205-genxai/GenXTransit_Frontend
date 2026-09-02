@@ -1,7 +1,8 @@
-import { apiClient } from "../../apiClient";
+import { apiClient } from "../../../apiClient";
 
 export interface MenuRecordApi {
-  id: number;
+  id?: number;
+  menuId?: number;
   iconName: string;
   sectionId: number;
   sortOrder: number;
@@ -32,12 +33,18 @@ export interface MenuDeletePayload {
 const PATH = "/menu";
 
 export const menuService = {
-  getAll: async (): Promise<MenuRecordApi[]> => {
-    const response = await apiClient.get<MenuRecordApi[]>(PATH);
+  getAll: async (sectionId?: number, isActive?: boolean): Promise<MenuRecordApi[]> => {
+    const params = new URLSearchParams();
+    if (sectionId !== undefined && sectionId !== null) params.append("sectionId", String(sectionId));
+    if (isActive !== undefined) params.append("isActive", String(isActive));
+    const queryString = params.toString();
+    const path = `${PATH}${queryString ? `?${queryString}` : ""}`;
+
+    const response = await apiClient.get<MenuRecordApi[]>(path);
     const payload = response.data;
 
     if (Array.isArray(payload)) return payload;
-    if (payload && typeof payload === "object" && "id" in payload) {
+    if (payload && typeof payload === "object" && ("id" in payload || "menuId" in payload)) {
       return [payload as MenuRecordApi];
     }
 

@@ -1,4 +1,4 @@
-import { apiClient } from "../../apiClient";
+import { apiClient } from "../../../apiClient";
 
 export interface SectionRecordApi {
   sectionId: number;
@@ -26,8 +26,13 @@ export interface SectionDeletePayload {
 const PATH = "/section";
 
 export const sectionService = {
-  getAll: async (): Promise<SectionRecordApi[]> => {
-    const response = await apiClient.get<SectionRecordApi[]>(PATH);
+  getAll: async (isActive?: boolean): Promise<SectionRecordApi[]> => {
+    const params = new URLSearchParams();
+    if (isActive !== undefined) params.append("isActive", String(isActive));
+    const queryString = params.toString();
+    const path = `${PATH}${queryString ? `?${queryString}` : ""}`;
+
+    const response = await apiClient.get<SectionRecordApi[]>(path);
     const payload = response.data;
 
     if (Array.isArray(payload)) return payload;

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { FolderSearch, Pencil, Plus, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { T } from "../../../constants/theme";
 import {
@@ -17,19 +17,19 @@ import {
   type MenuInsertPayload,
   type MenuRecordApi,
   type MenuUpdatePayload,
-} from "../../../api/organization/userManagement/menuService";
+} from "../../../api/organization/userManagement/screenMaster/menuService";
 import {
   sectionService,
   type SectionInsertPayload,
   type SectionRecordApi,
   type SectionUpdatePayload,
-} from "../../../api/organization/userManagement/sectionService";
+} from "../../../api/organization/userManagement/screenMaster/sectionService";
 import {
   tabService,
   type TabInsertPayload,
   type TabRecordApi,
   type TabUpdatePayload,
-} from "../../../api/organization/userManagement/tabService";
+} from "../../../api/organization/userManagement/screenMaster/tabService";
 
 export interface SectionRecord {
   sectionId: string;
@@ -61,401 +61,9 @@ export interface ScreenRecord {
   isActive: boolean;
 }
 
-const MENU_SECTION_MAP: Record<number, string> = {
-  1: "ORG",
-  2: "OPS",
-  3: "COM",
-  4: "SYS",
-  5: "SUP",
-};
-
-const MENU_SECTION_ID_MAP: Record<string, number> = {
-  ORG: 1,
-  OPS: 2,
-  COM: 3,
-  SYS: 4,
-  SUP: 5,
-};
-
-const initialMenus: MenuRecord[] = [
-  {
-    menuId: "organization-management",
-    menuName: "Organization Management",
-    iconName: "Building2",
-    sectionId: "ORG",
-    sectionName: "Organization",
-    sortOrder: 1,
-    isActive: true,
-  },
-  {
-    menuId: "master-data",
-    menuName: "Master Data",
-    iconName: "Database",
-    sectionId: "ORG",
-    sectionName: "Organization",
-    sortOrder: 2,
-    isActive: true,
-  },
-  {
-    menuId: "user-management",
-    menuName: "User Management",
-    iconName: "ShieldCheck",
-    sectionId: "ORG",
-    sectionName: "Organization",
-    sortOrder: 3,
-    isActive: true,
-  },
-  {
-    menuId: "fleet",
-    menuName: "Fleet",
-    iconName: "Bus",
-    sectionId: "OPS",
-    sectionName: "Operations",
-    sortOrder: 1,
-    isActive: true,
-  },
-  {
-    menuId: "employees",
-    menuName: "Employees",
-    iconName: "UserCog",
-    sectionId: "OPS",
-    sectionName: "Operations",
-    sortOrder: 2,
-    isActive: true,
-  },
-  {
-    menuId: "routes-schedule",
-    menuName: "Routes & Schedule",
-    iconName: "Milestone",
-    sectionId: "OPS",
-    sectionName: "Operations",
-    sortOrder: 3,
-    isActive: true,
-  },
-  {
-    menuId: "live-tracking",
-    menuName: "Live Tracking",
-    iconName: "Radar",
-    sectionId: "OPS",
-    sectionName: "Operations",
-    sortOrder: 4,
-    isActive: true,
-  },
-  {
-    menuId: "fare-management",
-    menuName: "Fare Management",
-    iconName: "IndianRupee",
-    sectionId: "COM",
-    sectionName: "Commercial",
-    sortOrder: 1,
-    isActive: true,
-  },
-  {
-    menuId: "ticketing",
-    menuName: "Ticketing",
-    iconName: "Ticket",
-    sectionId: "COM",
-    sectionName: "Commercial",
-    sortOrder: 2,
-    isActive: true,
-  },
-  {
-    menuId: "reservations",
-    menuName: "Reservations",
-    iconName: "CalendarCheck",
-    sectionId: "COM",
-    sectionName: "Commercial",
-    sortOrder: 3,
-    isActive: true,
-  },
-  {
-    menuId: "passes",
-    menuName: "Passes",
-    iconName: "Armchair",
-    sectionId: "COM",
-    sectionName: "Commercial",
-    sortOrder: 4,
-    isActive: true,
-  },
-  {
-    menuId: "etm-devices",
-    menuName: "ETM Devices",
-    iconName: "Smartphone",
-    sectionId: "SYS",
-    sectionName: "Systems",
-    sortOrder: 1,
-    isActive: true,
-  },
-  {
-    menuId: "finance-wallet",
-    menuName: "Finance & Wallet",
-    iconName: "Wallet",
-    sectionId: "SYS",
-    sectionName: "Systems",
-    sortOrder: 2,
-    isActive: true,
-  },
-  {
-    menuId: "complaints-alerts",
-    menuName: "Complaints & Alerts",
-    iconName: "MessageSquareWarning",
-    sectionId: "SUP",
-    sectionName: "Support",
-    sortOrder: 1,
-    isActive: true,
-  },
-  {
-    menuId: "reports",
-    menuName: "Reports",
-    iconName: "BarChart3",
-    sectionId: "SUP",
-    sectionName: "Support",
-    sortOrder: 2,
-    isActive: true,
-  },
-  {
-    menuId: "analytics",
-    menuName: "Analytics",
-    iconName: "LineChart",
-    sectionId: "SUP",
-    sectionName: "Support",
-    sortOrder: 3,
-    isActive: true,
-  },
-  {
-    menuId: "users-roles",
-    menuName: "Users & Roles",
-    iconName: "ShieldCheck",
-    sectionId: "SUP",
-    sectionName: "Support",
-    sortOrder: 4,
-    isActive: true,
-  },
-  {
-    menuId: "help",
-    menuName: "Help",
-    iconName: "HelpCircle",
-    sectionId: "SUP",
-    sectionName: "Support",
-    sortOrder: 5,
-    isActive: true,
-  },
-];
-
-const makeScreen = (
-  id: number,
-  sectionId: string,
-  sectionName: string,
-  menuId: string,
-  menuLabel: string,
-  tabName: string,
-  url: string,
-  sortOrder = 1,
-): ScreenRecord => ({
-  screenId: `SCR-ID-${String(id).padStart(3, "0")}`,
-  pageKey: tabName
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, ""),
-  tabName,
-  menuLabel,
-  menuId,
-  sectionId,
-  sectionName,
-  iconName: initialMenus.find((menu) => menu.menuId === menuId)?.iconName || "",
-  sortOrder,
-  frontendUrl: url,
-  isActive: true,
-});
-
-export const initialScreens: ScreenRecord[] = [
-  ...[
-    "Corporation",
-    "Regions",
-    "Divisions",
-    "Zone",
-    "Depots",
-    "Stations",
-    "WorkShop",
-    "Parking Yards",
-  ].map((tab, index) =>
-    makeScreen(
-      index + 1,
-      "ORG",
-      "Organization",
-      "organization-management",
-      "Organization Management",
-      tab,
-      `/Organization/organizationManagement/${tab === "Corporation" ? "Corporations" : tab === "Zone" ? "Zone" : tab === "Stations" ? "Stations" : tab === "WorkShop" ? "WorkShop" : tab.replace(/ /g, "")}`,
-      index + 1,
-    ),
-  ),
-  ...[
-    "Routes",
-    "Stops",
-    "Stages",
-    "Fare Policies",
-    "Ticket Types",
-    "Payment Modes",
-    "Vehicle Categories",
-    "Seat Layouts",
-    "Holiday Calendar",
-    "Notification Templates",
-    "Complaint Categories",
-    "Tax Configuration",
-  ].map((tab, index) =>
-    makeScreen(
-      index + 9,
-      "ORG",
-      "Organization",
-      "master-data",
-      "Master Data",
-      tab,
-      `/Organization/masters/${tab.replace(/[^a-zA-Z]/g, "")}`,
-      index + 1,
-    ),
-  ),
-  ...["Role Master", "User Master", "Screen Master", "Authorization"].map(
-    (tab, index) =>
-      makeScreen(
-        index + 21,
-        "ORG",
-        "Organization",
-        "user-management",
-        "User Management",
-        tab,
-        `/Organization/userManagement/${tab.replace(/ /g, "")}`,
-        index + 1,
-      ),
-  ),
-  makeScreen(
-    25,
-    "OPS",
-    "Operations",
-    "fleet",
-    "Fleet",
-    "Vehicle Register",
-    "/Operations/fleet/VehicleRegister",
-  ),
-  makeScreen(
-    26,
-    "OPS",
-    "Operations",
-    "employees",
-    "Employees",
-    "Roster",
-    "/Operations/employees/Roster",
-  ),
-  makeScreen(
-    27,
-    "OPS",
-    "Operations",
-    "employees",
-    "Employees",
-    "Attendance",
-    "/Operations/employees/Attendance",
-    2,
-  ),
-  makeScreen(
-    28,
-    "OPS",
-    "Operations",
-    "routes-schedule",
-    "Routes & Schedule",
-    "Routes & Schedule",
-    "/Operations/routesAndSchedule/RoutesAndSchedule",
-  ),
-  makeScreen(
-    29,
-    "OPS",
-    "Operations",
-    "live-tracking",
-    "Live Tracking",
-    "Live Tracking",
-    "/Operations/liveTracking/LiveTracking",
-  ),
-  ...["Fare Management", "Ticketing", "Reservations", "Passes"].map(
-    (tab, index) =>
-      makeScreen(
-        index + 30,
-        "COM",
-        "Commercial",
-        tab.toLowerCase().replace(/ /g, "-"),
-        tab,
-        tab,
-        `/Commercial/${tab.toLowerCase().replace(/ /g, "")}/${tab.replace(/ /g, "")}`,
-      ),
-  ),
-  makeScreen(
-    34,
-    "SYS",
-    "Systems",
-    "etm-devices",
-    "ETM Devices",
-    "ETM Devices",
-    "/Systems/etmDevices/EtmDevices",
-  ),
-  makeScreen(
-    35,
-    "SYS",
-    "Systems",
-    "finance-wallet",
-    "Finance & Wallet",
-    "Finance & Wallet",
-    "/Systems/financeWallet/FinanceWallet",
-  ),
-  ...[
-    "Complaints & Alerts",
-    "Reports",
-    "Analytics",
-    "Users & Roles",
-    "Help",
-  ].map((tab, index) =>
-    makeScreen(
-      index + 36,
-      "SUP",
-      "Support",
-      tab.toLowerCase().replace(/[^a-z]+/g, "-"),
-      tab,
-      tab,
-      `/Support/${tab.toLowerCase().replace(/[^a-z]+/g, "")}/${tab.replace(/ /g, "")}`,
-    ),
-  ),
-];
+export const initialScreens: ScreenRecord[] = [];
 
 type FormType = "section" | "menu" | "tab";
-
-function ActionButton({
-  label,
-  onClick,
-}: {
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 7,
-        minHeight: 38,
-        padding: "0 16px",
-        borderRadius: 7,
-        border: `1px solid ${T.amber}`,
-        fontSize: 12,
-        fontWeight: 700,
-        color: T.amberDeep,
-        background: T.amberFill,
-        cursor: "pointer",
-        boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
-      }}
-    >
-      <Plus size={15} /> {label}
-    </button>
-  );
-}
 
 function Field({
   label,
@@ -472,25 +80,291 @@ function Field({
   );
 }
 
-export default function ScreenMaster() {
-  const queryClient = useQueryClient();
-  const [screens, setScreens] = useState<ScreenRecord[]>(initialScreens);
-  const [search, setSearch] = useState("");
-  const [formType, setFormType] = useState<FormType | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [expandedSections, setExpandedSections] = useState<
-    Record<string, boolean>
-  >({});
-  const [sectionName, setSectionName] = useState("");
-  const { data: apiSections = [] } = useQuery({
-    queryKey: ["section"],
-    queryFn: () => sectionService.getAll(),
+function SectionTreeRow({
+  section,
+  isExpanded,
+  selectedMenuId,
+  onToggle,
+  onSelectMenu,
+  onEditSection,
+  onDeleteSection,
+  onEditMenu,
+  onDeleteMenu,
+}: {
+  section: SectionRecord;
+  isExpanded: boolean;
+  selectedMenuId: string | null;
+  onToggle: () => void;
+  onSelectMenu: (menu: MenuRecord, section: SectionRecord) => void;
+  onEditSection: (s: SectionRecord) => void;
+  onDeleteSection: (id: number) => void;
+  onEditMenu: (m: MenuRecord) => void;
+  onDeleteMenu: (id: number) => void;
+}) {
+  const { data: apiSectionMenus = [], isLoading: isLoadingMenus } = useQuery({
+    queryKey: ["menu", section.sectionId, true],
+    queryFn: () => menuService.getAll(Number(section.sectionId), true),
+    enabled: isExpanded && !isNaN(Number(section.sectionId)),
     staleTime: 0,
   });
 
-  const mappedSections = useMemo<SectionRecord[]>(() => {
-    if (!apiSections.length) return [];
+  const sectionMenus: MenuRecord[] = useMemo(() => {
+    return apiSectionMenus.map((m: MenuRecordApi) => ({
+      menuId: String(m.menuId ?? m.id ?? ""),
+      menuName: m.menuName,
+      iconName: m.iconName,
+      sectionId: String(m.sectionId),
+      sectionName: section.sectionName,
+      sortOrder: m.sortOrder,
+      isActive: m.isActive,
+    }));
+  }, [apiSectionMenus, section.sectionName]);
 
+  return (
+    <>
+      <tr className="stc-row" style={{ background: T.hover }}>
+        <Td>
+          <button
+            onClick={onToggle}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              width: "100%",
+              padding: 0,
+              background: "transparent",
+              border: "none",
+              color: T.text,
+              textAlign: "left",
+              cursor: "pointer",
+              fontWeight: 700,
+              fontSize: 13,
+            }}
+          >
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 16,
+                height: 16,
+                color: T.blue,
+                transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)",
+                transition: "transform 0.15s ease",
+                fontSize: 11,
+              }}
+            >
+              ▾
+            </span>
+            <span
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: "50%",
+                background: T.blue,
+                display: "inline-block",
+                flexShrink: 0,
+              }}
+            />
+            <span>{section.sectionName}</span>
+          </button>
+        </Td>
+        <Td align="right">
+          <button
+            onClick={() => onEditSection(section)}
+            title="Edit section"
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: 3,
+              color: T.textSoft,
+            }}
+          >
+            <Pencil size={13} color={T.textSoft} />
+          </button>
+          <button
+            onClick={() => {
+              const sId = Number(section.sectionId);
+              if (sId) onDeleteSection(sId);
+            }}
+            title="Delete section"
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: 3,
+              color: T.red,
+            }}
+          >
+            <Trash2 size={13} color={T.red} />
+          </button>
+        </Td>
+      </tr>
+
+      {isExpanded && (
+        <>
+          {isLoadingMenus && (
+            <tr className="stc-row">
+              <Td colSpan={2}>
+                <div style={{ paddingLeft: 22, color: T.textFaint, fontSize: 11 }}>
+                  Loading menus...
+                </div>
+              </Td>
+            </tr>
+          )}
+
+          {!isLoadingMenus && sectionMenus.length === 0 && (
+            <tr className="stc-row">
+              <Td colSpan={2}>
+                <div style={{ paddingLeft: 22, color: T.textFaint, fontSize: 11 }}>
+                  No menus found in this section
+                </div>
+              </Td>
+            </tr>
+          )}
+
+          {!isLoadingMenus &&
+            sectionMenus.map((menu) => {
+              const isSelected = selectedMenuId === menu.menuId;
+              return (
+                <MenuTreeRow
+                  key={menu.menuId}
+                  section={section}
+                  menu={menu}
+                  isSelected={isSelected}
+                  onSelectMenu={() => onSelectMenu(menu, section)}
+                  onEditMenu={onEditMenu}
+                  onDeleteMenu={onDeleteMenu}
+                />
+              );
+            })}
+        </>
+      )}
+    </>
+  );
+}
+
+function MenuTreeRow({
+  section,
+  menu,
+  isSelected,
+  onSelectMenu,
+  onEditMenu,
+  onDeleteMenu,
+}: {
+  section: SectionRecord;
+  menu: MenuRecord;
+  isSelected: boolean;
+  onSelectMenu: () => void;
+  onEditMenu: (m: MenuRecord) => void;
+  onDeleteMenu: (id: number) => void;
+}) {
+  return (
+    <tr
+      className="stc-row"
+      onClick={onSelectMenu}
+      style={{
+        background: isSelected ? T.amberFill : "transparent",
+        borderLeft: isSelected ? `3px solid ${T.amber}` : "3px solid transparent",
+        cursor: "pointer",
+        transition: "all 0.15s ease",
+      }}
+    >
+      <Td>
+        <div
+          style={{
+            paddingLeft: 18,
+            color: isSelected ? T.amber : T.text,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          <span style={{ color: isSelected ? T.amber : T.textSoft, fontSize: 11 }}>↳</span>
+          <span style={{ fontWeight: isSelected ? 700 : 500, fontSize: 12 }}>
+            {menu.menuName}
+          </span>
+          {isSelected && (
+            <span
+              style={{
+                fontSize: 9,
+                background: T.amber,
+                color: "#101B26",
+                padding: "1px 5px",
+                borderRadius: 8,
+                fontWeight: 700,
+                marginLeft: 4,
+              }}
+            >
+              Selected
+            </span>
+          )}
+        </div>
+      </Td>
+      <Td align="right">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onEditMenu(menu);
+          }}
+          title="Edit menu"
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: 3,
+            color: T.textSoft,
+          }}
+        >
+          <Pencil size={13} color={T.textSoft} />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            const mId = Number(menu.menuId);
+            if (mId) onDeleteMenu(mId);
+          }}
+          title="Delete menu"
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: 3,
+            color: T.red,
+          }}
+        >
+          <Trash2 size={13} color={T.red} />
+        </button>
+      </Td>
+    </tr>
+  );
+}
+
+export default function ScreenMaster() {
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [formType, setFormType] = useState<FormType | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const [sectionName, setSectionName] = useState("");
+
+  const [selectedMenu, setSelectedMenu] = useState<{
+    menuId: string;
+    sectionId: string;
+    menuName: string;
+    sectionName: string;
+  } | null>(null);
+
+  // Global Sections query with isActive=true
+  const { data: apiSections = [] } = useQuery({
+    queryKey: ["section", true],
+    queryFn: () => sectionService.getAll(true),
+    staleTime: 0,
+  });
+
+  const sections = useMemo<SectionRecord[]>(() => {
+    if (!apiSections.length) return [];
     return apiSections.map((section: SectionRecordApi) => ({
       sectionId: String(section.sectionId),
       sectionName: section.sectionName,
@@ -498,28 +372,15 @@ export default function ScreenMaster() {
     }));
   }, [apiSections]);
 
-  const [sections, setSections] = useState<SectionRecord[]>(mappedSections);
-  React.useEffect(() => {
-    setSections(mappedSections);
-    setExpandedSections((current) => {
-      const nextState: Record<string, boolean> = {};
-      mappedSections.forEach((section) => {
-        nextState[section.sectionId] =
-          current[section.sectionId] ?? section.isActive;
-      });
-      return nextState;
-    });
-  }, [mappedSections]);
-
+  // Global Menus query with isActive=true for forms
   const { data: apiMenus = [] } = useQuery({
-    queryKey: ["menu"],
-    queryFn: () => menuService.getAll(),
+    queryKey: ["menu", true],
+    queryFn: () => menuService.getAll(undefined, true),
     staleTime: 0,
   });
 
-  const mappedMenus = useMemo<MenuRecord[]>(() => {
+  const menus = useMemo<MenuRecord[]>(() => {
     if (!apiMenus.length) return [];
-
     return apiMenus.map((menu: MenuRecordApi) => {
       const backendSectionId = String(menu.sectionId);
       const sectionFromApi = sections.find(
@@ -527,7 +388,7 @@ export default function ScreenMaster() {
       );
 
       return {
-        menuId: String(menu.id),
+        menuId: String(menu.menuId ?? menu.id ?? ""),
         menuName: menu.menuName,
         iconName: menu.iconName,
         sectionId: String(sectionFromApi?.sectionId ?? backendSectionId),
@@ -538,51 +399,50 @@ export default function ScreenMaster() {
     });
   }, [apiMenus, sections]);
 
-  const [menus, setMenus] = useState<MenuRecord[]>(mappedMenus);
-  React.useEffect(() => {
-    setMenus(mappedMenus);
-  }, [mappedMenus]);
-
-  const { data: apiTabs = [] } = useQuery({
-    queryKey: ["tab"],
-    queryFn: () => tabService.getAll(),
+  // Fetch tabs ONLY for selected menu
+  const { data: apiConfiguredTabs = [], isLoading: isLoadingTabs } = useQuery({
+    queryKey: ["configuredTabs", selectedMenu?.menuId, selectedMenu?.sectionId, true],
+    queryFn: () =>
+      selectedMenu
+        ? tabService.getAll(Number(selectedMenu.menuId), Number(selectedMenu.sectionId), true)
+        : Promise.resolve([]),
+    enabled: !!selectedMenu,
     staleTime: 0,
   });
 
-  const mappedTabs = useMemo<ScreenRecord[]>(() => {
-    if (!apiTabs.length) return [];
-
-    return apiTabs.map((tab: TabRecordApi) => {
-      const section = sections.find(
-        (item) => item.sectionId === String(tab.sectionId),
-      );
-      const menu = menus.find((item) => item.menuId === String(tab.menuId));
-
+  const screens = useMemo<ScreenRecord[]>(() => {
+    if (!selectedMenu || !apiConfiguredTabs.length) return [];
+    return apiConfiguredTabs.map((tab: TabRecordApi) => {
+      const safeTabName = tab.tabName || "";
+      const safeUrl = tab.url || "";
       return {
         screenId: String(tab.tabId),
-        pageKey: tab.tabName.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-        tabName: tab.tabName,
-        menuLabel: menu?.menuName || "",
+        pageKey: safeTabName.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        tabName: safeTabName,
+        menuLabel: selectedMenu.menuName,
         menuId: String(tab.menuId),
         sectionId: String(tab.sectionId),
-        sectionName: section?.sectionName || "",
-        iconName: menu?.iconName || "",
-        sortOrder: tab.sortOrder,
-        frontendUrl: tab.url,
-        isActive: tab.isActive,
+        sectionName: selectedMenu.sectionName,
+        iconName: menus.find((m) => m.menuId === selectedMenu.menuId)?.iconName || "",
+        sortOrder: tab.sortOrder ?? 1,
+        frontendUrl: safeUrl,
+        isActive: tab.isActive ?? true,
       };
     });
-  }, [apiTabs, sections, menus]);
+  }, [apiConfiguredTabs, selectedMenu]);
 
-  React.useEffect(() => {
-    if (apiTabs.length) {
-      setScreens(mappedTabs);
-    }
-  }, [apiTabs, mappedTabs]);
+  const filteredScreens = useMemo(() => {
+    if (!search.trim()) return screens;
+    const q = search.toLowerCase();
+    return screens.filter((screen) =>
+      `${screen.tabName || ""} ${screen.frontendUrl || ""}`
+        .toLowerCase()
+        .includes(q),
+    );
+  }, [screens, search]);
 
   const sectionInsertMutation = useMutation({
-    mutationFn: (payload: SectionInsertPayload) =>
-      sectionService.insert(payload),
+    mutationFn: (payload: SectionInsertPayload) => sectionService.insert(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["section"] });
       toast.success("Section added successfully.");
@@ -594,8 +454,7 @@ export default function ScreenMaster() {
   });
 
   const sectionUpdateMutation = useMutation({
-    mutationFn: (payload: SectionUpdatePayload) =>
-      sectionService.update(payload),
+    mutationFn: (payload: SectionUpdatePayload) => sectionService.update(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["section"] });
       toast.success("Section updated successfully.");
@@ -607,8 +466,7 @@ export default function ScreenMaster() {
   });
 
   const sectionDeleteMutation = useMutation({
-    mutationFn: (payload: { sectionId: number }) =>
-      sectionService.delete(payload),
+    mutationFn: (payload: { sectionId: number }) => sectionService.delete(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["section"] });
       toast.success("Section deleted successfully.");
@@ -642,10 +500,22 @@ export default function ScreenMaster() {
     },
   });
 
+  const menuDeleteMutation = useMutation({
+    mutationFn: (payload: { id: number }) => menuService.delete(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["menu"] });
+      toast.success("Menu deleted successfully.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to delete menu");
+    },
+  });
+
   const tabInsertMutation = useMutation({
     mutationFn: (payload: TabInsertPayload) => tabService.insert(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tab"] });
+      queryClient.invalidateQueries({ queryKey: ["configuredTabs"] });
       toast.success("Tab added successfully.");
       closeForm();
     },
@@ -658,6 +528,7 @@ export default function ScreenMaster() {
     mutationFn: (payload: TabUpdatePayload) => tabService.update(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tab"] });
+      queryClient.invalidateQueries({ queryKey: ["configuredTabs"] });
       toast.success("Tab updated successfully.");
       closeForm();
     },
@@ -670,6 +541,7 @@ export default function ScreenMaster() {
     mutationFn: (payload: { tabId: number }) => tabService.delete(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tab"] });
+      queryClient.invalidateQueries({ queryKey: ["configuredTabs"] });
       toast.success("Tab deleted successfully.");
     },
     onError: (err: any) => {
@@ -680,12 +552,13 @@ export default function ScreenMaster() {
   const [menuForm, setMenuForm] = useState({
     menuName: "",
     iconName: "",
-    sectionId: "ORG",
+    sectionId: "",
     sortOrder: 1,
   });
+
   const [tabForm, setTabForm] = useState({
-    sectionId: "ORG",
-    menuId: "organization-management",
+    sectionId: "",
+    menuId: "",
     tabName: "",
     sortOrder: 1,
     frontendUrl: "",
@@ -693,23 +566,26 @@ export default function ScreenMaster() {
 
   const activeSections = sections.filter((item) => item.isActive);
   const activeMenus = menus.filter((item) => item.isActive);
-  const menuFormOptions = activeMenus.filter(
-    (item) => item.sectionId === menuForm.sectionId,
-  );
-  const tabFormOptions = activeMenus.filter(
-    (item) => item.sectionId === tabForm.sectionId,
-  );
-  const filteredScreens = screens.filter((screen) =>
-    `${screen.tabName} ${screen.menuLabel} ${screen.sectionName} ${screen.frontendUrl}`
-      .toLowerCase()
-      .includes(search.toLowerCase()),
-  );
+
+  const tabFormOptions = useMemo(() => {
+    if (!tabForm.sectionId) return activeMenus;
+    return activeMenus.filter((item) => item.sectionId === tabForm.sectionId);
+  }, [activeMenus, tabForm.sectionId]);
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections((current) => ({
       ...current,
-      [sectionId]: !(current[sectionId] ?? true),
+      [sectionId]: !current[sectionId],
     }));
+  };
+
+  const handleSelectMenu = (menu: MenuRecord, section: SectionRecord) => {
+    setSelectedMenu({
+      menuId: menu.menuId,
+      sectionId: menu.sectionId || section.sectionId,
+      menuName: menu.menuName,
+      sectionName: section.sectionName,
+    });
   };
 
   const openSection = (section?: SectionRecord) => {
@@ -717,6 +593,7 @@ export default function ScreenMaster() {
     setSectionName(section?.sectionName || "");
     setFormType("section");
   };
+
   const openMenu = (menu?: MenuRecord) => {
     setEditingId(menu?.menuId || null);
     setMenuForm(
@@ -730,12 +607,13 @@ export default function ScreenMaster() {
         : {
             menuName: "",
             iconName: "",
-            sectionId: activeSections[0]?.sectionId || "",
+            sectionId: selectedMenu?.sectionId || "",
             sortOrder: activeMenus.length + 1,
           },
     );
     setFormType("menu");
   };
+
   const openTab = (screen?: ScreenRecord) => {
     setEditingId(screen?.screenId || null);
     setTabForm(
@@ -748,8 +626,8 @@ export default function ScreenMaster() {
             frontendUrl: screen.frontendUrl,
           }
         : {
-            sectionId: activeSections[0]?.sectionId || "",
-            menuId: activeMenus[0]?.menuId || "",
+            sectionId: selectedMenu?.sectionId || "",
+            menuId: selectedMenu?.menuId || "",
             tabName: "",
             sortOrder: screens.length + 1,
             frontendUrl: "",
@@ -757,6 +635,7 @@ export default function ScreenMaster() {
     );
     setFormType("tab");
   };
+
   const closeForm = () => {
     setFormType(null);
     setEditingId(null);
@@ -765,7 +644,10 @@ export default function ScreenMaster() {
   const saveForm = () => {
     if (formType === "section") {
       const name = sectionName.trim();
-      if (!name) return;
+      if (!name) {
+        toast.error("Section name is required");
+        return;
+      }
 
       if (editingId) {
         sectionUpdateMutation.mutate({
@@ -782,12 +664,16 @@ export default function ScreenMaster() {
       });
       return;
     }
+
     if (formType === "menu") {
-      if (!menuForm.menuName.trim() || !menuForm.sectionId) return;
+      if (!menuForm.menuName.trim() || !menuForm.sectionId) {
+        toast.error("Please select a section and enter a menu name");
+        return;
+      }
 
       const payload = {
         iconName: menuForm.iconName.trim(),
-        sectionId: MENU_SECTION_ID_MAP[menuForm.sectionId] ?? 1,
+        sectionId: Number(menuForm.sectionId),
         sortOrder: Number(menuForm.sortOrder) || 1,
         menuName: menuForm.menuName.trim(),
         isActive: true,
@@ -804,16 +690,15 @@ export default function ScreenMaster() {
       menuInsertMutation.mutate(payload);
       return;
     }
+
     if (formType === "tab") {
-      if (
-        !tabForm.tabName.trim() ||
-        !tabForm.menuId ||
-        !tabForm.frontendUrl.trim()
-      )
+      if (!tabForm.tabName.trim() || !tabForm.sectionId || !tabForm.menuId || !tabForm.frontendUrl.trim()) {
+        toast.error("Please fill in all required tab fields");
         return;
+      }
 
       const payload = {
-        sectionId: Number(tabForm.sectionId || sections[0]?.sectionId || 1),
+        sectionId: Number(tabForm.sectionId),
         menuId: Number(tabForm.menuId),
         tabName: tabForm.tabName.trim(),
         sortOrder: Number(tabForm.sortOrder) || 1,
@@ -832,172 +717,91 @@ export default function ScreenMaster() {
       tabInsertMutation.mutate(payload);
       return;
     }
+
     closeForm();
   };
 
-  const workflowCards = [
-    {
-      key: "section",
-      title: "Sections",
-      description: "Top-level navigation areas",
-      count: activeSections.length,
-      buttonLabel: "Add section",
-      onClick: () => openSection(),
-      color: T.blue,
-    },
-    {
-      key: "menu",
-      title: "Menus",
-      description: "Navigation groups within sections",
-      count: activeMenus.length,
-      buttonLabel: "Add menu",
-      onClick: () => openMenu(),
-      color: T.amber,
-    },
-    {
-      key: "tab",
-      title: "Tabs",
-      description: "Screens users can open",
-      count: screens.length,
-      buttonLabel: "Add tab",
-      onClick: () => openTab(),
-      color: T.green,
-    },
-  ];
-
   return (
     <Card title="Screen Master">
+      {/* Visual Hierarchy Flow Banner */}
       <div
         style={{
           display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          gap: 16,
-          marginBottom: 18,
+          alignItems: "center",
+          gap: 8,
+          background: T.hover,
+          border: `1px solid ${T.border}`,
+          borderRadius: 8,
+          padding: "8px 14px",
+          marginBottom: 14,
         }}
       >
-        <div>
-          <div
-            style={{
-              color: T.text,
-              fontSize: 18,
-              fontWeight: 700,
-              marginBottom: 5,
-            }}
-          >
-            Navigation structure
-          </div>
-          <div style={{ color: T.textSoft, fontSize: 13 }}>
-            Build the sidebar flow in order: section, menu, then tab.
-          </div>
-        </div>
-        <div
+        <strong style={{ color: T.text, fontSize: 12 }}>Hierarchy Flow:</strong>
+        <span
           style={{
-            color: T.textFaint,
+            background: T.blueFill,
+            color: T.blue,
             fontSize: 11,
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
-            paddingTop: 5,
+            fontWeight: 600,
+            padding: "2px 9px",
+            borderRadius: 12,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
           }}
         >
-          Live catalog
-        </div>
+          <span style={{ fontWeight: 800 }}>1.</span> Expand Section
+        </span>
+        <span style={{ color: T.textFaint, fontWeight: 700 }}>➔</span>
+        <span
+          style={{
+            background: T.amberFill,
+            color: T.amberDeep,
+            fontSize: 11,
+            fontWeight: 600,
+            padding: "2px 9px",
+            borderRadius: 12,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+          }}
+        >
+          <span style={{ fontWeight: 800 }}>2.</span> Select Menu
+        </span>
+        <span style={{ color: T.textFaint, fontWeight: 700 }}>➔</span>
+        <span
+          style={{
+            background: T.greenFill,
+            color: T.green,
+            fontSize: 11,
+            fontWeight: 600,
+            padding: "2px 9px",
+            borderRadius: 12,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+          }}
+        >
+          <span style={{ fontWeight: 800 }}>3.</span> View & Manage Tabs
+        </span>
       </div>
 
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-          gap: 12,
-          marginBottom: 22,
-        }}
-      >
-        {workflowCards.map((card) => (
-          <div
-            key={card.key}
-            style={{
-              textAlign: "left",
-              border: `1px solid ${T.border}`,
-              borderRadius: 10,
-              padding: "14px 15px",
-              background: T.hover,
-              boxShadow: "0 2px 8px rgba(15, 23, 42, 0.04)",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: 12,
-              }}
-            >
-              <span
-                style={{
-                  color: card.color,
-                  fontSize: 22,
-                  fontWeight: 700,
-                  lineHeight: 1,
-                }}
-              >
-                {card.count}
-              </span>
-            </div>
-            <div
-              style={{
-                color: T.text,
-                fontWeight: 700,
-                fontSize: 13,
-                marginBottom: 4,
-              }}
-            >
-              {card.title}
-            </div>
-            <div style={{ color: T.textSoft, fontSize: 11, marginBottom: 12 }}>
-              {card.description}
-            </div>
-            <button
-              onClick={card.onClick}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 7,
-                width: "100%",
-                minHeight: 36,
-                padding: "0 12px",
-                borderRadius: 8,
-                border: `1px solid ${card.color}`,
-                background: "transparent",
-                color: card.color,
-                fontSize: 11,
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              <Plus size={14} />
-              {card.buttonLabel}
-            </button>
-          </div>
-        ))}
-      </div>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "420px minmax(0, 1fr)",
+          gridTemplateColumns: "320px minmax(0, 1fr)",
           gap: 16,
           alignItems: "flex-start",
-          marginTop: 8,
         }}
       >
+        {/* Left Panel: Navigation Tree */}
         <div
           style={{
             border: `1px solid ${T.border}`,
             borderRadius: 10,
             overflow: "hidden",
             background: T.panel,
-            boxShadow: "0 2px 8px rgba(15, 23, 42, 0.08)",
+            boxShadow: "0 2px 8px rgba(15, 23, 42, 0.06)",
           }}
         >
           <div
@@ -1005,177 +809,102 @@ export default function ScreenMaster() {
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              padding: "12px 14px",
+              padding: "8px 12px",
               borderBottom: `1px solid ${T.border}`,
               background: T.hover,
             }}
           >
-            <strong style={{ color: T.text, fontSize: 13 }}>Navigation</strong>
-            <span style={{ color: T.textFaint, fontSize: 11 }}>
-              {activeSections.length + activeMenus.length} items
-            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <strong style={{ color: T.text, fontSize: 13 }}>Navigation</strong>
+              <span
+                style={{
+                  background: T.panel,
+                  color: T.textSoft,
+                  border: `1px solid ${T.border}`,
+                  fontSize: 10,
+                  fontWeight: 600,
+                  padding: "1px 6px",
+                  borderRadius: 10,
+                }}
+              >
+                {activeSections.length}S • {activeMenus.length}M
+              </span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <button
+                onClick={() => openSection()}
+                title="Add Section"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 3,
+                  height: 24,
+                  padding: "0 7px",
+                  borderRadius: 5,
+                  border: `1px solid ${T.blue}`,
+                  background: T.blueFill,
+                  color: T.blue,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                <Plus size={12} /> Section
+              </button>
+              <button
+                onClick={() => openMenu()}
+                title="Add Menu"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 3,
+                  height: 24,
+                  padding: "0 7px",
+                  borderRadius: 5,
+                  border: `1px solid ${T.amber}`,
+                  background: T.amberFill,
+                  color: T.amberDeep,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                <Plus size={12} /> Menu
+              </button>
+            </div>
           </div>
           <Table>
             <thead>
               <tr>
-                <Th>Section</Th>
-                <Th>Menu</Th>
-                <Th align="right">Actions</Th>
+                <Th>STRUCTURE</Th>
+                <Th align="right">ACTIONS</Th>
               </tr>
             </thead>
             <tbody>
-              {activeSections.map((section) => {
-                const isExpanded = expandedSections[section.sectionId] ?? true;
-                const sectionMenus = activeMenus.filter(
-                  (menu) => menu.sectionId === section.sectionId,
-                );
-
-                return (
-                  <React.Fragment key={section.sectionId}>
-                    <tr className="stc-row" style={{ background: T.hover }}>
-                      <Td>
-                        <button
-                          onClick={() => toggleSection(section.sectionId)}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 8,
-                            width: "100%",
-                            padding: 0,
-                            background: "transparent",
-                            border: "none",
-                            color: T.text,
-                            textAlign: "left",
-                            cursor: "pointer",
-                            fontWeight: 700,
-                          }}
-                        >
-                          <span
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              width: 16,
-                              height: 16,
-                              color: T.textSoft,
-                              transform: isExpanded
-                                ? "rotate(0deg)"
-                                : "rotate(-90deg)",
-                              transition: "transform 0.15s ease",
-                            }}
-                          >
-                            ▾
-                          </span>
-                          <span
-                            style={{
-                              width: 8,
-                              height: 8,
-                              borderRadius: "50%",
-                              background: T.blue,
-                              display: "inline-block",
-                              flexShrink: 0,
-                            }}
-                          />
-                          <span>{section.sectionName}</span>
-                        </button>
-                      </Td>
-                      <Td>—</Td>
-                      <Td align="right">
-                        <button
-                          onClick={() => openSection(section)}
-                          title="Edit section"
-                          style={{
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            padding: 3,
-                            color: T.textSoft,
-                          }}
-                        >
-                          <Pencil size={14} color={T.textSoft} />
-                        </button>
-                        <button
-                          onClick={() => {
-                            const sectionId = Number(section.sectionId);
-                            if (sectionId) {
-                              sectionDeleteMutation.mutate({ sectionId });
-                            }
-                          }}
-                          title="Delete section"
-                          style={{
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            padding: 3,
-                            color: T.red,
-                          }}
-                        >
-                          <Trash2 size={14} color={T.red} />
-                        </button>
-                      </Td>
-                    </tr>
-                    {isExpanded &&
-                      sectionMenus.map((menu) => (
-                        <tr className="stc-row" key={menu.menuId}>
-                          <Td>
-                            <div
-                              style={{
-                                paddingLeft: 22,
-                                color: T.textSoft,
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 8,
-                              }}
-                            >
-                              <span>↳</span>
-                              <span>{menu.menuName}</span>
-                            </div>
-                          </Td>
-                          <Td>
-                            <div style={{ color: T.textSoft }}>
-                              {menu.sectionName}
-                            </div>
-                          </Td>
-                          <Td align="right">
-                            <button
-                              onClick={() => openMenu(menu)}
-                              title="Edit menu"
-                              style={{
-                                background: "none",
-                                border: "none",
-                                cursor: "pointer",
-                                padding: 3,
-                                color: T.textSoft,
-                              }}
-                            >
-                              <Pencil size={14} color={T.textSoft} />
-                            </button>
-                          </Td>
-                        </tr>
-                      ))}
-                    {!isExpanded && sectionMenus.length > 0 && (
-                      <tr className="stc-row">
-                        <Td colSpan={3}>
-                          <div
-                            style={{
-                              paddingLeft: 22,
-                              color: T.textFaint,
-                              fontSize: 11,
-                            }}
-                          >
-                            {sectionMenus.length} menu
-                            {sectionMenus.length > 1 ? "s" : ""} hidden
-                          </div>
-                        </Td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                );
-              })}
+              {activeSections.map((section) => (
+                <SectionTreeRow
+                  key={section.sectionId}
+                  section={section}
+                  isExpanded={!!expandedSections[section.sectionId]}
+                  selectedMenuId={selectedMenu?.menuId || null}
+                  onToggle={() => toggleSection(section.sectionId)}
+                  onSelectMenu={handleSelectMenu}
+                  onEditSection={openSection}
+                  onDeleteSection={(id) => sectionDeleteMutation.mutate({ sectionId: id })}
+                  onEditMenu={openMenu}
+                  onDeleteMenu={(id) => menuDeleteMutation.mutate({ id })}
+                />
+              ))}
+              {activeSections.length === 0 && (
+                <tr>
+                  <Td colSpan={3}>No sections available.</Td>
+                </tr>
+              )}
             </tbody>
           </Table>
         </div>
 
+        {/* Right Panel: Configured Tabs Table */}
         <div>
           <div
             style={{
@@ -1183,22 +912,53 @@ export default function ScreenMaster() {
               justifyContent: "space-between",
               alignItems: "center",
               gap: 12,
-              marginBottom: 10,
+              marginBottom: 8,
             }}
           >
             <div>
-              <div style={{ color: T.text, fontSize: 14, fontWeight: 700 }}>
-                Configured tabs
-              </div>
-              <div style={{ color: T.textSoft, fontSize: 12, marginTop: 3 }}>
-                Every tab mapped to its parent menu and section.
+              <div style={{ color: T.text, fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+                <span>Configured tabs</span>
+                {selectedMenu && (
+                  <span
+                    style={{
+                      background: T.amberFill,
+                      color: T.amberDeep,
+                      border: `1px solid ${T.amber}`,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: "2px 8px",
+                      borderRadius: 12,
+                    }}
+                  >
+                    {selectedMenu.menuName} ({selectedMenu.sectionName})
+                  </span>
+                )}
               </div>
             </div>
+            <button
+              onClick={() => openTab()}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                height: 28,
+                padding: "0 12px",
+                borderRadius: 6,
+                border: `1px solid ${T.green}`,
+                background: T.greenFill,
+                color: T.green,
+                fontSize: 11,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              <Plus size={13} /> Add tab
+            </button>
           </div>
           <TableToolbar
             search={search}
             onSearchChange={setSearch}
-            searchPlaceholder="Search tabs, menus, or sections..."
+            searchPlaceholder="Search tabs..."
           />
           <Table>
             <thead>
@@ -1213,56 +973,118 @@ export default function ScreenMaster() {
               </tr>
             </thead>
             <tbody>
-              {filteredScreens.map((screen) => (
-                <tr className="stc-row" key={screen.screenId}>
-                  <Td>
-                    <strong style={{ fontWeight: 600 }}>
-                      {screen.tabName}
-                    </strong>
-                  </Td>
-                  <Td>{screen.menuLabel}</Td>
-                  <Td>{screen.sectionName}</Td>
-                  <Td>{screen.sortOrder}</Td>
-                  <Td mono>{screen.frontendUrl}</Td>
-                  <Td>
-                    <StatusBadge status="Active" />
-                  </Td>
-                  <Td align="right">
-                    <button
-                      onClick={() => openTab(screen)}
-                      title="Edit tab"
+              {!selectedMenu ? (
+                <tr>
+                  <Td colSpan={7}>
+                    <div
                       style={{
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: 3,
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: "48px 16px",
+                        color: T.textSoft,
+                        gap: 10,
                       }}
                     >
-                      <Pencil size={14} color={T.textSoft} />
-                    </button>
-                    <button
-                      onClick={() => {
-                        const tabId = Number(screen.screenId);
-                        if (tabId) {
-                          tabDeleteMutation.mutate({ tabId });
-                        }
-                      }}
-                      title="Delete tab"
-                      style={{
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: 3,
-                      }}
-                    >
-                      <Trash2 size={14} color={T.red} />
-                    </button>
+                      <div
+                        style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: "50%",
+                          background: T.hover,
+                          border: `1px solid ${T.border}`,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: T.textFaint,
+                        }}
+                      >
+                        <FolderSearch size={22} />
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>
+                        Please select a menu from Navigation to view its tab records.
+                      </div>
+                    </div>
                   </Td>
                 </tr>
-              ))}
-              {!filteredScreens.length && (
+              ) : isLoadingTabs ? (
                 <tr>
-                  <Td colSpan={7}>No screens found.</Td>
+                  <Td colSpan={7}>
+                    <div
+                      style={{
+                        textAlign: "center",
+                        padding: "24px 16px",
+                        color: T.textFaint,
+                        fontSize: 13,
+                      }}
+                    >
+                      Loading tabs...
+                    </div>
+                  </Td>
+                </tr>
+              ) : filteredScreens.length > 0 ? (
+                filteredScreens.map((screen) => (
+                  <tr className="stc-row" key={screen.screenId}>
+                    <Td>
+                      <strong style={{ fontWeight: 600 }}>
+                        {screen.tabName}
+                      </strong>
+                    </Td>
+                    <Td>{screen.menuLabel}</Td>
+                    <Td>{screen.sectionName}</Td>
+                    <Td>{screen.sortOrder}</Td>
+                    <Td mono>{screen.frontendUrl}</Td>
+                    <Td>
+                      <StatusBadge status="Active" />
+                    </Td>
+                    <Td align="right">
+                      <button
+                        onClick={() => openTab(screen)}
+                        title="Edit tab"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: 3,
+                        }}
+                      >
+                        <Pencil size={14} color={T.textSoft} />
+                      </button>
+                      <button
+                        onClick={() => {
+                          const tabId = Number(screen.screenId);
+                          if (tabId) {
+                            tabDeleteMutation.mutate({ tabId });
+                          }
+                        }}
+                        title="Delete tab"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: 3,
+                        }}
+                      >
+                        <Trash2 size={14} color={T.red} />
+                      </button>
+                    </Td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <Td colSpan={7}>
+                    <div
+                      style={{
+                        textAlign: "center",
+                        padding: "24px 16px",
+                        color: T.textSoft,
+                        fontSize: 13,
+                      }}
+                    >
+                      No tabs found for this menu.
+                    </div>
+                  </Td>
                 </tr>
               )}
             </tbody>
@@ -1306,7 +1128,7 @@ export default function ScreenMaster() {
             )}
             {formType === "menu" && (
               <>
-                <Field label="Menu">
+                <Field label="Menu Name">
                   <input
                     autoFocus
                     value={menuForm.menuName}
@@ -1341,6 +1163,7 @@ export default function ScreenMaster() {
                       }))
                     }
                   >
+                    <option value="">Select Section</option>
                     {activeSections.map((section) => (
                       <option key={section.sectionId} value={section.sectionId}>
                         {section.sectionName}
@@ -1370,16 +1193,14 @@ export default function ScreenMaster() {
                     value={tabForm.sectionId}
                     onChange={(event) => {
                       const sectionId = event.target.value;
-                      const firstMenu = activeMenus.find(
-                        (menu) => menu.sectionId === sectionId,
-                      );
                       setTabForm((form) => ({
                         ...form,
                         sectionId,
-                        menuId: firstMenu?.menuId || "",
+                        menuId: "",
                       }));
                     }}
                   >
+                    <option value="">Select Section</option>
                     {activeSections.map((section) => (
                       <option key={section.sectionId} value={section.sectionId}>
                         {section.sectionName}
@@ -1397,6 +1218,7 @@ export default function ScreenMaster() {
                       }))
                     }
                   >
+                    <option value="">Select Menu</option>
                     {tabFormOptions.map((menu) => (
                       <option key={menu.menuId} value={menu.menuId}>
                         {menu.menuName}
