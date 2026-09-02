@@ -257,12 +257,13 @@ body {
 }
 
 .stc-table-search {
-  height: 42px;
-  flex: 1;
-  min-width: 200px;
+  height: 38px;
+  width: 240px;
+  max-width: 260px;
+  flex: none;
   padding: 0 14px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
   background: var(--panel);
   color: var(--text);
   font: inherit;
