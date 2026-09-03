@@ -88,7 +88,7 @@ export function VehicleCategories() {
   });
 
   const handleOpenAdd = () => {
-    setFormData({ categoryCode: "", categoryName: "", capacity: 0, type: "Non AC", class: "Standard" });
+    setFormData({ categoryCode: "", categoryName: "", capacity: 0, type: "Non-AC", class: "Standard" });
     setModal({ mode: "add" });
   };
 
@@ -104,7 +104,7 @@ export function VehicleCategories() {
       addMutation.mutate({
         categoryName: formData.categoryName || "",
         capacity: String(formData.capacity ?? 0),
-        type: formData.type || "Non AC",
+        type: formData.type || "Non-AC",
         class: formData.class || "Standard",
         isActive: true,
       });
@@ -113,7 +113,7 @@ export function VehicleCategories() {
         categoryId: formData.categoryId || "",
         categoryName: formData.categoryName || "",
         capacity: String(formData.capacity ?? 0),
-        type: formData.type || "Non AC",
+        type: formData.type || "Non-AC",
         class: formData.class || "Standard",
         isActive: formData.isActive !== undefined ? formData.isActive : true,
       });
@@ -153,7 +153,7 @@ export function VehicleCategories() {
               onChange: setTypeFilter,
               options: [
                 { value: "AC", label: "AC" },
-                { value: "Non AC", label: "Non AC" },
+                { value: "Non-AC", label: "Non-AC" },
               ],
             },
             {
@@ -282,11 +282,11 @@ export function VehicleCategories() {
               <div className="stc-field">
                 <label className="stc-field-label">Type</label>
                 <select
-                  value={formData.type || "Non AC"}
+                  value={formData.type || "Non-AC"}
                   onChange={(e) => setFormData((s) => ({ ...s, type: e.target.value }))}
                 >
                   <option value="AC">AC</option>
-                  <option value="Non AC">Non AC</option>
+                  <option value="Non-AC">Non-AC</option>
                 </select>
               </div>
               <div className="stc-field">
