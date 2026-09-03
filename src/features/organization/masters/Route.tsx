@@ -133,6 +133,11 @@ export function RouteMaster() {
       return;
     }
 
+    if (String(formData.fromStationId) === String(formData.toStationId)) {
+      toast.error("From Station and To Station cannot be the same.");
+      return;
+    }
+
     const payload = {
       routeName: formData.routeName || "",
       service: formData.service,
@@ -329,7 +334,13 @@ export function RouteMaster() {
                 >
                   <option value="">Select From Station</option>
                   {stationOptions.map((opt) => (
-                    <option key={opt.stationId} value={opt.stationId}>{opt.stationName}</option>
+                    <option
+                      key={opt.stationId}
+                      value={opt.stationId}
+                      disabled={Boolean(formData.toStationId && String(opt.stationId) === String(formData.toStationId))}
+                    >
+                      {opt.stationName}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -341,7 +352,13 @@ export function RouteMaster() {
                 >
                   <option value="">Select To Station</option>
                   {stationOptions.map((opt) => (
-                    <option key={opt.stationId} value={opt.stationId}>{opt.stationName}</option>
+                    <option
+                      key={opt.stationId}
+                      value={opt.stationId}
+                      disabled={Boolean(formData.fromStationId && String(opt.stationId) === String(formData.fromStationId))}
+                    >
+                      {opt.stationName}
+                    </option>
                   ))}
                 </select>
               </div>
