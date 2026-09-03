@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
+import { ChevronDown } from "lucide-react";
 
 export interface TableFilterOption {
   value: string;
@@ -14,6 +15,7 @@ export interface TableFilter {
   type?: "select" | "date";
   searchable?: boolean;
   hideDefaultOption?: boolean;
+  clearable?: boolean;
   onChange: (value: string) => void;
 }
 
@@ -29,7 +31,11 @@ function CuteFilterDropdown({ filter }: { filter: TableFilter }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const [coords, setCoords] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
+  const [coords, setCoords] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  }>({ top: 0, left: 0, width: 0 });
 
   const updateCoords = () => {
     if (buttonRef.current) {
@@ -56,7 +62,10 @@ function CuteFilterDropdown({ filter }: { filter: TableFilter }) {
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     }
@@ -73,11 +82,22 @@ function CuteFilterDropdown({ filter }: { filter: TableFilter }) {
     normalizedLabel === "all statuses";
   const shouldHideDefault = filter.hideDefaultOption || isStatusFilter;
 
-  const selectedOption = filter.options?.find((opt) => opt.value === filter.value);
-  const displayText = selectedOption?.label || (filter.value ? filter.value : filter.label);
+  const selectedOption = filter.options?.find(
+    (opt) => opt.value === filter.value,
+  );
+  const displayText =
+    selectedOption?.label || (filter.value ? filter.value : filter.label);
 
   return (
-    <div ref={containerRef} style={{ position: "relative", minWidth: 100, flex: "0 1 auto", maxWidth: 130 }}>
+    <div
+      ref={containerRef}
+      style={{
+        position: "relative",
+        minWidth: 100,
+        flex: "0 1 auto",
+        maxWidth: 130,
+      }}
+    >
       <button
         ref={buttonRef}
         type="button"
@@ -113,8 +133,13 @@ function CuteFilterDropdown({ filter }: { filter: TableFilter }) {
           opacity: filter.disabled ? 0.5 : 1,
         }}
       >
-        <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{displayText}</span>
-        {filter.value && !filter.disabled && !isStatusFilter ? (
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+          {displayText}
+        </span>
+        {filter.value &&
+        !filter.disabled &&
+        !isStatusFilter &&
+        filter.clearable !== false ? (
           <span
             onClick={(e) => {
               e.stopPropagation();
@@ -143,14 +168,17 @@ function CuteFilterDropdown({ filter }: { filter: TableFilter }) {
               position: "absolute",
               right: 12,
               top: "50%",
-              transform: isOpen ? "translateY(-50%) rotate(180deg)" : "translateY(-50%)",
+              display: "flex",
+              transform: isOpen
+                ? "translateY(-50%) rotate(180deg)"
+                : "translateY(-50%)",
               fontSize: 10,
               color: filter.value ? "var(--amber-deep)" : "var(--text-soft)",
               transition: "transform 0.2s ease",
               pointerEvents: "none",
             }}
           >
-            ▼
+            <ChevronDown size={16} strokeWidth={2.25} />
           </span>
         )}
       </button>
@@ -193,10 +221,12 @@ function CuteFilterDropdown({ filter }: { filter: TableFilter }) {
                 setIsOpen(false);
               }}
               onMouseEnter={(e) => {
-                if (filter.value) e.currentTarget.style.background = "var(--hover)";
+                if (filter.value)
+                  e.currentTarget.style.background = "var(--hover)";
               }}
               onMouseLeave={(e) => {
-                if (filter.value) e.currentTarget.style.background = "transparent";
+                if (filter.value)
+                  e.currentTarget.style.background = "transparent";
               }}
             >
               {filter.label}
@@ -226,14 +256,28 @@ function CuteFilterDropdown({ filter }: { filter: TableFilter }) {
                   setIsOpen(false);
                 }}
                 onMouseEnter={(e) => {
-                  if (!isSelected) e.currentTarget.style.background = "var(--hover)";
+                  if (!isSelected)
+                    e.currentTarget.style.background = "var(--hover)";
                 }}
                 onMouseLeave={(e) => {
-                  if (!isSelected) e.currentTarget.style.background = "transparent";
+                  if (!isSelected)
+                    e.currentTarget.style.background = "transparent";
                 }}
               >
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{opt.label}</span>
-                {isSelected && <span style={{ fontSize: 12, color: "var(--amber-deep)", fontWeight: "bold" }}>✓</span>}
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {opt.label}
+                </span>
+                {isSelected && (
+                  <span
+                    style={{
+                      fontSize: 12,
+                      color: "var(--amber-deep)",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    ✓
+                  </span>
+                )}
               </div>
             );
           })}
@@ -248,7 +292,11 @@ function SearchableFilter({ filter }: { filter: TableFilter }) {
   const [searchTerm, setSearchTerm] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [coords, setCoords] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
+  const [coords, setCoords] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  }>({ top: 0, left: 0, width: 0 });
 
   const updateCoords = () => {
     if (inputRef.current) {
@@ -275,7 +323,10 @@ function SearchableFilter({ filter }: { filter: TableFilter }) {
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     }
@@ -283,19 +334,31 @@ function SearchableFilter({ filter }: { filter: TableFilter }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const selectedOption = filter.options?.find((opt) => opt.value === filter.value);
-  const displayValue = isOpen ? searchTerm : (selectedOption?.label || filter.value || "");
+  const selectedOption = filter.options?.find(
+    (opt) => opt.value === filter.value,
+  );
+  const displayValue = isOpen
+    ? searchTerm
+    : selectedOption?.label || filter.value || "";
 
   const filteredOptions = useMemo(() => {
     if (!filter.options) return [];
     if (!searchTerm.trim()) return filter.options;
     return filter.options.filter((opt) =>
-      opt.label.toLowerCase().includes(searchTerm.toLowerCase())
+      opt.label.toLowerCase().includes(searchTerm.toLowerCase()),
     );
   }, [filter.options, searchTerm]);
 
   return (
-    <div ref={containerRef} style={{ position: "relative", minWidth: 100, flex: "0 1 auto", maxWidth: 130 }}>
+    <div
+      ref={containerRef}
+      style={{
+        position: "relative",
+        minWidth: 100,
+        flex: "0 1 auto",
+        maxWidth: 130,
+      }}
+    >
       <input
         ref={inputRef}
         type="text"
@@ -392,17 +455,27 @@ function SearchableFilter({ filter }: { filter: TableFilter }) {
                 setIsOpen(false);
               }}
               onMouseEnter={(e) => {
-                if (filter.value) e.currentTarget.style.background = "var(--hover)";
+                if (filter.value)
+                  e.currentTarget.style.background = "var(--hover)";
               }}
               onMouseLeave={(e) => {
-                if (filter.value) e.currentTarget.style.background = "transparent";
+                if (filter.value)
+                  e.currentTarget.style.background = "transparent";
               }}
             >
               {filter.label}
             </div>
           )}
           {filteredOptions.length === 0 ? (
-            <div style={{ padding: "8px 12px", fontSize: 13, color: "var(--text-soft)" }}>No matches found</div>
+            <div
+              style={{
+                padding: "8px 12px",
+                fontSize: 13,
+                color: "var(--text-soft)",
+              }}
+            >
+              No matches found
+            </div>
           ) : (
             filteredOptions.map((opt) => {
               const isSelected = opt.value === filter.value;
@@ -416,7 +489,9 @@ function SearchableFilter({ filter }: { filter: TableFilter }) {
                     borderRadius: 8,
                     cursor: "pointer",
                     color: isSelected ? "var(--amber-deep)" : "var(--text)",
-                    background: isSelected ? "var(--amber-fill)" : "transparent",
+                    background: isSelected
+                      ? "var(--amber-fill)"
+                      : "transparent",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
@@ -426,14 +501,30 @@ function SearchableFilter({ filter }: { filter: TableFilter }) {
                     setIsOpen(false);
                   }}
                   onMouseEnter={(e) => {
-                    if (!isSelected) e.currentTarget.style.background = "var(--hover)";
+                    if (!isSelected)
+                      e.currentTarget.style.background = "var(--hover)";
                   }}
                   onMouseLeave={(e) => {
-                    if (!isSelected) e.currentTarget.style.background = "transparent";
+                    if (!isSelected)
+                      e.currentTarget.style.background = "transparent";
                   }}
                 >
-                  <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{opt.label}</span>
-                  {isSelected && <span style={{ fontSize: 12, color: "var(--amber-deep)", fontWeight: "bold" }}>✓</span>}
+                  <span
+                    style={{ overflow: "hidden", textOverflow: "ellipsis" }}
+                  >
+                    {opt.label}
+                  </span>
+                  {isSelected && (
+                    <span
+                      style={{
+                        fontSize: 12,
+                        color: "var(--amber-deep)",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      ✓
+                    </span>
+                  )}
                 </div>
               );
             })
