@@ -12,15 +12,15 @@ import {
 import {
   sectionService,
   type SectionRecordApi,
-} from "../../../api/organization/userManagement/sectionService";
+} from "../../../api/organization/userManagement/screenMaster/sectionService";
 import {
   menuService,
   type MenuRecordApi,
-} from "../../../api/organization/userManagement/menuService";
+} from "../../../api/organization/userManagement/screenMaster/menuService";
 import {
   tabService,
   type TabRecordApi,
-} from "../../../api/organization/userManagement/tabService";
+} from "../../../api/organization/userManagement/screenMaster/tabService";
 
 export interface AuthorizationRecord {
   authId?: number | null;
