@@ -36,7 +36,7 @@ export interface Route {
 }
 
 const serviceOptions = ["ST", "Local"];
-const typeOptions = ["Luxury", "Express", "Ordinary", "City"];
+const typeOptions = ["Luxury", "Express", "Ordinary", "Standard", "City"];
 const fareModelOptions = ["Fixed", "Distance", "Zone"];
 
 export function RouteMaster() {

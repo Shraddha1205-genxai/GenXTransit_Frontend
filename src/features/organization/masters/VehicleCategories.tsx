@@ -163,6 +163,8 @@ export function VehicleCategories() {
               onChange: setClassFilter,
               options: [
                 { value: "Luxury", label: "Luxury" },
+                { value: "Express", label: "Express" },
+                { value: "Ordinary", label: "Ordinary" },
                 { value: "Standard", label: "Standard" },
                 { value: "City", label: "City" },
               ],
@@ -296,6 +298,8 @@ export function VehicleCategories() {
                   onChange={(e) => setFormData((s) => ({ ...s, class: e.target.value }))}
                 >
                   <option value="Luxury">Luxury</option>
+                  <option value="Express">Express</option>
+                  <option value="Ordinary">Ordinary</option>
                   <option value="Standard">Standard</option>
                   <option value="City">City</option>
                 </select>
