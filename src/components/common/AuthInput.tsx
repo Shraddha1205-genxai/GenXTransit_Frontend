@@ -1,7 +1,7 @@
 import React from "react";
-import { T } from "../../../constants/theme";
+import { T } from "../../constants/theme";
 
-interface AuthInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+export interface AuthInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   icon?: React.ComponentType<{
     size?: number;
     color?: string;

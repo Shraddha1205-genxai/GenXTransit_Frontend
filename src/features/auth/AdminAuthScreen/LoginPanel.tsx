@@ -1,8 +1,7 @@
 import React from "react";
 import { ArrowUpRight, Eye, EyeOff, KeyRound, UserRound } from "lucide-react";
 import { T } from "../../../constants/theme";
-import AuthInput from "./AuthInput";
-import PrimaryButtonInline from "./PrimaryButtonInline";
+import { AuthInput, PrimaryButtonInline } from "../../../components/common";
 
 interface LoginPanelProps {
   userName: string;

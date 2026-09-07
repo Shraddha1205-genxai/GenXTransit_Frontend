@@ -1,6 +1,6 @@
 import React from "react";
 
-interface PrimaryButtonInlineProps {
+export interface PrimaryButtonInlineProps {
   children: React.ReactNode;
   onClick: () => void;
   icon?: React.ComponentType<{ size?: number }>;

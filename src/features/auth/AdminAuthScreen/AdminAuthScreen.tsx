@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { fontStack } from "../../../constants/theme";
+import { TransportCanvas } from "../../../components/common";
 import { authService, type AuthSession } from "../../../api/auth/authService";
 import LoginPanel from "./LoginPanel";
-import TransportCanvas from "./TransportCanvas";
 
 interface AdminAuthScreenProps {
   onLogin: (session: AuthSession) => void;

@@ -1,5 +1,5 @@
 import React from "react";
-import { Bus, MapPin, Radio } from "lucide-react";
+import { Bus } from "lucide-react";
 
 export default function TransportCanvas() {
   return (
