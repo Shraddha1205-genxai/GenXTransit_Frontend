@@ -12,3 +12,8 @@ export * from "./SectionHeader";
 export * from "./Sidebar";
 export * from "./Header";
 export * from "./TableToolbar";
+export { default as AuthInput } from "./AuthInput";
+export type { AuthInputProps } from "./AuthInput";
+export { default as PrimaryButtonInline } from "./PrimaryButtonInline";
+export type { PrimaryButtonInlineProps } from "./PrimaryButtonInline";
+export { default as TransportCanvas } from "./TransportCanvas";
