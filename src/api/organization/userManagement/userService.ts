@@ -10,11 +10,21 @@ export interface User {
   lastName: string;
   roleId: number | string;
   roleName?: string;
+  address?: string | null;
+  regionId?: number;
+  regionCode?: string | null;
+  regionName?: string | null;
+  divisionId?: number;
+  divisionCode?: string | null;
+  divisionName?: string | null;
+  depotId?: number;
+  depotCode?: string | null;
+  depotName?: string | null;
   isActive: boolean;
   isEmailVerified: boolean;
   isMobileVerified: boolean;
   isFirstLogin: boolean;
-  passwordChangedDate: string | null;
+  passwordChangedDate?: string | null;
   createdDate: string;
   createdBy: number | null;
   modifiedDate: string | null;
@@ -27,7 +37,11 @@ export interface AddUserPayload {
   mobileNo: string;
   firstName: string;
   lastName: string;
-  roleId: string;
+  roleId: number;
+  address: string;
+  regionId: number;
+  divisionId: number;
+  depotId: number;
 }
 
 export interface UpdateUserPayload {
@@ -37,7 +51,11 @@ export interface UpdateUserPayload {
   mobileNo: string;
   firstName: string;
   lastName: string;
-  roleId: string;
+  roleId: number;
+  address: string;
+  regionId: number;
+  divisionId: number;
+  depotId: number;
 }
 
 export interface DeleteUserPayload {
@@ -89,6 +107,16 @@ const normalizeUser = (user: Partial<User>): User => ({
   passwordHash: user.passwordHash ?? "",
   firstName: user.firstName ?? "",
   lastName: user.lastName ?? "",
+  address: user.address ?? "",
+  regionId: Number(user.regionId ?? 0),
+  regionCode: user.regionCode ?? null,
+  regionName: user.regionName ?? null,
+  divisionId: Number(user.divisionId ?? 0),
+  divisionCode: user.divisionCode ?? null,
+  divisionName: user.divisionName ?? null,
+  depotId: Number(user.depotId ?? 0),
+  depotCode: user.depotCode ?? null,
+  depotName: user.depotName ?? null,
   isActive: Boolean(user.isActive),
   isEmailVerified: Boolean(user.isEmailVerified),
   isMobileVerified: Boolean(user.isMobileVerified),
