@@ -18,6 +18,7 @@ import {
 } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "react-hot-toast";
+import { authService } from "./api/auth/authService";
 import {
   LayoutDashboard,
   Building2,
@@ -1894,88 +1895,53 @@ function UserManagementLayout() {
   );
 }
 
-
-
-
 function DepotsTab() {
   const [vehiclesData] = useCrud("vehicles", "reg");
-  return (
-    <Depots
-      vehiclesData={vehiclesData}
-    />
-  );
+  return <Depots vehiclesData={vehiclesData} />;
 }
 function BusStationTab() {
-  return (
-    <BusStation />
-  );
+  return <BusStation />;
 }
 function WorkshopsTab() {
-  return (
-    <Workshops />
-  );
+  return <Workshops />;
 }
 function ParkingYardsTab() {
-  return (
-    <ParkingYards />
-  );
+  return <ParkingYards />;
 }
 
 function RouteTab() {
-  return (
-    <RouteMaster />
-  );
+  return <RouteMaster />;
 }
 function StopTab() {
-  return (
-    <Stop />
-  );
+  return <Stop />;
 }
 function StagesTab() {
-  return (
-    <Stages />
-  );
+  return <Stages />;
 }
 function FarePoliciesTab() {
-  return (
-    <FarePolicies />
-  );
+  return <FarePolicies />;
 }
 function TicketTypesTab() {
-  return (
-    <TicketTypes />
-  );
+  return <TicketTypes />;
 }
 function PaymentModesTab() {
-  return (
-    <PaymentModes />
-  );
+  return <PaymentModes />;
 }
 function VehicleCategoriesTab() {
-  return (
-    <VehicleCategories />
-  );
+  return <VehicleCategories />;
 }
 function SeatLayoutsTab() {
-  return (
-    <SeatLayouts />
-  );
+  return <SeatLayouts />;
 }
 
 function NotificationTemplatesTab() {
-  return (
-    <NotificationTemplates />
-  );
+  return <NotificationTemplates />;
 }
 function ComplaintCategoriesTab() {
-  return (
-    <ComplaintCategories />
-  );
+  return <ComplaintCategories />;
 }
 function TaxConfigurationTab() {
-  return (
-    <TaxConfiguration />
-  );
+  return <TaxConfiguration />;
 }
 
 function FleetTab() {
@@ -2421,12 +2387,9 @@ const queryClient = new QueryClient({
 });
 
 function AuthGate() {
-  const [session, setSession] = useState<any>({
-    name: "Guest Admin",
-    role: "Super Admin",
-    depot: "All depots",
-  });
-  const [, usersCrud] = useCrud("users", "id");
+  const [session, setSession] = useState<any>(() =>
+    authService.getStoredSession(),
+  );
 
   return (
     <Suspense fallback={<PageFallback />}>
@@ -2434,22 +2397,27 @@ function AuthGate() {
         <Route
           path="/login"
           element={
-            <AdminAuthScreen onLogin={setSession} onAddUser={usersCrud.add} />
+            session ? (
+              <Navigate to="/" replace />
+            ) : (
+              <AdminAuthScreen onLogin={setSession} />
+            )
           }
         />
         <Route
           path="/"
           element={
-            <ConsoleShell
-              session={
-                session || {
-                  name: "Guest Admin",
-                  role: "Super Admin",
-                  depot: "All depots",
-                }
-              }
-              onLogout={() => setSession(null)}
-            />
+            session ? (
+              <ConsoleShell
+                session={session}
+                onLogout={() => {
+                  authService.clearSession();
+                  setSession(null);
+                }}
+              />
+            ) : (
+              <Navigate to="/login" replace />
+            )
           }
         >
           <Route index element={<DashboardTabWrapper />} />

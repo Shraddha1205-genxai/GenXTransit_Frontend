@@ -1,4 +1,5 @@
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5189/api";
+const BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5189/api";
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -7,10 +8,24 @@ export interface ApiResponse<T> {
   totalCount: number | null;
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
+async function request<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<ApiResponse<T>> {
   const url = `${BASE_URL}${path}`;
+  let accessToken: string | null = null;
+  try {
+    const storedSession = sessionStorage.getItem("genxtransit.auth.session");
+    accessToken = storedSession
+      ? JSON.parse(storedSession).accessToken || null
+      : null;
+  } catch {
+    accessToken = null;
+  }
+
   const headers = {
     "Content-Type": "application/json",
+    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     ...options.headers,
   };
 
@@ -41,10 +56,12 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<ApiR
 }
 
 export const apiClient = {
-  get: <T>(path: string, options?: RequestInit) => request<T>(path, { ...options, method: "GET" }),
-  post: <T>(path: string, body: any, options?: RequestInit) => request<T>(path, {
-    ...options,
-    method: "POST",
-    body: JSON.stringify(body),
-  }),
+  get: <T>(path: string, options?: RequestInit) =>
+    request<T>(path, { ...options, method: "GET" }),
+  post: <T>(path: string, body: any, options?: RequestInit) =>
+    request<T>(path, {
+      ...options,
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 };
