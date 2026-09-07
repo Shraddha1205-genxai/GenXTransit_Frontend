@@ -110,7 +110,7 @@ function SectionTreeRow({
 
   const sectionMenus: MenuRecord[] = useMemo(() => {
     return apiSectionMenus.map((m: MenuRecordApi) => ({
-      menuId: String(m.menuId ?? m.id ?? ""),
+      menuId: String(m.menuId || ""),
       menuName: m.menuName,
       iconName: m.iconName,
       sectionId: String(m.sectionId),
@@ -388,7 +388,7 @@ export default function ScreenMaster() {
       );
 
       return {
-        menuId: String(menu.menuId ?? menu.id ?? ""),
+        menuId: String(menu.menuId || ""),
         menuName: menu.menuName,
         iconName: menu.iconName,
         sectionId: String(sectionFromApi?.sectionId ?? backendSectionId),
@@ -501,7 +501,7 @@ export default function ScreenMaster() {
   });
 
   const menuDeleteMutation = useMutation({
-    mutationFn: (payload: { id: number }) => menuService.delete(payload),
+    mutationFn: (payload: { menuId: number }) => menuService.delete(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["menu"] });
       toast.success("Menu deleted successfully.");
@@ -681,7 +681,7 @@ export default function ScreenMaster() {
 
       if (editingId) {
         menuUpdateMutation.mutate({
-          id: Number(editingId),
+          menuId: Number(editingId),
           ...payload,
         });
         return;
@@ -892,7 +892,7 @@ export default function ScreenMaster() {
                   onEditSection={openSection}
                   onDeleteSection={(id) => sectionDeleteMutation.mutate({ sectionId: id })}
                   onEditMenu={openMenu}
-                  onDeleteMenu={(id) => menuDeleteMutation.mutate({ id })}
+                  onDeleteMenu={(id) => menuDeleteMutation.mutate({ menuId: id })}
                 />
               ))}
               {activeSections.length === 0 && (

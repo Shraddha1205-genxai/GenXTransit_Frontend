@@ -1,7 +1,6 @@
 import { apiClient } from "../../../apiClient";
 
 export interface MenuRecordApi {
-  id?: number;
   menuId?: number;
   iconName: string;
   sectionId: number;
@@ -23,11 +22,11 @@ export interface MenuInsertPayload {
 }
 
 export interface MenuUpdatePayload extends MenuInsertPayload {
-  id: number;
+  menuId: number;
 }
 
 export interface MenuDeletePayload {
-  id: number;
+  menuId: number;
 }
 
 const PATH = "/menu";
@@ -44,15 +43,15 @@ export const menuService = {
     const payload = response.data;
 
     if (Array.isArray(payload)) return payload;
-    if (payload && typeof payload === "object" && ("id" in payload || "menuId" in payload)) {
+    if (payload && typeof payload === "object" && ("menuId" in payload)) {
       return [payload as MenuRecordApi];
     }
 
     return [];
   },
 
-  getById: async (id: number): Promise<MenuRecordApi> => {
-    const response = await apiClient.get<MenuRecordApi>(`${PATH}/${id}`);
+  getById: async (menuId: number): Promise<MenuRecordApi> => {
+    const response = await apiClient.get<MenuRecordApi>(`${PATH}/${menuId}`);
     return response.data;
   },
 
