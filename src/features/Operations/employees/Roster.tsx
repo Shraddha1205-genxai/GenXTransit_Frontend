@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { T } from "../../../constants/theme";
+import { usePermissions } from "../../../hooks/usePermissions";
 import { Card, Th, Td, StatusBadge, Table, Modal } from "../../../components/common";
 
 export interface EmployeeRecord {
@@ -43,6 +44,7 @@ const SHIFTS = [
 const ATTENDANCE_STATUSES = ["On duty", "On leave", "Absent", "Suspended"];
 
 export function Roster({ data, depotOptions = [], onAdd, onUpdate, onDelete }: RosterProps) {
+  const { canAdd, canEdit, canDelete } = usePermissions("Roster");
   const [modal, setModal] = useState<{ mode: "add" | "edit"; record?: EmployeeRecord } | null>(null);
   const [toDelete, setToDelete] = useState<EmployeeRecord | null>(null);
   const [formData, setFormData] = useState<Partial<EmployeeRecord>>({});
@@ -89,12 +91,14 @@ export function Roster({ data, depotOptions = [], onAdd, onUpdate, onDelete }: R
       <Card
         title="Employee roster"
         action={
-          <button
-            onClick={handleOpenAdd}
-            style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: T.amberDeep, background: "none", border: "none", cursor: "pointer" }}
-          >
-            <Plus size={13} /> Add employee
-          </button>
+          canAdd ? (
+            <button
+              onClick={handleOpenAdd}
+              style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: T.amberDeep, background: "none", border: "none", cursor: "pointer" }}
+            >
+              <Plus size={13} /> Add employee
+            </button>
+          ) : undefined
         }
       >
         <Table>
@@ -126,12 +130,16 @@ export function Roster({ data, depotOptions = [], onAdd, onUpdate, onDelete }: R
                 </Td>
                 <Td align="right">
                   <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-                    <button onClick={() => handleOpenEdit(e)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                      <Pencil size={14} color={T.textSoft} />
-                    </button>
-                    <button onClick={() => setToDelete(e)} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                      <Trash2 size={14} color={T.red} />
-                    </button>
+                    {canEdit && (
+                      <button onClick={() => handleOpenEdit(e)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                        <Pencil size={14} color={T.textSoft} />
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button onClick={() => setToDelete(e)} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                        <Trash2 size={14} color={T.red} />
+                      </button>
+                    )}
                   </div>
                 </Td>
               </tr>

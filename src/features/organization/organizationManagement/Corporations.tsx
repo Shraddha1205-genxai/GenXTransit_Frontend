@@ -7,6 +7,7 @@ import { Card, StatusBadge, Th, Td, Modal, Table, TableToolbar } from "../../../
 import { corporationService } from "../../../api/organization/organizationManagement/corporationService";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { getStates, getDistrictsByState, getAllDistricts, INDIA_GEO_DATA } from "../../../constants/indiaGeoData";
+import { usePermissions } from "../../../hooks/usePermissions";
 
 export interface Corporation {
   corpId: string | false | undefined;
@@ -249,6 +250,7 @@ function SearchableSelect({
 
 export function Corporations() {
   const queryClient = useQueryClient();
+  const { canAdd, canEdit, canDelete } = usePermissions("Corporations");
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 500);
@@ -518,12 +520,14 @@ export function Corporations() {
       <Card
         title="Corporations"
         action={
-          <button
-            onClick={handleOpenAdd}
-            style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: T.amberDeep, background: "none", border: "none", cursor: "pointer" }}
-          >
-            <Plus size={13} /> Add corporation
-          </button>
+          canAdd ? (
+            <button
+              onClick={handleOpenAdd}
+              style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: T.amberDeep, background: "none", border: "none", cursor: "pointer" }}
+            >
+              <Plus size={13} /> Add corporation
+            </button>
+          ) : undefined
         }
       >
         <TableToolbar
@@ -615,12 +619,16 @@ export function Corporations() {
                     {filterStatus !== "Inactive" && (
                       <Td align="right">
                         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                          <button disabled={filterStatus === "Both" && !item.isActive} onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: filterStatus === "Both" && !item.isActive ? "not-allowed" : "pointer", padding: 2, display: "flex", opacity: filterStatus === "Both" && !item.isActive ? 0.5 : 1 }}>
-                            <Pencil size={14} color={T.textSoft} />
-                          </button>
-                          <button disabled={filterStatus === "Both" && !item.isActive} onClick={() => setToDelete(item)} title="Delete" style={{ background: "none", border: "none", cursor: filterStatus === "Both" && !item.isActive ? "not-allowed" : "pointer", padding: 2, display: "flex", opacity: filterStatus === "Both" && !item.isActive ? 0.5 : 1 }}>
-                            <Trash2 size={14} color={T.red} />
-                          </button>
+                          {canEdit && (
+                            <button disabled={filterStatus === "Both" && !item.isActive} onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: filterStatus === "Both" && !item.isActive ? "not-allowed" : "pointer", padding: 2, display: "flex", opacity: filterStatus === "Both" && !item.isActive ? 0.5 : 1 }}>
+                              <Pencil size={14} color={T.textSoft} />
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button disabled={filterStatus === "Both" && !item.isActive} onClick={() => setToDelete(item)} title="Delete" style={{ background: "none", border: "none", cursor: filterStatus === "Both" && !item.isActive ? "not-allowed" : "pointer", padding: 2, display: "flex", opacity: filterStatus === "Both" && !item.isActive ? 0.5 : 1 }}>
+                              <Trash2 size={14} color={T.red} />
+                            </button>
+                          )}
                         </div>
                       </Td>
                     )}

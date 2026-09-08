@@ -3,6 +3,7 @@ import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { T } from "../../../constants/theme";
+import { usePermissions } from "../../../hooks/usePermissions";
 import {
   Card,
   Modal,
@@ -54,6 +55,7 @@ export const initialRoles: RoleRecord[] = [
 ];
 
 export default function RoleMaster() {
+  const { canAdd, canEdit, canDelete } = usePermissions("RoleMaster");
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("Active");
@@ -173,22 +175,24 @@ export default function RoleMaster() {
     <Card
       title="Roles"
       action={
-        <button
-          onClick={handleOpenAdd}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 5,
-            fontSize: 12,
-            fontWeight: 600,
-            color: T.amberDeep,
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-          }}
-        >
-          <Plus size={13} /> Add role
-        </button>
+        canAdd ? (
+          <button
+            onClick={handleOpenAdd}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              fontSize: 12,
+              fontWeight: 600,
+              color: T.amberDeep,
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            <Plus size={13} /> Add role
+          </button>
+        ) : undefined
       }
     >
       <TableToolbar
@@ -254,36 +258,40 @@ export default function RoleMaster() {
                         justifyContent: "flex-end",
                       }}
                     >
-                      <button
-                        onClick={() => role.isActive && handleOpenEdit(role)}
-                        title="Edit"
-                        disabled={!role.isActive}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: role.isActive ? "pointer" : "not-allowed",
-                          padding: 2,
-                          display: "flex",
-                          opacity: role.isActive ? 1 : 0.35,
-                        }}
-                      >
-                        <Pencil size={14} color={T.textSoft} />
-                      </button>
-                      <button
-                        onClick={() => role.isActive && setToDelete(role)}
-                        title="Delete"
-                        disabled={!role.isActive}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: role.isActive ? "pointer" : "not-allowed",
-                          padding: 2,
-                          display: "flex",
-                          opacity: role.isActive ? 1 : 0.35,
-                        }}
-                      >
-                        <Trash2 size={14} color={T.red} />
-                      </button>
+                      {canEdit && (
+                        <button
+                          onClick={() => role.isActive && handleOpenEdit(role)}
+                          title="Edit"
+                          disabled={!role.isActive}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: role.isActive ? "pointer" : "not-allowed",
+                            padding: 2,
+                            display: "flex",
+                            opacity: role.isActive ? 1 : 0.35,
+                          }}
+                        >
+                          <Pencil size={14} color={T.textSoft} />
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button
+                          onClick={() => role.isActive && setToDelete(role)}
+                          title="Delete"
+                          disabled={!role.isActive}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: role.isActive ? "pointer" : "not-allowed",
+                            padding: 2,
+                            display: "flex",
+                            opacity: role.isActive ? 1 : 0.35,
+                          }}
+                        >
+                          <Trash2 size={14} color={T.red} />
+                        </button>
+                      )}
                     </div>
                   </Td>
                 )}
