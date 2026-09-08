@@ -17,6 +17,7 @@ import { farePolicyService } from "../../../api/organization/master/farePolicySe
 import { routeService } from "../../../api/organization/master/routeService";
 import { vehicleCategoryService } from "../../../api/organization/master/vehicleCategoryService";
 import { useDebounce } from "../../../hooks/useDebounce";
+import { usePermissions } from "../../../hooks/usePermissions";
 
 export interface FarePolicy {
   policyId: string;
@@ -38,6 +39,7 @@ const modelOptions = ["Fixed", "Distance", "Zone"];
 const statusOptions = ["Published", "Simulated", "Draft"];
 
 export function FarePolicies() {
+  const { canAdd, canEdit, canDelete } = usePermissions("FarePolicies");
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
@@ -200,12 +202,14 @@ export function FarePolicies() {
       <Card
         title="Fare policies"
         action={
-          <button
+          canAdd ? (
+            <button
               onClick={handleOpenAdd}
               style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: T.amberDeep, background: "none", border: "none", cursor: "pointer" }}
             >
               <Plus size={13} /> Add policy
             </button>
+          ) : undefined
         }
       >
         <TableToolbar
@@ -301,12 +305,16 @@ export function FarePolicies() {
                     {statusFilter !== "Inactive" && (
                       <Td align="right">
                         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                          <button disabled={statusFilter === "Both" && !item.isActive} onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: statusFilter === "Both" && !item.isActive ? "not-allowed" : "pointer", padding: 2, display: "flex", opacity: statusFilter === "Both" && !item.isActive ? 0.5 : 1 }}>
-                            <Pencil size={14} color={T.textSoft} />
-                          </button>
-                          <button disabled={statusFilter === "Both" && !item.isActive} onClick={() => setToDelete(item)} title="Delete" style={{ background: "none", border: "none", cursor: statusFilter === "Both" && !item.isActive ? "not-allowed" : "pointer", padding: 2, display: "flex", opacity: statusFilter === "Both" && !item.isActive ? 0.5 : 1 }}>
-                            <Trash2 size={14} color={T.red} />
-                          </button>
+                          {canEdit && (
+                            <button disabled={statusFilter === "Both" && !item.isActive} onClick={() => handleOpenEdit(item)} title="Edit" style={{ background: "none", border: "none", cursor: statusFilter === "Both" && !item.isActive ? "not-allowed" : "pointer", padding: 2, display: "flex", opacity: statusFilter === "Both" && !item.isActive ? 0.5 : 1 }}>
+                              <Pencil size={14} color={T.textSoft} />
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button disabled={statusFilter === "Both" && !item.isActive} onClick={() => setToDelete(item)} title="Delete" style={{ background: "none", border: "none", cursor: statusFilter === "Both" && !item.isActive ? "not-allowed" : "pointer", padding: 2, display: "flex", opacity: statusFilter === "Both" && !item.isActive ? 0.5 : 1 }}>
+                              <Trash2 size={14} color={T.red} />
+                            </button>
+                          )}
                         </div>
                       </Td>
                     )}

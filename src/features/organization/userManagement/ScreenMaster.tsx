@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FolderSearch, Pencil, Plus, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { T } from "../../../constants/theme";
+import { usePermissions } from "../../../hooks/usePermissions";
 import {
   Card,
   Modal,
@@ -342,6 +343,7 @@ function MenuTreeRow({
 }
 
 export default function ScreenMaster() {
+  const { canAdd, canEdit, canDelete } = usePermissions("ScreenMaster");
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [formType, setFormType] = useState<FormType | null>(null);
@@ -938,25 +940,27 @@ export default function ScreenMaster() {
                 )}
               </div>
             </div>
-            <button
-              onClick={() => openTab()}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-                height: 28,
-                padding: "0 12px",
-                borderRadius: 6,
-                border: `1px solid ${T.green}`,
-                background: T.greenFill,
-                color: T.green,
-                fontSize: 11,
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              <Plus size={13} /> Add tab
-            </button>
+            {canAdd && (
+              <button
+                onClick={() => openTab()}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  height: 28,
+                  padding: "0 12px",
+                  borderRadius: 6,
+                  border: `1px solid ${T.green}`,
+                  background: T.greenFill,
+                  color: T.green,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                <Plus size={13} /> Add tab
+              </button>
+            )}
           </div>
           <TableToolbar
             search={search}
@@ -1042,35 +1046,39 @@ export default function ScreenMaster() {
                       <StatusBadge status="Active" />
                     </Td>
                     <Td align="right">
-                      <button
-                        onClick={() => openTab(screen)}
-                        title="Edit tab"
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          padding: 3,
-                        }}
-                      >
-                        <Pencil size={14} color={T.textSoft} />
-                      </button>
-                      <button
-                        onClick={() => {
-                          const tabId = Number(screen.screenId);
-                          if (tabId) {
-                            tabDeleteMutation.mutate({ tabId });
-                          }
-                        }}
-                        title="Delete tab"
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          padding: 3,
-                        }}
-                      >
-                        <Trash2 size={14} color={T.red} />
-                      </button>
+                      {canEdit && (
+                        <button
+                          onClick={() => openTab(screen)}
+                          title="Edit tab"
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: 3,
+                          }}
+                        >
+                          <Pencil size={14} color={T.textSoft} />
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button
+                          onClick={() => {
+                            const tabId = Number(screen.screenId);
+                            if (tabId) {
+                              tabDeleteMutation.mutate({ tabId });
+                            }
+                          }}
+                          title="Delete tab"
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: 3,
+                          }}
+                        >
+                          <Trash2 size={14} color={T.red} />
+                        </button>
+                      )}
                     </Td>
                   </tr>
                 ))

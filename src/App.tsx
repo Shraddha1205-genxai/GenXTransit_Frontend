@@ -53,6 +53,8 @@ import {
   SectionHeader,
   KpiCard,
 } from "./components/common";
+import { buildNavFromPermissions } from "./utils/navigationUtils";
+import { flattenPermissions } from "./hooks/usePermissions";
 
 // Lazy-loaded Feature Pages
 const DashboardTab = lazy(() => import("./features/dashboard"));
@@ -2180,147 +2182,67 @@ function HelpTab() {
 /* ---------------------------------------------------------------------
    NAVIGATION + SHELL
 --------------------------------------------------------------------- */
-const NAV = [
-  {
-    group: null,
-    items: [
-      { id: "overview", label: "Dashboard", icon: LayoutDashboard, path: "/" },
-    ],
-  },
-  {
-    group: "Organization",
-    items: [
-      {
-        id: "organization",
-        label: "Organization",
-        icon: Building2,
-        path: "/Organization/organizationManagement/Depots",
-      },
-      {
-        id: "masters",
-        label: "Master Data",
-        icon: Database,
-        path: "/Organization/masters/Route",
-      },
-      {
-        id: "user-management",
-        label: "User Management",
-        icon: ShieldCheck,
-        path: "/Organization/userManagement/RoleMaster",
-      },
-    ],
-  },
-  {
-    group: "Operations",
-    items: [
-      {
-        id: "fleet",
-        label: "Fleet",
-        icon: Bus,
-        path: "/Operations/fleet/VehicleRegister",
-      },
-      {
-        id: "employees",
-        label: "Employees",
-        icon: UserCog,
-        path: "/Operations/employees/Roster",
-      },
-      {
-        id: "routes",
-        label: "Trip Schedule",
-        icon: Milestone,
-        path: "/Operations/tripSchedule/TripSchedule",
-      },
-      {
-        id: "tracking",
-        label: "Live Tracking",
-        icon: Radar,
-        path: "/Operations/liveTracking/LiveTracking",
-      },
-    ],
-  },
-  {
-    group: "Commercial",
-    items: [
-      {
-        id: "fares",
-        label: "Fare Management",
-        icon: IndianRupee,
-        path: "/Commercial/fareManagement/FareManagement",
-      },
-      {
-        id: "ticketing",
-        label: "Ticketing",
-        icon: Ticket,
-        path: "/Commercial/ticketing/Ticketing",
-      },
-      {
-        id: "reservations",
-        label: "Reservations",
-        icon: CalendarCheck,
-        path: "/Commercial/reservations/Reservations",
-      },
-      {
-        id: "passes",
-        label: "Passes",
-        icon: Armchair,
-        path: "/Commercial/passes/Passes",
-      },
-    ],
-  },
-  {
-    group: "Systems",
-    items: [
-      {
-        id: "etm",
-        label: "ETM Devices",
-        icon: Smartphone,
-        path: "/Systems/etmDevices/EtmDevices",
-      },
-      {
-        id: "finance",
-        label: "Finance & Wallet",
-        icon: Wallet,
-        path: "/Systems/financeWallet/FinanceWallet",
-      },
-    ],
-  },
-  {
-    group: "Support",
-    items: [
-      {
-        id: "support",
-        label: "Complaints & Alerts",
-        icon: MessageSquareWarning,
-        path: "/Support/complaintsAlerts/ComplaintsAlerts",
-      },
-      {
-        id: "reports",
-        label: "Reports",
-        icon: BarChart3,
-        path: "/Support/reports/Reports",
-      },
-      {
-        id: "analytics",
-        label: "Analytics",
-        icon: LineChartIcon,
-        path: "/Support/analytics/Analytics",
-      },
-      {
-        id: "admin",
-        label: "Users & Roles",
-        icon: ShieldCheck,
-        path: "/Support/usersRoles/UsersRoles",
-      },
-      {
-        id: "help",
-        label: "Help",
-        icon: HelpCircle,
-        path: "/Support/help/Help",
-      },
-    ],
-  },
-];
+
+function useActiveMenuTabs(session: any) {
+  const location = useLocation();
+
+  return useMemo(() => {
+    const raw = localStorage.getItem("permissions");
+    let perms: any[] = [];
+    try {
+      if (raw) perms = JSON.parse(raw);
+    } catch {}
+
+    if ((!perms || perms.length === 0) && session?.permissions) {
+      perms = session.permissions;
+    }
+
+    if (!Array.isArray(perms) || perms.length === 0) return null;
+
+    const clean = (s?: string) =>
+      (s || "").toLowerCase().trim().replace(/^\/+|\/+$/g, "");
+
+    const currentPathClean = clean(location.pathname);
+    if (!currentPathClean) return null;
+
+    for (const section of perms) {
+      if (!section || !Array.isArray(section.menuList)) continue;
+      for (const menu of section.menuList) {
+        if (!menu || !Array.isArray(menu.tabList)) continue;
+
+        const visibleTabs = menu.tabList.filter(
+          (t: any) => t.canView !== false
+        );
+        if (visibleTabs.length === 0) continue;
+
+        const matchingTab = visibleTabs.find((t: any) => {
+          if (!t.url) return false;
+          const tabUrlClean = clean(t.url);
+          if (tabUrlClean === currentPathClean) return true;
+
+          const currentLastSeg = currentPathClean.split("/").pop();
+          const tabLastSeg = tabUrlClean.split("/").pop();
+          if (currentLastSeg && tabLastSeg && currentLastSeg === tabLastSeg) {
+            return true;
+          }
+          return false;
+        });
+
+        if (matchingTab) {
+          return {
+            sectionName: section.sectionName || "Navigation",
+            menuName: menu.menuName || "",
+            visibleTabs,
+            activeTab: matchingTab,
+            activeTabName: matchingTab.tabName || "",
+          };
+        }
+      }
+    }
+
+    return null;
+  }, [session, location.pathname]);
+}
 
 function ConsoleShell({
   session,
@@ -2330,6 +2252,24 @@ function ConsoleShell({
   onLogout: () => void;
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  const navigate = useNavigate();
+
+  const dynamicNav = useMemo(() => {
+    const raw = localStorage.getItem("permissions");
+    let perms: any[] = [];
+    try {
+      if (raw) perms = JSON.parse(raw);
+    } catch {}
+
+    if ((!perms || perms.length === 0) && session?.permissions) {
+      perms = session.permissions;
+    }
+
+    return buildNavFromPermissions(perms);
+  }, [session]);
+  console.log("Nav", dynamicNav);
+  const activeMenu = useActiveMenuTabs(session);
+
   return (
     <div
       className="stc-body"
@@ -2345,7 +2285,7 @@ function ConsoleShell({
       <style>{fontStack}</style>
 
       <Sidebar
-        nav={NAV}
+        nav={dynamicNav}
         session={session}
         onLogout={onLogout}
         collapsed={collapsed}
@@ -2367,6 +2307,26 @@ function ConsoleShell({
           className="stc-scroll"
           style={{ flex: 1, overflowY: "auto", padding: 24 }}
         >
+          {activeMenu && activeMenu.visibleTabs.length > 1 && (
+            <div>
+              <SectionHeader
+                eyebrow={activeMenu.sectionName}
+                title={activeMenu.menuName}
+              />
+              <SubTabs
+                tabs={activeMenu.visibleTabs.map((t: any) => t.tabName)}
+                active={activeMenu.activeTabName}
+                onChange={(tabName: string) => {
+                  const targetTab = activeMenu.visibleTabs.find(
+                    (t: any) => t.tabName === tabName
+                  );
+                  if (targetTab?.url) {
+                    navigate(targetTab.url);
+                  }
+                }}
+              />
+            </div>
+          )}
           <Outlet />
         </main>
       </div>
@@ -2395,11 +2355,131 @@ const queryClient = new QueryClient({
   },
 });
 
+const FEATURE_COMPONENTS: Record<string, React.ReactNode> = {
+  dashboard: <DashboardTabWrapper />,
+  dasboard: <DashboardTabWrapper />,
+  overview: <DashboardTabWrapper />,
+  corporation: <Corporations />,
+  corporations: <Corporations />,
+  regions: <Regions />,
+  region: <Regions />,
+  divisions: <Divisions />,
+  division: <Divisions />,
+  zone: <Zones />,
+  zones: <Zones />,
+  depots: <DepotsTab />,
+  depot: <DepotsTab />,
+  stations: <BusStationTab />,
+  station: <BusStationTab />,
+  busstation: <BusStationTab />,
+  workshop: <WorkshopsTab />,
+  workshops: <WorkshopsTab />,
+  parkingyards: <ParkingYardsTab />,
+  parkingyard: <ParkingYardsTab />,
+  vehiclecategories: <VehicleCategoriesTab />,
+  route: <RouteTab />,
+  routes: <RouteTab />,
+  stop: <StopTab />,
+  stops: <StopTab />,
+  stages: <StagesTab />,
+  stage: <StagesTab />,
+  farepolicies: <FarePoliciesTab />,
+  tickettypes: <TicketTypesTab />,
+  paymentmodes: <PaymentModesTab />,
+  seatlayouts: <SeatLayoutsTab />,
+  holidaycalendar: <HolidayCalendar />,
+  notificationtemplates: <NotificationTemplatesTab />,
+  complaintcategories: <ComplaintCategoriesTab />,
+  taxconfiguration: <TaxConfigurationTab />,
+  rolemaster: <RoleMaster />,
+  usermaster: <UserMaster />,
+  screenmaster: <ScreenMaster />,
+  authorization: <Authorization />,
+  vehicleregister: <FleetRegisterTab />,
+  vehicleservice: <FleetServiceTab />,
+  roster: <RosterTab />,
+  attendance: <AttendanceTab />,
+  tripschedule: <TripScheduleTab />,
+  livetracking: <LiveTrackingTab />,
+  faremanagement: <FaresTab />,
+  ticketing: <TicketingTab />,
+  reservations: <ReservationsTab />,
+  passes: <PassesTab />,
+  etmdevices: <EtmDevicesTab />,
+  financewallet: <FinanceWalletTab />,
+  complaintsalerts: <SupportTab />,
+  reports: <ReportsTab />,
+  analytics: <AnalyticsTab />,
+  usersroles: <AdminTab />,
+  helpp: <HelpTab />,
+};
+
+function resolveComponent(tab: { url?: string; tabName?: string; menuName?: string }): React.ReactNode | null {
+  const clean = (s?: string) => (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  if (tab.url) {
+    const parts = tab.url.split("/").filter(Boolean);
+    if (parts.length > 0) {
+      const lastSeg = clean(parts[parts.length - 1]);
+      if (FEATURE_COMPONENTS[lastSeg]) return FEATURE_COMPONENTS[lastSeg];
+    }
+    const fullUrlClean = clean(tab.url);
+    if (FEATURE_COMPONENTS[fullUrlClean]) return FEATURE_COMPONENTS[fullUrlClean];
+  }
+
+  if (tab.tabName) {
+    const key = clean(tab.tabName);
+    if (FEATURE_COMPONENTS[key]) return FEATURE_COMPONENTS[key];
+  }
+
+  if (tab.menuName) {
+    const key = clean(tab.menuName);
+    if (FEATURE_COMPONENTS[key]) return FEATURE_COMPONENTS[key];
+  }
+
+  return null;
+}
+
 function AuthGate() {
   const [session, setSession] = useState<any>(() =>
     authService.getStoredSession(),
   );
 
+  const dynamicRoutes = useMemo(() => {
+    const raw = localStorage.getItem("permissions");
+    let perms: any[] = [];
+    try {
+      if (raw) perms = JSON.parse(raw);
+    } catch {}
+
+    if ((!perms || perms.length === 0) && session?.permissions) {
+      perms = session.permissions;
+    }
+
+    const flattened = flattenPermissions(perms);
+    const routes: { path: string; element: React.ReactNode; key: string }[] = [];
+    const addedPaths = new Set<string>();
+
+    flattened.forEach((tab) => {
+      if (!tab.url) return;
+      const element = resolveComponent(tab);
+
+      if (element) {
+        const routePath = tab.url.startsWith("/") ? tab.url.substring(1) : tab.url;
+        if (!addedPaths.has(routePath.toLowerCase())) {
+          addedPaths.add(routePath.toLowerCase());
+          routes.push({
+            path: routePath,
+            element,
+            key: tab.tabId ? String(tab.tabId) : routePath,
+          });
+        }
+      }
+    });
+
+    return routes;
+  }, [session]);
+  console.log('dynamicRoutes :>> ', dynamicRoutes);
   return (
     <Suspense fallback={<PageFallback />}>
       <Routes>
@@ -2432,117 +2512,12 @@ function AuthGate() {
         >
           <Route index element={<DashboardTabWrapper />} />
 
-          {/* Organization Sub-Routes */}
-          <Route
-            path="Organization/organizationManagement"
-            element={<OrganizationLayout />}
-          >
-            <Route index element={<Navigate to="Corporations" replace />} />
-            <Route path="Corporations" element={<Corporations />} />
-            <Route path="Regions" element={<Regions />} />
-            <Route path="Divisions" element={<Divisions />} />
-            <Route path="Zone" element={<Zones />} />
-            <Route path="Depots" element={<DepotsTab />} />
-            <Route path="Stations" element={<BusStationTab />} />
-            <Route path="WorkShop" element={<WorkshopsTab />} />
-            <Route path="ParkingYards" element={<ParkingYardsTab />} />
-          </Route>
+          {/* Dynamically generated routes from permissions tabList urls */}
+          {dynamicRoutes.map((r) => (
+            <Route key={r.key} path={r.path} element={r.element} />
+          ))}
 
-          <Route path="Organization/masters" element={<MasterDataLayout />}>
-            <Route index element={<Navigate to="Route" replace />} />
-            <Route path="Route" element={<RouteTab />} />
-            <Route path="Stop" element={<StopTab />} />
-            <Route path="Stages" element={<StagesTab />} />
-            <Route path="zones" element={<Zones />} />
-            <Route path="FarePolicies" element={<FarePoliciesTab />} />
-            <Route path="TicketTypes" element={<TicketTypesTab />} />
-            <Route path="PaymentModes" element={<PaymentModesTab />} />
-            <Route
-              path="VehicleCategories"
-              element={<VehicleCategoriesTab />}
-            />
-            <Route path="SeatLayouts" element={<SeatLayoutsTab />} />
-            <Route path="HolidayCalendar" element={<HolidayCalendar />} />
-            <Route
-              path="NotificationTemplates"
-              element={<NotificationTemplatesTab />}
-            />
-            <Route
-              path="ComplaintCategories"
-              element={<ComplaintCategoriesTab />}
-            />
-            <Route path="TaxConfiguration" element={<TaxConfigurationTab />} />
-          </Route>
 
-          {/* User Management Sub-Routes */}
-          <Route
-            path="Organization/userManagement"
-            element={<UserManagementLayout />}
-          >
-            <Route index element={<Navigate to="RoleMaster" replace />} />
-            <Route path="RoleMaster" element={<RoleMaster />} />
-            <Route path="UserMaster" element={<UserMaster />} />
-            <Route path="ScreenMaster" element={<ScreenMaster />} />
-            <Route path="Authorization" element={<Authorization />} />
-          </Route>
-
-          {/* Operations Sub-Routes */}
-          <Route path="Operations/fleet" element={<FleetLayout />}>
-            <Route index element={<Navigate to="VehicleRegister" replace />} />
-            <Route path="VehicleRegister" element={<FleetRegisterTab />} />
-            <Route path="VehicleService" element={<FleetServiceTab />} />
-          </Route>
-          <Route path="Operations/employees" element={<EmployeesLayout />}>
-            <Route index element={<Navigate to="Roster" replace />} />
-            <Route path="Roster" element={<RosterTab />} />
-            <Route path="Attendance" element={<AttendanceTab />} />
-          </Route>
-          <Route
-            path="Operations/tripSchedule/TripSchedule"
-            element={<TripScheduleTab />}
-          />
-          <Route
-            path="Operations/liveTracking/LiveTracking"
-            element={<LiveTrackingTab />}
-          />
-
-          {/* Commercial Routes */}
-          <Route
-            path="Commercial/fareManagement/FareManagement"
-            element={<FaresTab />}
-          />
-          <Route
-            path="Commercial/ticketing/Ticketing"
-            element={<TicketingTab />}
-          />
-          <Route
-            path="Commercial/reservations/Reservations"
-            element={<ReservationsTab />}
-          />
-          <Route path="Commercial/passes/Passes" element={<PassesTab />} />
-
-          {/* Systems Routes */}
-          <Route
-            path="Systems/etmDevices/EtmDevices"
-            element={<EtmDevicesTab />}
-          />
-          <Route
-            path="Systems/financeWallet/FinanceWallet"
-            element={<FinanceWalletTab />}
-          />
-
-          {/* Support Routes */}
-          <Route
-            path="Support/complaintsAlerts/ComplaintsAlerts"
-            element={<SupportTab />}
-          />
-          <Route path="Support/reports/Reports" element={<ReportsTab />} />
-          <Route
-            path="Support/analytics/Analytics"
-            element={<AnalyticsTab />}
-          />
-          <Route path="Support/usersRoles/UsersRoles" element={<AdminTab />} />
-          <Route path="Support/help/Help" element={<HelpTab />} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

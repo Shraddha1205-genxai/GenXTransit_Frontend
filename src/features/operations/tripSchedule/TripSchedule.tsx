@@ -25,6 +25,7 @@ import { depotService } from "../../../api/organization/organizationManagement/d
 import { routeService } from "../../../api/organization/master/routeService";
 import { fleetService } from "../../../api/operations/fleet/fleetService";
 import { driverConductorService } from "../../../api/operations/tripSchedule/driverConductorService";
+import { usePermissions } from "../../../hooks/usePermissions";
 
 export type { TripRecord, CreateTripDto, UpdateTripDto };
 
@@ -62,6 +63,7 @@ export function TripSchedule({
   onDelete,
 }: TripScheduleProps = {}) {
   const queryClient = useQueryClient();
+  const { canAdd, canEdit, canDelete } = usePermissions("Trip Schedule");
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 400);
@@ -340,22 +342,24 @@ export function TripSchedule({
       <Card
         title="Trips"
         action={
-          <button
-            onClick={handleOpenAdd}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-              fontSize: 12,
-              fontWeight: 600,
-              color: T.amberDeep,
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            <Plus size={13} /> Add trip
-          </button>
+          canAdd ? (
+            <button
+              onClick={handleOpenAdd}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                fontSize: 12,
+                fontWeight: 600,
+                color: T.amberDeep,
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              <Plus size={13} /> Add trip
+            </button>
+          ) : undefined
         }
       >
         <TableToolbar
@@ -529,32 +533,36 @@ export function TripSchedule({
                           gap: 8,
                         }}
                       >
-                        <button
-                          onClick={() => handleOpenEdit(t)}
-                          title="Edit trip"
-                          style={{
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            padding: 2,
-                            display: "flex",
-                          }}
-                        >
-                          <Pencil size={14} color={T.textSoft} />
-                        </button>
-                        <button
-                          onClick={() => setToDelete(t)}
-                          title="Delete trip"
-                          style={{
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            padding: 2,
-                            display: "flex",
-                          }}
-                        >
-                          <Trash2 size={14} color={T.red} />
-                        </button>
+                        {canEdit && (
+                          <button
+                            onClick={() => handleOpenEdit(t)}
+                            title="Edit trip"
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: 2,
+                              display: "flex",
+                            }}
+                          >
+                            <Pencil size={14} color={T.textSoft} />
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button
+                            onClick={() => setToDelete(t)}
+                            title="Delete trip"
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: 2,
+                              display: "flex",
+                            }}
+                          >
+                            <Trash2 size={14} color={T.red} />
+                          </button>
+                        )}
                       </div>
                     </Td>
                   </tr>
