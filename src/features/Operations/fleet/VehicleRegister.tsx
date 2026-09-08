@@ -22,6 +22,7 @@ import {
 } from "../../../api/operations/fleet/fleetService";
 import { vehicleCategoryService } from "../../../api/organization/master/vehicleCategoryService";
 import { depotService } from "../../../api/organization/organizationManagement/depotService";
+import { usePermissions } from "../../../hooks/usePermissions";
 
 export const DOC_TYPE_OPTIONS = [
   "Registration Certificate (RC)",
@@ -93,6 +94,7 @@ export function VehicleRegister({
     mode: "add" | "edit";
     record?: FleetVehicleRecord;
   } | null>(null);
+  const { canAdd, canEdit, canDelete } = usePermissions("Vehicle Register");
   const [toDelete, setToDelete] = useState<FleetVehicleRecord | null>(null);
   const [formData, setFormData] = useState<Partial<FleetVehicleRecord>>({
     docExpiry: [],
@@ -343,22 +345,24 @@ export function VehicleRegister({
       <Card
         title="Vehicle Register"
         action={
-          <button
-            onClick={handleOpenAdd}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-              fontSize: 12,
-              fontWeight: 600,
-              color: T.amberDeep,
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            <Plus size={13} /> Add vehicle
-          </button>
+          canAdd ? (
+            <button
+              onClick={handleOpenAdd}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                fontSize: 12,
+                fontWeight: 600,
+                color: T.amberDeep,
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              <Plus size={13} /> Add vehicle
+            </button>
+          ) : undefined
         }
       >
         <TableToolbar
@@ -501,32 +505,36 @@ export function VehicleRegister({
                           justifyContent: "flex-end",
                         }}
                       >
-                        <button
-                          onClick={() => handleOpenEdit(item)}
-                          title="Edit vehicle"
-                          style={{
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            padding: 2,
-                            display: "flex",
-                          }}
-                        >
-                          <Pencil size={14} color={T.textSoft} />
-                        </button>
-                        <button
-                          onClick={() => setToDelete(item)}
-                          title="Delete vehicle"
-                          style={{
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            padding: 2,
-                            display: "flex",
-                          }}
-                        >
-                          <Trash2 size={14} color={T.red} />
-                        </button>
+                        {canEdit && (
+                          <button
+                            onClick={() => handleOpenEdit(item)}
+                            title="Edit vehicle"
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: 2,
+                              display: "flex",
+                            }}
+                          >
+                            <Pencil size={14} color={T.textSoft} />
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button
+                            onClick={() => setToDelete(item)}
+                            title="Delete vehicle"
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: 2,
+                              display: "flex",
+                            }}
+                          >
+                            <Trash2 size={14} color={T.red} />
+                          </button>
+                        )}
                       </div>
                     </Td>
                   </tr>

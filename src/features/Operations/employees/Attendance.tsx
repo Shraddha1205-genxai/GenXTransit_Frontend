@@ -1,6 +1,7 @@
 import React from "react";
 import { ResponsiveContainer, BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts";
 import { T } from "../../../constants/theme";
+import { usePermissions } from "../../../hooks/usePermissions";
 import { Card } from "../../../components/common";
 
 export interface AttendanceSummaryItem {
@@ -13,6 +14,7 @@ interface AttendanceProps {
 }
 
 export function Attendance({ data }: AttendanceProps) {
+  const { canAdd, canEdit, canDelete } = usePermissions("Attendance");
   return (
     <Card title="Attendance — last 7 days (network-wide)">
       <div style={{ height: 220 }}>

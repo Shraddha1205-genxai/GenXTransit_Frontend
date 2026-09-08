@@ -16,6 +16,7 @@ import {
 import { divisionService } from "../../../api/organization/organizationManagement/divisionService";
 import { regionService } from "../../../api/organization/organizationManagement/regionService";
 import { useDebounce } from "../../../hooks/useDebounce";
+import { usePermissions } from "../../../hooks/usePermissions";
 
 export interface Division {
   divisionId: string;
@@ -41,6 +42,7 @@ export interface DivisionPayload {
 
 export function Divisions() {
   const queryClient = useQueryClient();
+  const { canAdd, canEdit, canDelete } = usePermissions("Divisions");
 
   const [modal, setModal] = useState<{
     mode: "add" | "edit";
@@ -167,22 +169,24 @@ export function Divisions() {
       <Card
         title="Divisions"
         action={
-          <button
-            onClick={handleOpenAdd}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-              fontSize: 12,
-              fontWeight: 600,
-              color: T.amberDeep,
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            <Plus size={13} /> Add division
-          </button>
+          canAdd ? (
+            <button
+              onClick={handleOpenAdd}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                fontSize: 12,
+                fontWeight: 600,
+                color: T.amberDeep,
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              <Plus size={13} /> Add division
+            </button>
+          ) : undefined
         }
       >
         <TableToolbar
@@ -265,32 +269,36 @@ export function Divisions() {
                             justifyContent: "flex-end",
                           }}
                         >
-                          <button
-                            onClick={() => handleOpenEdit(d)}
-                            title="Edit"
-                            style={{
-                              background: "none",
-                              border: "none",
-                              cursor: "pointer",
-                              padding: 2,
-                              display: "flex",
-                            }}
-                          >
-                            <Pencil size={14} color={T.textSoft} />
-                          </button>
-                          <button
-                            onClick={() => setToDelete(d)}
-                            title="Delete"
-                            style={{
-                              background: "none",
-                              border: "none",
-                              cursor: "pointer",
-                              padding: 2,
-                              display: "flex",
-                            }}
-                          >
-                            <Trash2 size={14} color={T.red} />
-                          </button>
+                          {canEdit && (
+                            <button
+                              onClick={() => handleOpenEdit(d)}
+                              title="Edit"
+                              style={{
+                                background: "none",
+                                border: "none",
+                                cursor: "pointer",
+                                padding: 2,
+                                display: "flex",
+                              }}
+                            >
+                              <Pencil size={14} color={T.textSoft} />
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button
+                              onClick={() => setToDelete(d)}
+                              title="Delete"
+                              style={{
+                                background: "none",
+                                border: "none",
+                                cursor: "pointer",
+                                padding: 2,
+                                display: "flex",
+                              }}
+                            >
+                              <Trash2 size={14} color={T.red} />
+                            </button>
+                          )}
                         </div>
                       </Td>
                     )}

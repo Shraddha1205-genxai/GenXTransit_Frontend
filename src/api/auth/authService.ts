@@ -61,31 +61,38 @@ const SESSION_KEY = "genxtransit.auth.session";
 
 export const authService = {
   login: async (credentials: LoginRequest): Promise<AuthSession> => {
-    const response = await apiClient.post<AuthUser>("/auth/login", credentials);
-    const user = response.data;
+    const response = await apiClient.post<any>("/auth/login", credentials);
+    const resData = response.data;
+    const user = resData?.data || resData || {};
+    const permissions: Permission[] = Array.isArray(user.permissions)
+      ? user.permissions
+      : Array.isArray(resData?.permissions)
+      ? resData.permissions
+      : [];
+
     const session: AuthSession = {
-      userId: user.userId,
-      userName: user.userName,
-      email: user.email,
-      roleId: user.roleId,
-      roleName: user.roleName,
-      accessToken: user.accessToken,
-      refreshToken: user.refreshToken,
-      permissions: Array.isArray(user.permissions) ? user.permissions : [],
-      name: user.userName || user.email || credentials.userName,
-      role: user.roleName || `Role ${user.roleId}`,
+      userId: user.userId ?? resData?.userId ?? 0,
+      userName: user.userName || resData?.userName || credentials.userName,
+      email: user.email || resData?.email || "",
+      roleId: user.roleId ?? resData?.roleId ?? 0,
+      roleName: user.roleName || resData?.roleName || "",
+      accessToken: user.accessToken || resData?.accessToken || "",
+      refreshToken: user.refreshToken || resData?.refreshToken || "",
+      permissions,
+      name: user.userName || user.email || resData?.userName || credentials.userName,
+      role: user.roleName || resData?.roleName || `Role ${user.roleId || 0}`,
       depot: "All depots",
     };
 
     localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-    if (user.accessToken) localStorage.setItem("accessToken", user.accessToken);
-    if (user.refreshToken) localStorage.setItem("refreshToken", user.refreshToken);
-    if (user.userId !== undefined && user.userId !== null) localStorage.setItem("userId", String(user.userId));
-    if (user.userName) localStorage.setItem("userName", user.userName);
-    if (user.email) localStorage.setItem("email", user.email);
-    if (user.roleId !== undefined && user.roleId !== null) localStorage.setItem("roleId", String(user.roleId));
-    if (user.roleName) localStorage.setItem("roleName", user.roleName);
-    localStorage.setItem("permissions", JSON.stringify(Array.isArray(user.permissions) ? user.permissions : []));
+    if (session.accessToken) localStorage.setItem("accessToken", session.accessToken);
+    if (session.refreshToken) localStorage.setItem("refreshToken", session.refreshToken);
+    if (session.userId) localStorage.setItem("userId", String(session.userId));
+    if (session.userName) localStorage.setItem("userName", session.userName);
+    if (session.email) localStorage.setItem("email", session.email);
+    if (session.roleId) localStorage.setItem("roleId", String(session.roleId));
+    if (session.roleName) localStorage.setItem("roleName", session.roleName);
+    localStorage.setItem("permissions", JSON.stringify(permissions));
 
     return session;
   },

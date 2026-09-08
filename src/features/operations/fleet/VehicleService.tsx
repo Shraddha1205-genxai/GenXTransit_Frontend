@@ -13,6 +13,7 @@ import {
   Th,
 } from "../../../components/common";
 import { useDebounce } from "../../../hooks/useDebounce";
+import { usePermissions } from "../../../hooks/usePermissions";
 import {
   vehicleServiceService,
   type serviceRecord,
@@ -25,6 +26,7 @@ export type { serviceRecord, serviceRecordPayload };
 const serviceStatusOptions = ["Inprogress", "Cancelled", "Completed", "Pending"];
 
 export function VehicleService() {
+  const { canAdd, canEdit, canDelete } = usePermissions("VehicleService");
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
@@ -188,22 +190,24 @@ export function VehicleService() {
       <Card
         title="Vehicle Service Records"
         action={
-          <button
-            onClick={handleOpenAdd}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-              fontSize: 12,
-              fontWeight: 600,
-              color: T.amberDeep,
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            <Plus size={13} /> Add service record
-          </button>
+          canAdd ? (
+            <button
+              onClick={handleOpenAdd}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                fontSize: 12,
+                fontWeight: 600,
+                color: T.amberDeep,
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              <Plus size={13} /> Add service record
+            </button>
+          ) : undefined
         }
       >
         <TableToolbar
@@ -323,32 +327,36 @@ export function VehicleService() {
                         justifyContent: "flex-end",
                       }}
                     >
-                      <button
-                        onClick={() => handleOpenEdit(item)}
-                        title="Edit service record"
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          padding: 2,
-                          display: "flex",
-                        }}
-                      >
-                        <Pencil size={14} color={T.textSoft} />
-                      </button>
-                      <button
-                        onClick={() => setToDelete(item)}
-                        title="Delete service record"
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          padding: 2,
-                          display: "flex",
-                        }}
-                      >
-                        <Trash2 size={14} color={T.red} />
-                      </button>
+                      {canEdit && (
+                        <button
+                          onClick={() => handleOpenEdit(item)}
+                          title="Edit service record"
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: 2,
+                            display: "flex",
+                          }}
+                        >
+                          <Pencil size={14} color={T.textSoft} />
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button
+                          onClick={() => setToDelete(item)}
+                          title="Delete service record"
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: 2,
+                            display: "flex",
+                          }}
+                        >
+                          <Trash2 size={14} color={T.red} />
+                        </button>
+                      )}
                     </div>
                   </Td>
                 </tr>

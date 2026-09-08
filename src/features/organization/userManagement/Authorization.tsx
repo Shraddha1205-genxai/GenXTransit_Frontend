@@ -3,6 +3,7 @@ import { Save } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { T } from "../../../constants/theme";
+import { usePermissions } from "../../../hooks/usePermissions";
 import { Card, Table, TableToolbar, Td, Th } from "../../../components/common";
 import { apiClient } from "../../../api/apiClient";
 import {
@@ -65,6 +66,7 @@ function PermissionCheckbox({
 }
  
 export default function Authorization() {
+  const { canAdd, canEdit, canDelete } = usePermissions("Authorization");
   const queryClient = useQueryClient();
   const [roleId, setRoleId] = useState<string>("");
   const [search, setSearch] = useState("");
@@ -160,6 +162,18 @@ export default function Authorization() {
             item.tabId === targetRecord.tabId;
  
       if (isTarget) {
+        if (field === "canView" && item.canView) {
+          // Unchecking "View" automatically unchecks Add, Edit, Delete, and Is Default
+          return {
+            ...item,
+            canView: false,
+            canAdd: false,
+            canEdit: false,
+            canDelete: false,
+            isDefault: false,
+          };
+        }
+ 
         return {
           ...item,
           [field]: !item[field],
@@ -217,46 +231,48 @@ export default function Authorization() {
     <Card
       title="Authorization"
       action={
-        <button
-          className="stc-btn stc-btn-primary"
-          onClick={() => {
-            if (!selectedRoleId) {
-              toast.error("Please select a role before saving.");
-              return;
-            }
-            if (!mergedData.length) {
-              toast.error("No permissions to save.");
-              return;
-            }
-            const defaultScreens = mergedData.filter((item) => item.isDefault);
-            if (defaultScreens.length === 0) {
-              toast.error("Please mark exactly one tab as the default screen.");
-              return;
-            }
-            if (defaultScreens.length > 1) {
-              toast.error("Only one tab can be marked as the default screen.");
-              return;
-            }
-            const invalidRows = mergedData.filter(
-              (item) =>
-                !item.isDisableAction &&
-                !item.isDisableView &&
-                (item.canAdd || item.canEdit || item.canDelete) &&
-                !item.canView,
-            );
-            if (invalidRows.length > 0) {
-              toast.error(
-                `"View" permission must be enabled when Add/Edit/Delete is granted (${invalidRows[0].tabName || "a tab"}).`,
+        canAdd ? (
+          <button
+            className="stc-btn stc-btn-primary"
+            onClick={() => {
+              if (!selectedRoleId) {
+                toast.error("Please select a role before saving.");
+                return;
+              }
+              if (!mergedData.length) {
+                toast.error("No permissions to save.");
+                return;
+              }
+              const defaultScreens = mergedData.filter((item) => item.isDefault);
+              if (defaultScreens.length === 0) {
+                toast.error("Please mark exactly one tab as the default screen.");
+                return;
+              }
+              if (defaultScreens.length > 1) {
+                toast.error("Only one tab can be marked as the default screen.");
+                return;
+              }
+              const invalidRows = mergedData.filter(
+                (item) =>
+                  !item.isDisableAction &&
+                  !item.isDisableView &&
+                  (item.canAdd || item.canEdit || item.canDelete) &&
+                  !item.canView,
               );
-              return;
-            }
-            saveAllPermissions.mutate(mergedData);
-          }}
-          disabled={saveAllPermissions.isPending || !mergedData.length}
-        >
-          <Save size={14} />{" "}
-          {saved ? "Permissions saved" : "Save all permissions"}
-        </button>
+              if (invalidRows.length > 0) {
+                toast.error(
+                  `"View" permission must be enabled when Add/Edit/Delete is granted (${invalidRows[0].tabName || "a tab"}).`,
+                );
+                return;
+              }
+              saveAllPermissions.mutate(mergedData);
+            }}
+            disabled={saveAllPermissions.isPending || !mergedData.length}
+          >
+            <Save size={14} />{" "}
+            {saved ? "Permissions saved" : "Save all permissions"}
+          </button>
+        ) : undefined
       }
     >
       <TableToolbar

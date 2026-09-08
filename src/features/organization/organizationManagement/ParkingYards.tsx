@@ -9,6 +9,7 @@ import { regionService } from "../../../api/organization/organizationManagement/
 import { divisionService } from "../../../api/organization/organizationManagement/divisionService";
 import { depotService } from "../../../api/organization/organizationManagement/depotService";
 import { useDebounce } from "../../../hooks/useDebounce";
+import { usePermissions } from "../../../hooks/usePermissions";
 
 export interface ParkingYard {
   yardId: string;
@@ -48,6 +49,7 @@ const initialDefaultParkingYards: ParkingYard[] = [
 
 export function ParkingYards({}: ParkingYardPageProps) {
   const queryClient = useQueryClient();
+  const { canAdd, canEdit, canDelete } = usePermissions("ParkingYards");
 
   // Search & Filter States
   const [search, setSearch] = useState("");
@@ -231,14 +233,14 @@ export function ParkingYards({}: ParkingYardPageProps) {
       <Card
         title="Parking Yards"
         action={
-          filterStatus !== "Inactive" && (
+          canAdd ? (
             <button
               onClick={handleOpenAdd}
               style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: T.amberDeep, background: "none", border: "none", cursor: "pointer" }}
             >
               <Plus size={13} /> Add parking yard
             </button>
-          )
+          ) : undefined
         }
       >
         <TableToolbar
@@ -333,12 +335,16 @@ export function ParkingYards({}: ParkingYardPageProps) {
                     {filterStatus !== "Inactive" && (
                       <Td align="right">
                         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                          <button onClick={() => handleOpenEdit(p)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                            <Pencil size={14} color={T.textSoft} />
-                          </button>
-                          <button onClick={() => setToDelete(p)} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                            <Trash2 size={14} color={T.red} />
-                          </button>
+                          {canEdit && (
+                            <button onClick={() => handleOpenEdit(p)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                              <Pencil size={14} color={T.textSoft} />
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button onClick={() => setToDelete(p)} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                              <Trash2 size={14} color={T.red} />
+                            </button>
+                          )}
                         </div>
                       </Td>
                     )}

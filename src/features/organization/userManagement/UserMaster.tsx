@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { T } from "../../../constants/theme";
+import { usePermissions } from "../../../hooks/usePermissions";
 import {
   Card,
   Modal,
@@ -65,6 +66,7 @@ interface UserRow {
 }
 
 export default function UserMaster() {
+  const { canAdd, canEdit, canDelete } = usePermissions("UserMaster");
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("Active");
@@ -315,22 +317,24 @@ export default function UserMaster() {
     <Card
       title="Users"
       action={
-        <button
-          onClick={handleOpenAdd}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 5,
-            fontSize: 12,
-            fontWeight: 600,
-            color: T.amberDeep,
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-          }}
-        >
-          <Plus size={13} /> Add user
-        </button>
+        canAdd ? (
+          <button
+            onClick={handleOpenAdd}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              fontSize: 12,
+              fontWeight: 600,
+              color: T.amberDeep,
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            <Plus size={13} /> Add user
+          </button>
+        ) : undefined
       }
     >
       <TableToolbar
@@ -475,36 +479,40 @@ export default function UserMaster() {
                         justifyContent: "flex-end",
                       }}
                     >
-                      <button
-                        onClick={() => user.isActive && handleOpenEdit(user)}
-                        title="Edit"
-                        disabled={!user.isActive}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: user.isActive ? "pointer" : "not-allowed",
-                          padding: 2,
-                          display: "flex",
-                          opacity: user.isActive ? 1 : 0.35,
-                        }}
-                      >
-                        <Pencil size={14} color={T.textSoft} />
-                      </button>
-                      <button
-                        onClick={() => user.isActive && setToDelete(user)}
-                        title="Delete"
-                        disabled={!user.isActive}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: user.isActive ? "pointer" : "not-allowed",
-                          padding: 2,
-                          display: "flex",
-                          opacity: user.isActive ? 1 : 0.35,
-                        }}
-                      >
-                        <Trash2 size={14} color={T.red} />
-                      </button>
+                      {canEdit && (
+                        <button
+                          onClick={() => user.isActive && handleOpenEdit(user)}
+                          title="Edit"
+                          disabled={!user.isActive}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: user.isActive ? "pointer" : "not-allowed",
+                            padding: 2,
+                            display: "flex",
+                            opacity: user.isActive ? 1 : 0.35,
+                          }}
+                        >
+                          <Pencil size={14} color={T.textSoft} />
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button
+                          onClick={() => user.isActive && setToDelete(user)}
+                          title="Delete"
+                          disabled={!user.isActive}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: user.isActive ? "pointer" : "not-allowed",
+                            padding: 2,
+                            display: "flex",
+                            opacity: user.isActive ? 1 : 0.35,
+                          }}
+                        >
+                          <Trash2 size={14} color={T.red} />
+                        </button>
+                      )}
                     </div>
                   </Td>
                 )}
