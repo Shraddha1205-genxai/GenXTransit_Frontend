@@ -48,7 +48,7 @@ export const initialRoles: RoleRecord[] = [
   {
     roleId: 4,
     roleName: "Route Planner",
-    description: "Routes and schedule",
+    description: "Trip Schedule",
     isActive: true,
   },
 ];

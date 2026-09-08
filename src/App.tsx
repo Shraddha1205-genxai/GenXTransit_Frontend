@@ -127,12 +127,15 @@ const TaxConfiguration = lazy(
 const VehicleRegister = lazy(
   () => import("./features/operations/fleet/VehicleRegister"),
 );
+const VehicleService = lazy(
+  () => import("./features/operations/fleet/VehicleService"),
+);
 const Roster = lazy(() => import("./features/operations/employees/Roster"));
 const Attendance = lazy(
   () => import("./features/operations/employees/Attendance"),
 );
-const RoutesAndSchedule = lazy(
-  () => import("./features/operations/routesAndSchedule/RoutesAndSchedule"),
+const TripSchedule = lazy(
+  () => import("./features/operations/tripSchedule/TripSchedule"),
 );
 const LiveTracking = lazy(
   () => import("./features/operations/liveTracking/LiveTracking"),
@@ -1944,7 +1947,38 @@ function TaxConfigurationTab() {
   return <TaxConfiguration />;
 }
 
-function FleetTab() {
+function FleetLayout() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const tabMap: Record<string, string> = {
+    "/Operations/fleet/VehicleRegister": "Vehicle Register",
+    "/Operations/fleet/VehicleService": "Vehicle Service",
+  };
+
+  const activeTab = tabMap[location.pathname] || "Vehicle Register";
+  const routeMap: Record<string, string> = {
+    "Vehicle Register": "/Operations/fleet/VehicleRegister",
+    "Vehicle Service": "/Operations/fleet/VehicleService",
+  };
+
+  return (
+    <div>
+      <SectionHeader
+        eyebrow="TBL_MAST_VEHICLE · TBL_TRANS_VEHICLE_DOCUMENT · TBL_TRANS_MAINTENANCE_RECORD"
+        title="Fleet management"
+      />
+      <SubTabs
+        tabs={["Vehicle Register", "Vehicle Service"]}
+        active={activeTab}
+        onChange={(tab) => navigate(routeMap[tab])}
+      />
+      <Outlet />
+    </div>
+  );
+}
+
+function FleetRegisterTab() {
   const [vehiclesData, vehiclesCrud] = useCrud("vehicles", "reg");
   const [depotsData] = useCrud("depots", "code");
   const [vehicleCategoriesData] = useCrud("vehicleCategories", "categoryId");
@@ -1956,10 +1990,6 @@ function FleetTab() {
   ).length;
   return (
     <div>
-      <SectionHeader
-        eyebrow="TBL_MAST_VEHICLE · TBL_TRANS_VEHICLE_DOCUMENT · TBL_TRANS_MAINTENANCE_RECORD"
-        title="Fleet management"
-      />
       <div
         style={{
           display: "grid",
@@ -1988,16 +2018,13 @@ function FleetTab() {
           tone="amber"
         />
       </div>
-      <VehicleRegister
-        data={vehiclesData}
-        depotOptions={depotsData}
-        categoryOptions={vehicleCategoriesData}
-        onAdd={vehiclesCrud.add}
-        onUpdate={vehiclesCrud.update}
-        onDelete={vehiclesCrud.remove}
-      />
+      <VehicleRegister />
     </div>
   );
+}
+
+function FleetServiceTab() {
+  return <VehicleService />;
 }
 
 function EmployeesLayout() {
@@ -2075,27 +2102,8 @@ function AttendanceTab() {
   return <Attendance data={attendanceSummary} />;
 }
 
-function RoutesScheduleTab() {
-  const [routesData] = useCrud("routes", "code");
-  const [employeeData] = useCrud("employees", "empId");
-  const [vehiclesData] = useCrud("vehicles", "reg");
-  const [tripsData, tripsCrud] = useCrud("trips", "id");
-  return (
-    <RoutesAndSchedule
-      routes={routesData}
-      fleetOptions={vehiclesData}
-      driverOptions={employeeData.filter(
-        (x) => x.role.toLowerCase() === "driver",
-      )}
-      conductorOptions={employeeData.filter(
-        (x) => x.role.toLowerCase() === "conductor",
-      )}
-      trips={tripsData}
-      onAdd={tripsCrud.add}
-      onUpdate={tripsCrud.update}
-      onDelete={tripsCrud.remove}
-    />
-  );
+function TripScheduleTab() {
+  return <TripSchedule />;
 }
 function LiveTrackingTab() {
   return <LiveTracking liveBuses={liveBuses} />;
@@ -2218,9 +2226,9 @@ const NAV = [
       },
       {
         id: "routes",
-        label: "Routes & Schedule",
+        label: "Trip Schedule",
         icon: Milestone,
-        path: "/Operations/routesAndSchedule/RoutesAndSchedule",
+        path: "/Operations/tripSchedule/TripSchedule",
       },
       {
         id: "tracking",
@@ -2477,18 +2485,19 @@ function AuthGate() {
           </Route>
 
           {/* Operations Sub-Routes */}
-          <Route
-            path="Operations/fleet/VehicleRegister"
-            element={<FleetTab />}
-          />
+          <Route path="Operations/fleet" element={<FleetLayout />}>
+            <Route index element={<Navigate to="VehicleRegister" replace />} />
+            <Route path="VehicleRegister" element={<FleetRegisterTab />} />
+            <Route path="VehicleService" element={<FleetServiceTab />} />
+          </Route>
           <Route path="Operations/employees" element={<EmployeesLayout />}>
             <Route index element={<Navigate to="Roster" replace />} />
             <Route path="Roster" element={<RosterTab />} />
             <Route path="Attendance" element={<AttendanceTab />} />
           </Route>
           <Route
-            path="Operations/routesAndSchedule/RoutesAndSchedule"
-            element={<RoutesScheduleTab />}
+            path="Operations/tripSchedule/TripSchedule"
+            element={<TripScheduleTab />}
           />
           <Route
             path="Operations/liveTracking/LiveTracking"
