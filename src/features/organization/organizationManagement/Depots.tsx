@@ -194,41 +194,67 @@ export function Depots({
   const [toDelete, setToDelete] = useState<Depot | null>(null);
   const [formData, setFormData] = useState<Partial<Depot>>({});
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   const handleOpenAdd = () => {
     setFormData({ depotCode: "", depotName: "", corpId: "", service: "", zoneId: "", regionId: "", divisionId: "" });
+    setFormErrors({});
     setModal({ mode: "add" });
   };
 
   const handleOpenEdit = (record: DepotPayload) => {
     setFormData(record);
+    setFormErrors({});
     setModal({ mode: "edit", record });
   };
 
   const handleSave = () => {
-    if (!formData.depotName || !formData.corpId || !formData.regionId || !formData.divisionId || !formData.zoneId || !formData.service) {
+    const errors: Record<string, string> = {};
+    if (!formData.depotName || !formData.depotName.trim()) {
+      errors.depotName = "Depot Name is required.";
+    }
+    if (!formData.corpId) {
+      errors.corpId = "Please select a Corporation.";
+    }
+    if (!formData.service) {
+      errors.service = "Please select a Service.";
+    }
+    if (!formData.regionId) {
+      errors.regionId = "Please select a Region.";
+    }
+    if (!formData.divisionId) {
+      errors.divisionId = "Please select a Division.";
+    }
+    if (!formData.zoneId) {
+      errors.zoneId = "Please select a Zone.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
       toast.error("Please fill required fields.");
       return;
     }
+    setFormErrors({});
 
     if (modal?.mode === "add") {
       addMutation.mutate({
-        depotName: formData.depotName.trim(),
-        corpId: formData.corpId,
-        service: formData.service,
-        regionId: formData.regionId,
-        divisionId: formData.divisionId,
-        zoneId: formData.zoneId,
+        depotName: formData.depotName!.trim(),
+        corpId: formData.corpId!,
+        service: formData.service!,
+        regionId: formData.regionId!,
+        divisionId: formData.divisionId!,
+        zoneId: formData.zoneId!,
         isActive: true,
       });
     } else if (modal?.mode === "edit" && modal.record) {
       updateMutation.mutate({
         depotId: modal.record.depotId,
-        depotName: formData.depotName.trim(),
-        corpId: formData.corpId,
-        service: formData.service,
-        regionId: formData.regionId,
-        divisionId: formData.divisionId,
-        zoneId: formData.zoneId,
+        depotName: formData.depotName!.trim(),
+        corpId: formData.corpId!,
+        service: formData.service!,
+        regionId: formData.regionId!,
+        divisionId: formData.divisionId!,
+        zoneId: formData.zoneId!,
         isActive: formData.isActive !== undefined ? formData.isActive : true,
       });
     }
@@ -427,22 +453,40 @@ export function Depots({
               </div>
             )}
             <div className="stc-field">
-              <label className="stc-field-label">Name</label>
-              <input value={formData.depotName || ""} onChange={(e) => setFormData((s) => ({ ...s, depotName: e.target.value }))} />
+              <label className="stc-field-label">
+                Name <span style={{ color: T.red }}>*</span>
+              </label>
+              <input
+                value={formData.depotName || ""}
+                onChange={(e) => {
+                  setFormData((s) => ({ ...s, depotName: e.target.value }));
+                  if (formErrors.depotName) setFormErrors((prev) => ({ ...prev, depotName: "" }));
+                }}
+                style={{ borderColor: formErrors.depotName ? T.red : undefined }}
+              />
+              {formErrors.depotName && (
+                <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                  {formErrors.depotName}
+                </span>
+              )}
             </div>
             <div className="stc-field">
-              <label className="stc-field-label">Corporation</label>
+              <label className="stc-field-label">
+                Corporation <span style={{ color: T.red }}>*</span>
+              </label>
               <select
                 value={formData.corpId || ""}
-                onChange={(e) =>
+                onChange={(e) => {
                   setFormData((s) => ({
                     ...s,
                     corpId: e.target.value,
                     regionId: "",
                     divisionId: "",
                     zoneId: "",
-                  }))
-                }
+                  }));
+                  if (formErrors.corpId) setFormErrors((prev) => ({ ...prev, corpId: "" }));
+                }}
+                style={{ borderColor: formErrors.corpId ? T.red : undefined }}
               >
                 <option value="">Select Corporation</option>
                 {corporationOptions.map((c) => (
@@ -451,12 +495,23 @@ export function Depots({
                   </option>
                 ))}
               </select>
+              {formErrors.corpId && (
+                <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                  {formErrors.corpId}
+                </span>
+              )}
             </div>
             <div className="stc-field">
-              <label className="stc-field-label">Service</label>
+              <label className="stc-field-label">
+                Service <span style={{ color: T.red }}>*</span>
+              </label>
               <select
                 value={formData.service || ""}
-                onChange={(e) => setFormData((s) => ({ ...s, service: e.target.value }))}
+                onChange={(e) => {
+                  setFormData((s) => ({ ...s, service: e.target.value }));
+                  if (formErrors.service) setFormErrors((prev) => ({ ...prev, service: "" }));
+                }}
+                style={{ borderColor: formErrors.service ? T.red : undefined }}
               >
                 <option value="">Select Service</option>
                 {["ST", "Local"].map((svc) => (
@@ -465,20 +520,29 @@ export function Depots({
                   </option>
                 ))}
               </select>
+              {formErrors.service && (
+                <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                  {formErrors.service}
+                </span>
+              )}
             </div>
             <div className="stc-field">
-              <label className="stc-field-label">Region</label>
+              <label className="stc-field-label">
+                Region <span style={{ color: T.red }}>*</span>
+              </label>
               <select
                 value={formData.regionId || ""}
                 disabled={!formData.corpId}
-                onChange={(e) =>
+                onChange={(e) => {
                   setFormData((s) => ({
                     ...s,
                     regionId: e.target.value,
                     divisionId: "",
                     zoneId: "",
-                  }))
-                }
+                  }));
+                  if (formErrors.regionId) setFormErrors((prev) => ({ ...prev, regionId: "" }));
+                }}
+                style={{ borderColor: formErrors.regionId ? T.red : undefined }}
               >
                 <option value="">Select Region</option>
                 {regionOptions.map((c) => (
@@ -487,19 +551,28 @@ export function Depots({
                   </option>
                 ))}
               </select>
+              {formErrors.regionId && (
+                <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                  {formErrors.regionId}
+                </span>
+              )}
             </div>
             <div className="stc-field">
-              <label className="stc-field-label">Divisions</label>
+              <label className="stc-field-label">
+                Divisions <span style={{ color: T.red }}>*</span>
+              </label>
               <select
                 value={formData.divisionId || ""}
                 disabled={!formData.regionId}
-                onChange={(e) =>
+                onChange={(e) => {
                   setFormData((s) => ({
                     ...s,
                     divisionId: e.target.value,
                     zoneId: "",
-                  }))
-                }
+                  }));
+                  if (formErrors.divisionId) setFormErrors((prev) => ({ ...prev, divisionId: "" }));
+                }}
+                style={{ borderColor: formErrors.divisionId ? T.red : undefined }}
               >
                 <option value="">Select Division</option>
                 {divisionOptions
@@ -510,13 +583,24 @@ export function Depots({
                     </option>
                   ))}
               </select>
+              {formErrors.divisionId && (
+                <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                  {formErrors.divisionId}
+                </span>
+              )}
             </div>
             <div className="stc-field">
-              <label className="stc-field-label">Zone</label>
+              <label className="stc-field-label">
+                Zone <span style={{ color: T.red }}>*</span>
+              </label>
               <select
                 value={formData.zoneId || ""}
                 disabled={!formData.regionId}
-                onChange={(e) => setFormData((s) => ({ ...s, zoneId: e.target.value }))}
+                onChange={(e) => {
+                  setFormData((s) => ({ ...s, zoneId: e.target.value }));
+                  if (formErrors.zoneId) setFormErrors((prev) => ({ ...prev, zoneId: "" }));
+                }}
+                style={{ borderColor: formErrors.zoneId ? T.red : undefined }}
               >
                 <option value="">Select Zone</option>
                 {zoneOptions
@@ -527,6 +611,11 @@ export function Depots({
                     </option>
                   ))}
               </select>
+              {formErrors.zoneId && (
+                <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                  {formErrors.zoneId}
+                </span>
+              )}
             </div>
             {/* {modal.mode === "edit" && (
               <div className="stc-field">

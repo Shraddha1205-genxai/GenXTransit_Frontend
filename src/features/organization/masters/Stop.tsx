@@ -95,39 +95,62 @@ export function Stop() {
     },
   });
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   const handleOpenAdd = () => {
     setFormData({
       stopCode: "",
       stopName: "",
       routeId: "",
-      stopOrder: 0,
+      stopOrder: "" as any,
       isActive: true,
     });
+    setFormErrors({});
     setModal({ mode: "add" });
   };
 
   const handleOpenEdit = (record: Stop) => {
     setFormData(record);
+    setFormErrors({});
     setModal({ mode: "edit", record });
   };
 
   const handleSave = () => {
-    if (!formData.stopName || !formData.routeId) {
+    const errors: Record<string, string> = {};
+    if (!(formData.stopName || "").trim()) {
+      errors.stopName = "Name is required.";
+    }
+    if (!formData.routeId) {
+      errors.routeId = "Please select a Route.";
+    }
+    if (
+      formData.stopOrder === undefined ||
+      formData.stopOrder === null ||
+      formData.stopOrder === ("" as any) ||
+      isNaN(Number(formData.stopOrder)) ||
+      Number(formData.stopOrder) <= 0
+    ) {
+      errors.stopOrder = "Stop Order is required and must be greater than 0.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
       toast.error("Please fill required fields.");
       return;
     }
+    setFormErrors({});
 
     if (modal?.mode === "add") {
       addMutation.mutate({
         stopName: formData.stopName || "",
-        routeId: formData.routeId,
+        routeId: formData.routeId!,
         stopOrder: Number(formData.stopOrder) || 0,
       });
     } else if (modal?.mode === "edit" && modal.record) {
       updateMutation.mutate({
         stopId: formData.stopId || "",
         stopName: formData.stopName || "",
-        routeId: formData.routeId,
+        routeId: formData.routeId!,
         stopOrder: Number(formData.stopOrder) || 0,
         isActive: formData.isActive !== undefined ? formData.isActive : true,
       });
@@ -265,17 +288,30 @@ export function Stop() {
                 </div>
               )}
               <div className="stc-field">
-                <label className="stc-field-label">Name</label>
+                <label className="stc-field-label">
+                  Name <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
+                  style={{ borderColor: formErrors.stopName ? T.red : undefined }}
                   value={formData.stopName || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, stopName: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, stopName: e.target.value }));
+                    if (formErrors.stopName) setFormErrors((prev) => ({ ...prev, stopName: "" }));
+                  }}
                 />
+                {formErrors.stopName && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.stopName}</span>}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Route</label>
+                <label className="stc-field-label">
+                  Route <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
+                  style={{ borderColor: formErrors.routeId ? T.red : undefined }}
                   value={formData.routeId || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, routeId: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, routeId: e.target.value }));
+                    if (formErrors.routeId) setFormErrors((prev) => ({ ...prev, routeId: "" }));
+                  }}
                 >
                   <option value="">Select Route</option>
                   {routeOptions.map((opt) => (
@@ -284,14 +320,22 @@ export function Stop() {
                     </option>
                   ))}
                 </select>
+                {formErrors.routeId && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.routeId}</span>}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Stop Order</label>
+                <label className="stc-field-label">
+                  Stop Order <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
                   type="number"
-                  value={formData.stopOrder ?? 0}
-                  onChange={(e) => setFormData((s) => ({ ...s, stopOrder: Number(e.target.value) }))}
+                  style={{ borderColor: formErrors.stopOrder ? T.red : undefined }}
+                  value={formData.stopOrder ?? ""}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, stopOrder: e.target.value === "" ? ("" as any) : Number(e.target.value) }));
+                    if (formErrors.stopOrder) setFormErrors((prev) => ({ ...prev, stopOrder: "" }));
+                  }}
                 />
+                {formErrors.stopOrder && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.stopOrder}</span>}
               </div>
             </div>
           </Modal>

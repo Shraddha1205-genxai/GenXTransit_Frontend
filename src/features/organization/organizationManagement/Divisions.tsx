@@ -101,6 +101,8 @@ export function Divisions() {
 
   const filteredData = data;
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   const handleOpenAdd = () => {
     setFormData({
       divisionId: "",
@@ -109,37 +111,45 @@ export function Divisions() {
       regionId: "",
       isActive: true,
     });
+    setFormErrors({});
     setModal({ mode: "add" });
   };
 
   const handleOpenEdit = (record: DivisionPayload) => {
     setFormData(record);
+    setFormErrors({});
     setModal({ mode: "edit", record });
   };
 
   const handleSave = () => {
-    if (!formData.divisionName) {
-      toast.error("Please enter a division name.");
-      return;
+    const errors: Record<string, string> = {};
+    if (!formData.divisionName || !formData.divisionName.trim()) {
+      errors.divisionName = "Division Name is required.";
     }
     if (!formData.regionId) {
-      toast.error("Please select a Region.");
+      errors.regionId = "Please select a Region.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      toast.error("Please fill required fields.");
       return;
     }
+    setFormErrors({});
 
     const rId = formData.regionId;
 
     if (modal?.mode === "add") {
       addMutation.mutate({
-        divisionName: formData.divisionName.trim(),
-        regionId: rId,
+        divisionName: formData.divisionName!.trim(),
+        regionId: rId!,
         isActive: true,
       });
     } else if (modal?.mode === "edit" && modal.record) {
       updateMutation.mutate({
         divisionId: modal.record.divisionId,
-        divisionName: formData.divisionName.trim(),
-        regionId: rId,
+        divisionName: formData.divisionName!.trim(),
+        regionId: rId!,
         isActive: formData.isActive ?? true,
       });
     }
@@ -336,22 +346,35 @@ export function Divisions() {
               )}
 
               <div className="stc-field" style={{ gridColumn: "1 / -1" }}>
-                <label className="stc-field-label">Division Name</label>
+                <label className="stc-field-label">
+                  Division Name <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
                   value={formData.divisionName || ""}
-                  onChange={(e) =>
-                    setFormData((s) => ({ ...s, divisionName: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, divisionName: e.target.value }));
+                    if (formErrors.divisionName) setFormErrors((prev) => ({ ...prev, divisionName: "" }));
+                  }}
+                  style={{ borderColor: formErrors.divisionName ? T.red : undefined }}
                 />
+                {formErrors.divisionName && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.divisionName}
+                  </span>
+                )}
               </div>
 
               <div className="stc-field">
-                <label className="stc-field-label">Region</label>
+                <label className="stc-field-label">
+                  Region <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
                   value={formData.regionId || ""}
-                  onChange={(e) =>
-                    setFormData((s) => ({ ...s, regionId: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, regionId: e.target.value }));
+                    if (formErrors.regionId) setFormErrors((prev) => ({ ...prev, regionId: "" }));
+                  }}
+                  style={{ borderColor: formErrors.regionId ? T.red : undefined }}
                 >
                   <option value="">Select Region</option>
                   {regionOptions.length > 0 &&
@@ -361,6 +384,11 @@ export function Divisions() {
                       </option>
                     ))}
                 </select>
+                {formErrors.regionId && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.regionId}
+                  </span>
+                )}
               </div>
 
               {/* {modal.mode === "edit" && (

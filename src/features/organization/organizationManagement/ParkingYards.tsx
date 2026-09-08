@@ -130,6 +130,8 @@ export function ParkingYards({}: ParkingYardPageProps) {
   const [toDelete, setToDelete] = useState<ParkingYard | null>(null);
   const [formData, setFormData] = useState<Partial<ParkingYard>>({});
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   const handleOpenAdd = () => {
     setFormData({
       yardCode: "",
@@ -137,27 +139,66 @@ export function ParkingYards({}: ParkingYardPageProps) {
       regionId: "",
       divisionId: "",
       depotId: "",
-      capacity: 0,
+      capacity: "" as any,
       occupied: 0,
       isActive: true,
     });
+    setFormErrors({});
     setModal({ mode: "add" });
   };
 
   const handleOpenEdit = (record: ParkingYard) => {
     setFormData(record);
+    setFormErrors({});
     setModal({ mode: "edit", record });
   };
 
   const handleSave = () => {
-    if (!formData.yardName || !formData.regionId || !formData.divisionId || !formData.depotId) return;
+    const errors: Record<string, string> = {};
+    if (!formData.yardName || !formData.yardName.trim()) {
+      errors.yardName = "Parking Yard Name is required.";
+    }
+    if (!formData.regionId) {
+      errors.regionId = "Please select a Region.";
+    }
+    if (!formData.divisionId) {
+      errors.divisionId = "Please select a Division.";
+    }
+    if (!formData.depotId) {
+      errors.depotId = "Please select a Depot.";
+    }
+
+    const cap = Number(formData.capacity);
+    if (
+      formData.capacity === undefined ||
+      formData.capacity === null ||
+      formData.capacity === ("" as any) ||
+      isNaN(cap) ||
+      cap <= 0
+    ) {
+      errors.capacity = "Capacity is required and must be greater than 0.";
+    }
+
+    const occ = Number(formData.occupied ?? 0);
+    if (isNaN(occ) || occ < 0) {
+      errors.occupied = "Occupied count cannot be negative.";
+    } else if (!isNaN(cap) && cap > 0 && occ >= cap) {
+      errors.occupied = "Occupied count must be less than Capacity.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      toast.error("Please fill required fields correctly.");
+      return;
+    }
+    setFormErrors({});
 
     if (modal?.mode === "add") {
       addMutation.mutate({
-        yardName: formData.yardName.trim(),
-        regionId: formData.regionId,
-        divisionId: formData.divisionId,
-        depotId: formData.depotId,
+        yardName: formData.yardName!.trim(),
+        regionId: formData.regionId!,
+        divisionId: formData.divisionId!,
+        depotId: formData.depotId!,
         capacity: Number(formData.capacity) || 0,
         occupied: Number(formData.occupied) || 0,
         isActive: true,
@@ -165,10 +206,10 @@ export function ParkingYards({}: ParkingYardPageProps) {
     } else if (modal?.mode === "edit" && modal.record) {
       updateMutation.mutate({
         yardId: modal.record.yardId,
-        yardName: formData.yardName.trim(),
-        regionId: formData.regionId,
-        divisionId: formData.divisionId,
-        depotId: formData.depotId,
+        yardName: formData.yardName!.trim(),
+        regionId: formData.regionId!,
+        divisionId: formData.divisionId!,
+        depotId: formData.depotId!,
         capacity: Number(formData.capacity) || 0,
         occupied: Number(formData.occupied) || 0,
         isActive: formData.isActive !== undefined ? formData.isActive : true,
@@ -339,24 +380,39 @@ export function ParkingYards({}: ParkingYardPageProps) {
                 />
               </div>)}
               <div className="stc-field">
-                <label className="stc-field-label">Yard Name</label>
+                <label className="stc-field-label">
+                  Yard Name <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
                   value={formData.yardName || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, yardName: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, yardName: e.target.value }));
+                    if (formErrors.yardName) setFormErrors((prev) => ({ ...prev, yardName: "" }));
+                  }}
+                  style={{ borderColor: formErrors.yardName ? T.red : undefined }}
                 />
+                {formErrors.yardName && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.yardName}
+                  </span>
+                )}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Region</label>
+                <label className="stc-field-label">
+                  Region <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
                   value={formData.regionId || ""}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setFormData((s) => ({
                       ...s,
                       regionId: e.target.value,
                       divisionId: "",
                       depotId: "",
-                    }))
-                  }
+                    }));
+                    if (formErrors.regionId) setFormErrors((prev) => ({ ...prev, regionId: "" }));
+                  }}
+                  style={{ borderColor: formErrors.regionId ? T.red : undefined }}
                 >
                   <option value="">Select Region</option>
                   {regionOptions.map((opt) => (
@@ -365,19 +421,28 @@ export function ParkingYards({}: ParkingYardPageProps) {
                     </option>
                   ))}
                 </select>
+                {formErrors.regionId && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.regionId}
+                  </span>
+                )}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Divisions</label>
+                <label className="stc-field-label">
+                  Divisions <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
                   value={formData.divisionId || ""}
                   disabled={!formData.regionId}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setFormData((s) => ({
                       ...s,
                       divisionId: e.target.value,
                       depotId: "",
-                    }))
-                  }
+                    }));
+                    if (formErrors.divisionId) setFormErrors((prev) => ({ ...prev, divisionId: "" }));
+                  }}
+                  style={{ borderColor: formErrors.divisionId ? T.red : undefined }}
                 >
                   <option value="">Select Division</option>
                   {divisionOptions
@@ -388,15 +453,24 @@ export function ParkingYards({}: ParkingYardPageProps) {
                       </option>
                     ))}
                 </select>
+                {formErrors.divisionId && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.divisionId}
+                  </span>
+                )}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Depot</label>
+                <label className="stc-field-label">
+                  Depot <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
                   value={formData.depotId || ""}
                   disabled={!formData.divisionId}
-                  onChange={(e) =>
-                    setFormData((s) => ({ ...s, depotId: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, depotId: e.target.value }));
+                    if (formErrors.depotId) setFormErrors((prev) => ({ ...prev, depotId: "" }));
+                  }}
+                  style={{ borderColor: formErrors.depotId ? T.red : undefined }}
                 >
                   <option value="">Select Depot</option>
                   {depotOptions
@@ -407,26 +481,56 @@ export function ParkingYards({}: ParkingYardPageProps) {
                       </option>
                     ))}
                 </select>
+                {formErrors.depotId && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.depotId}
+                  </span>
+                )}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Capacity</label>
+                <label className="stc-field-label">
+                  Capacity <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
                   type="number"
-                  value={formData.capacity ?? 0}
-                  onChange={(e) =>
-                    setFormData((s) => ({ ...s, capacity: Number(e.target.value) }))
-                  }
+                  placeholder="Enter yard capacity"
+                  value={formData.capacity ?? ""}
+                  onChange={(e) => {
+                    setFormData((s) => ({
+                      ...s,
+                      capacity: e.target.value === "" ? ("" as any) : Number(e.target.value),
+                    }));
+                    if (formErrors.capacity) setFormErrors((prev) => ({ ...prev, capacity: "" }));
+                    if (formErrors.occupied) setFormErrors((prev) => ({ ...prev, occupied: "" }));
+                  }}
+                  style={{ borderColor: formErrors.capacity ? T.red : undefined }}
                 />
+                {formErrors.capacity && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.capacity}
+                  </span>
+                )}
               </div>
               <div className="stc-field">
                 <label className="stc-field-label">Occupied</label>
                 <input
                   type="number"
+                  placeholder="Enter occupied count"
                   value={formData.occupied ?? 0}
-                  onChange={(e) =>
-                    setFormData((s) => ({ ...s, occupied: Number(e.target.value) }))
-                  }
+                  onChange={(e) => {
+                    setFormData((s) => ({
+                      ...s,
+                      occupied: e.target.value === "" ? 0 : Number(e.target.value),
+                    }));
+                    if (formErrors.occupied) setFormErrors((prev) => ({ ...prev, occupied: "" }));
+                  }}
+                  style={{ borderColor: formErrors.occupied ? T.red : undefined }}
                 />
+                {formErrors.occupied && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.occupied}
+                  </span>
+                )}
               </div>
               {/* {modal.mode === "edit" && (
                 <div className="stc-field">

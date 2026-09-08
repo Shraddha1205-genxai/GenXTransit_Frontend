@@ -85,6 +85,8 @@ export function PaymentModes() {
     },
   });
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   const handleOpenAdd = () => {
     setFormData({
       modeCode: "",
@@ -93,16 +95,28 @@ export function PaymentModes() {
       description: "",
       isActive: true,
     });
+    setFormErrors({});
     setModal({ mode: "add" });
   };
 
   const handleOpenEdit = (record: PaymentMode) => {
     setFormData(record);
+    setFormErrors({});
     setModal({ mode: "edit", record });
   };
 
   const handleSave = () => {
-    if (!formData.modeName) return;
+    const errors: Record<string, string> = {};
+    if (!(formData.modeName || "").trim()) {
+      errors.modeName = "Name is required.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      toast.error("Please fill required fields.");
+      return;
+    }
+    setFormErrors({});
 
     const payload = {
       modeName: formData.modeName || "",
@@ -253,11 +267,18 @@ export function PaymentModes() {
                 </div>
               )}
               <div className="stc-field">
-                <label className="stc-field-label">Name</label>
+                <label className="stc-field-label">
+                  Name <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
+                  style={{ borderColor: formErrors.modeName ? T.red : undefined }}
                   value={formData.modeName || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, modeName: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, modeName: e.target.value }));
+                    if (formErrors.modeName) setFormErrors((prev) => ({ ...prev, modeName: "" }));
+                  }}
                 />
+                {formErrors.modeName && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.modeName}</span>}
               </div>
               <div className="stc-field">
                 <label className="stc-field-label">Mode Status</label>

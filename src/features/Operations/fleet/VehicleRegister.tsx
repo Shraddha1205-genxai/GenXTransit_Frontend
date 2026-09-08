@@ -47,11 +47,10 @@ export const DOC_TYPE_OPTIONS = [
 const seriesTypeOptions = ["BH", "State"];
 const fleetStatusOptions = [
   "Available",
-  "Active",
-  "Under maintenance",
-  "Breakdown",
-  "Delayed",
-  "Retired",
+  "Assigned",
+  "Reserved",
+  "Under Maintenance",
+  "Accident/Damaged",
 ];
 
 export interface FleetVehicleRecordPayload {
@@ -180,6 +179,8 @@ export function VehicleRegister({
     },
   });
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   const handleOpenAdd = () => {
     setFormData({
       vehicleNumber: "",
@@ -190,6 +191,7 @@ export function VehicleRegister({
       docExpiry: [],
       isActive: true,
     });
+    setFormErrors({});
     setModal({ mode: "add" });
   };
 
@@ -198,7 +200,14 @@ export function VehicleRegister({
       ...record,
       docExpiry: Array.isArray(record.docExpiry) ? [...record.docExpiry] : [],
     });
+    setFormErrors({});
     setModal({ mode: "edit", record });
+  };
+
+  const getMinFutureDate = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split("T")[0];
   };
 
   const handleAddDocExpiryRow = () => {
@@ -208,7 +217,7 @@ export function VehicleRegister({
         ...(prev.docExpiry || []),
         {
           docType: "",
-          docExpiryDate: new Date().toISOString().split("T")[0],
+          docExpiryDate: getMinFutureDate(),
         },
       ],
     }));
@@ -219,6 +228,7 @@ export function VehicleRegister({
       ...prev,
       docExpiry: (prev.docExpiry || []).filter((_, i) => i !== index),
     }));
+    if (formErrors.docExpiry) setFormErrors((prev) => ({ ...prev, docExpiry: "" }));
   };
 
   const handleDocExpiryChange = (
@@ -234,13 +244,43 @@ export function VehicleRegister({
       };
       return { ...prev, docExpiry: updated };
     });
+    if (formErrors.docExpiry) setFormErrors((prev) => ({ ...prev, docExpiry: "" }));
   };
 
   const handleSave = () => {
-    if (!formData.vehicleNumber || !formData.categoryId || !formData.depotId || !formData.seriesType) {
-      toast.error("Please fill in all required fields.");
+    const errors: Record<string, string> = {};
+    const vehicleNo = (formData.vehicleNumber || "").trim().toUpperCase();
+    const vehicleRegex = /^[A-Z]{2}[- ]?[0-9]{2}[- ]?[A-Z]{1,3}[- ]?[0-9]{1,4}$/;
+
+    if (!vehicleNo) {
+      errors.vehicleNumber = "Vehicle Number is required.";
+    } else if (!vehicleRegex.test(vehicleNo)) {
+      errors.vehicleNumber = "Invalid Vehicle Number format (e.g. MH-12-AB-4421).";
+    }
+    if (!formData.seriesType) {
+      errors.seriesType = "Please select a Series Type.";
+    }
+    if (!formData.categoryId) {
+      errors.categoryId = "Please select a Category.";
+    }
+    if (!formData.depotId) {
+      errors.depotId = "Please select a Depot.";
+    }
+
+    const todayStr = new Date().toISOString().split("T")[0];
+    for (const doc of formData.docExpiry || []) {
+      if (doc.docType && doc.docExpiryDate && doc.docExpiryDate <= todayStr) {
+        errors.docExpiry = "Document expiration date must be in the future (after today).";
+        break;
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      toast.error("Please fill required fields.");
       return;
     }
+    setFormErrors({});
 
     const docExpiryCleaned = (formData.docExpiry || []).filter(
       (doc) => doc.docType && doc.docExpiryDate
@@ -248,9 +288,9 @@ export function VehicleRegister({
 
     if (modal?.mode === "add") {
       const payload: CreateFleetDto = {
-        vehicleNumber: formData.vehicleNumber.trim(),
+        vehicleNumber: vehicleNo,
         categoryId: String(formData.categoryId),
-        seriesType: formData.seriesType,
+        seriesType: formData.seriesType!,
         depotId: String(formData.depotId),
         docExpiry: docExpiryCleaned,
       };
@@ -264,7 +304,7 @@ export function VehicleRegister({
     } else if (modal?.mode === "edit" && modal.record) {
       const payload: UpdateFleetDto = {
         fleetId: String(formData.fleetId || modal.record.fleetId),
-        vehicleNumber: formData.vehicleNumber.trim(),
+        vehicleNumber: vehicleNo,
         categoryId: String(formData.categoryId),
         seriesType: formData.seriesType || "BH",
         depotId: String(formData.depotId),
@@ -526,23 +566,36 @@ export function VehicleRegister({
           >
             <div className="stc-form-grid">
               <div className="stc-field">
-                <label className="stc-field-label">Vehicle Number</label>
+                <label className="stc-field-label">
+                  Vehicle Number <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
+                  style={{
+                    borderColor: formErrors.vehicleNumber ? T.red : undefined,
+                    textTransform: "uppercase",
+                  }}
                   value={formData.vehicleNumber || ""}
                   placeholder="e.g. MH-12-AB-4421"
-                  onChange={(e) =>
-                    setFormData((s) => ({ ...s, vehicleNumber: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    const val = e.target.value.toUpperCase();
+                    setFormData((s) => ({ ...s, vehicleNumber: val }));
+                    if (formErrors.vehicleNumber) setFormErrors((prev) => ({ ...prev, vehicleNumber: "" }));
+                  }}
                 />
+                {formErrors.vehicleNumber && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.vehicleNumber}</span>}
               </div>
 
               <div className="stc-field">
-                <label className="stc-field-label">Series Type</label>
+                <label className="stc-field-label">
+                  Series Type <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
+                  style={{ borderColor: formErrors.seriesType ? T.red : undefined }}
                   value={formData.seriesType || ""}
-                  onChange={(e) =>
-                    setFormData((s) => ({ ...s, seriesType: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, seriesType: e.target.value }));
+                    if (formErrors.seriesType) setFormErrors((prev) => ({ ...prev, seriesType: "" }));
+                  }}
                 >
                   <option value="">Select Series Type</option>
                   {seriesTypeOptions.map((opt) => (
@@ -551,15 +604,20 @@ export function VehicleRegister({
                     </option>
                   ))}
                 </select>
+                {formErrors.seriesType && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.seriesType}</span>}
               </div>
 
               <div className="stc-field">
-                <label className="stc-field-label">Category</label>
+                <label className="stc-field-label">
+                  Category <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
+                  style={{ borderColor: formErrors.categoryId ? T.red : undefined }}
                   value={formData.categoryId || ""}
-                  onChange={(e) =>
-                    setFormData((s) => ({ ...s, categoryId: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, categoryId: e.target.value }));
+                    if (formErrors.categoryId) setFormErrors((prev) => ({ ...prev, categoryId: "" }));
+                  }}
                 >
                   <option value="">Select Category</option>
                   {apiCategories.map((cat) => (
@@ -568,15 +626,20 @@ export function VehicleRegister({
                     </option>
                   ))}
                 </select>
+                {formErrors.categoryId && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.categoryId}</span>}
               </div>
 
               <div className="stc-field">
-                <label className="stc-field-label">Depot</label>
+                <label className="stc-field-label">
+                  Depot <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
+                  style={{ borderColor: formErrors.depotId ? T.red : undefined }}
                   value={formData.depotId || ""}
-                  onChange={(e) =>
-                    setFormData((s) => ({ ...s, depotId: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, depotId: e.target.value }));
+                    if (formErrors.depotId) setFormErrors((prev) => ({ ...prev, depotId: "" }));
+                  }}
                 >
                   <option value="">Select Depot</option>
                   {apiDepots.map((dep) => (
@@ -585,6 +648,7 @@ export function VehicleRegister({
                     </option>
                   ))}
                 </select>
+                {formErrors.depotId && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.depotId}</span>}
               </div>
 
               {/* Document Expiration Multi-Row Editor */}
@@ -751,6 +815,7 @@ export function VehicleRegister({
 
                         <input
                           type="date"
+                          min={getMinFutureDate()}
                           value={doc.docExpiryDate}
                           onChange={(e) =>
                             handleDocExpiryChange(
@@ -765,7 +830,11 @@ export function VehicleRegister({
                             height: 34,
                             padding: "0 8px",
                             borderRadius: 6,
-                            border: `1px solid ${T.border}`,
+                            border: `1px solid ${
+                              doc.docExpiryDate && doc.docExpiryDate <= new Date().toISOString().split("T")[0]
+                                ? T.red
+                                : T.border
+                            }`,
                             background: "var(--bg, #fff)",
                             color: "var(--text, #111)",
                             outline: "none",
@@ -794,6 +863,11 @@ export function VehicleRegister({
                       </div>
                     ))}
                   </div>
+                )}
+                {formErrors.docExpiry && (
+                  <span style={{ color: T.red, fontSize: 11, marginTop: 8, display: "block" }}>
+                    {formErrors.docExpiry}
+                  </span>
                 )}
               </div>
             </div>

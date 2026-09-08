@@ -44,7 +44,7 @@ export function VehicleService() {
   // Fetch registered fleet vehicles for dropdowns
   const { data: fleetVehicles = [] } = useQuery({
     queryKey: ["fleetVehicles", true],
-    queryFn: () => fleetService.getAll(undefined, undefined, undefined, undefined, true),
+    queryFn: () => fleetService.getAll(undefined, undefined, "", undefined, true),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -114,37 +114,51 @@ export function VehicleService() {
     },
   });
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   const handleOpenAdd = () => {
     setFormData({
       serviceId: "",
       fleetId: "",
       status: "",
     });
+    setFormErrors({});
     setModal({ mode: "add" });
   };
 
   const handleOpenEdit = (record: serviceRecord) => {
     setFormData(record);
+    setFormErrors({});
     setModal({ mode: "edit", record });
   };
 
   const handleSave = () => {
-    if (!formData.fleetId || !formData.status) {
-      toast.error("Please fill in all required fields.");
+    const errors: Record<string, string> = {};
+    if (!formData.fleetId) {
+      errors.fleetId = "Please select a Vehicle / Fleet.";
+    }
+    if (!formData.status) {
+      errors.status = "Please select a Service Status.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      toast.error("Please fill required fields.");
       return;
     }
+    setFormErrors({});
 
     if (modal?.mode === "add") {
       const payload: serviceRecordPayload = {
         fleetId: String(formData.fleetId),
-        status: formData.status,
+        status: formData.status!,
       };
       addMutation.mutate(payload);
     } else if (modal?.mode === "edit" && modal.record) {
       const payload: serviceRecordPayload = {
         serviceId: String(formData.serviceId || modal.record.serviceId),
         fleetId: String(formData.fleetId),
-        status: formData.status,
+        status: formData.status!,
       };
       updateMutation.mutate(payload);
     }
@@ -204,7 +218,7 @@ export function VehicleService() {
               onChange: setFleetIdFilter,
               options: fleetVehicles.map((fv) => ({
                 value: String(fv.fleetId),
-                label: `${fv.vehicleNumber} (ID: ${fv.fleetId})`,
+                label: `${fv.vehicleNumber}`,
               })),
             },
             {
@@ -373,32 +387,41 @@ export function VehicleService() {
           >
             <div className="stc-form-grid">
               <div className="stc-field">
-                <label className="stc-field-label">Vehicle / Fleet</label>
+                <label className="stc-field-label">
+                  Vehicle / Fleet <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
+                  style={{ borderColor: formErrors.fleetId ? T.red : undefined }}
                   value={formData.fleetId || ""}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setFormData((s) => ({
                       ...s,
                       fleetId: e.target.value,
-                    }))
-                  }
+                    }));
+                    if (formErrors.fleetId) setFormErrors((prev) => ({ ...prev, fleetId: "" }));
+                  }}
                 >
                   <option value="">Select Vehicle / Fleet</option>
                   {fleetVehicles.map((fv) => (
                     <option key={fv.fleetId} value={String(fv.fleetId)}>
-                      {fv.vehicleNumber} (Fleet ID: {fv.fleetId})
+                      {fv.vehicleNumber}
                     </option>
                   ))}
                 </select>
+                {formErrors.fleetId && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.fleetId}</span>}
               </div>
 
               <div className="stc-field">
-                <label className="stc-field-label">Status</label>
+                <label className="stc-field-label">
+                  Status <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
+                  style={{ borderColor: formErrors.status ? T.red : undefined }}
                   value={formData.status || ""}
-                  onChange={(e) =>
-                    setFormData((s) => ({ ...s, status: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, status: e.target.value }));
+                    if (formErrors.status) setFormErrors((prev) => ({ ...prev, status: "" }));
+                  }}
                 >
                   <option value="">Select Service Status</option>
                   {serviceStatusOptions.map((st) => (
@@ -407,6 +430,7 @@ export function VehicleService() {
                     </option>
                   ))}
                 </select>
+                {formErrors.status && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.status}</span>}
               </div>
             </div>
           </Modal>

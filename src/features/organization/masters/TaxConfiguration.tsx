@@ -88,6 +88,8 @@ export function TaxConfiguration() {
     },
   });
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   const handleOpenAdd = () => {
     setFormData({
       taxCode: "",
@@ -96,22 +98,40 @@ export function TaxConfiguration() {
       description: "",
       isActive: true,
     });
+    setFormErrors({});
     setModal({ mode: "add" });
   };
 
   const handleOpenEdit = (record: TaxConfiguration) => {
     setFormData(record);
+    setFormErrors({});
     setModal({ mode: "edit", record });
   };
 
   const handleSave = () => {
+    const errors: Record<string, string> = {};
     if (!formData.taxType) {
-      toast.error("Please select a Tax Type.");
-      return;
+      errors.taxType = "Please select a Tax Type.";
+    }
+    if (
+      formData.rate === undefined ||
+      formData.rate === null ||
+      formData.rate === ("" as any) ||
+      isNaN(Number(formData.rate)) ||
+      Number(formData.rate) < 0
+    ) {
+      errors.rate = "Rate is required and must be non-negative.";
     }
 
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      toast.error("Please fill required fields.");
+      return;
+    }
+    setFormErrors({});
+
     const payload = {
-      taxType: formData.taxType,
+      taxType: formData.taxType!,
       rate: Number(formData.rate) || 0,
       description: formData.description || "",
     };
@@ -253,10 +273,16 @@ export function TaxConfiguration() {
                 </div>
               )}
               <div className="stc-field">
-                <label className="stc-field-label">Type</label>
+                <label className="stc-field-label">
+                  Type <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
+                  style={{ borderColor: formErrors.taxType ? T.red : undefined }}
                   value={formData.taxType || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, taxType: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, taxType: e.target.value }));
+                    if (formErrors.taxType) setFormErrors((prev) => ({ ...prev, taxType: "" }));
+                  }}
                 >
                   <option value="">Select TAX Type</option>
                   {taxTypes.map((s) => (
@@ -265,14 +291,22 @@ export function TaxConfiguration() {
                     </option>
                   ))}
                 </select>
+                {formErrors.taxType && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.taxType}</span>}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Rate (%)</label>
+                <label className="stc-field-label">
+                  Rate (%) <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
                   type="number"
+                  style={{ borderColor: formErrors.rate ? T.red : undefined }}
                   value={formData.rate ?? 0}
-                  onChange={(e) => setFormData((s) => ({ ...s, rate: Number(e.target.value) }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, rate: Number(e.target.value) }));
+                    if (formErrors.rate) setFormErrors((prev) => ({ ...prev, rate: "" }));
+                  }}
                 />
+                {formErrors.rate && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.rate}</span>}
               </div>
               <div className="stc-field" style={{ gridColumn: "1 / -1" }}>
                 <label className="stc-field-label">Description</label>

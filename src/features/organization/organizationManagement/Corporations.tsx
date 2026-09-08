@@ -441,6 +441,8 @@ export function Corporations() {
     return [toTitleCase(filterDistrict)];
   }, [filterOfficesData, filterDistrict]);
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   const handleOpenAdd = () => {
     setFormData({
       corporationName: "",
@@ -449,32 +451,53 @@ export function Corporations() {
       cityName: "",
       isActive: true,
     });
+    setFormErrors({});
     setModal({ mode: "add" });
   };
 
   const handleOpenEdit = (record: Corporation) => {
     setFormData(record);
+    setFormErrors({});
     setModal({ mode: "edit", record });
   };
 
   const handleSave = () => {
-    if (!formData.corporationName || !formData.stateName || !formData.districtName || !formData.cityName) return;
+    const errors: Record<string, string> = {};
+    if (!formData.corporationName || !formData.corporationName.trim()) {
+      errors.corporationName = "Corporation Name is required.";
+    }
+    if (!formData.stateName || !formData.stateName.trim()) {
+      errors.stateName = "State Name is required.";
+    }
+    if (!formData.districtName || !formData.districtName.trim()) {
+      errors.districtName = "District Name is required.";
+    }
+    if (!formData.cityName || !formData.cityName.trim()) {
+      errors.cityName = "City Name is required.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      toast.error("Please fill required fields.");
+      return;
+    }
+    setFormErrors({});
 
     if (modal?.mode === "add") {
       addMutation.mutate({
-        corporationName: formData.corporationName.trim(),
-        stateName: formData.stateName.trim(),
-        districtName: formData.districtName.trim(),
-        cityName: formData.cityName.trim(),
+        corporationName: formData.corporationName!.trim(),
+        stateName: formData.stateName!.trim(),
+        districtName: formData.districtName!.trim(),
+        cityName: formData.cityName!.trim(),
         isActive: true,
       });
     } else if (modal?.mode === "edit" && modal.record) {
       updateMutation.mutate({
         corporationId: String(modal.record.corpId),
-        corporationName: formData.corporationName.trim(),
-        stateName: formData.stateName.trim(),
-        districtName: formData.districtName.trim(),
-        cityName: formData.cityName.trim(),
+        corporationName: formData.corporationName!.trim(),
+        stateName: formData.stateName!.trim(),
+        districtName: formData.districtName!.trim(),
+        cityName: formData.cityName!.trim(),
         isActive: formData.isActive !== undefined ? formData.isActive : true,
       });
     }
@@ -636,15 +659,28 @@ export function Corporations() {
               )}
 
               <div className="stc-field" style={{ gridColumn: modal.mode === "add" ? "1 / -1" : undefined }}>
-                <label className="stc-field-label">Corporation Name</label>
+                <label className="stc-field-label">
+                  Corporation Name <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
                   value={formData.corporationName || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, corporationName: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, corporationName: e.target.value }));
+                    if (formErrors.corporationName) setFormErrors((prev) => ({ ...prev, corporationName: "" }));
+                  }}
+                  style={{ borderColor: formErrors.corporationName ? T.red : undefined }}
                 />
+                {formErrors.corporationName && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.corporationName}
+                  </span>
+                )}
               </div>
 
               <div className="stc-field">
-                <label className="stc-field-label">State Name</label>
+                <label className="stc-field-label">
+                  State Name <span style={{ color: T.red }}>*</span>
+                </label>
                 <SearchableSelect
                   value={formData.stateName || ""}
                   onChange={(val) => {
@@ -654,14 +690,22 @@ export function Corporations() {
                       districtName: "",
                       cityName: "",
                     }));
+                    if (formErrors.stateName) setFormErrors((prev) => ({ ...prev, stateName: "" }));
                   }}
                   options={statesList}
                   placeholder="Select State"
                 />
+                {formErrors.stateName && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.stateName}
+                  </span>
+                )}
               </div>
 
               <div className="stc-field">
-                <label className="stc-field-label">District Name</label>
+                <label className="stc-field-label">
+                  District Name <span style={{ color: T.red }}>*</span>
+                </label>
                 <SearchableSelect
                   value={formData.districtName || ""}
                   onChange={(val) => {
@@ -670,22 +714,38 @@ export function Corporations() {
                       districtName: val,
                       cityName: "",
                     }));
+                    if (formErrors.districtName) setFormErrors((prev) => ({ ...prev, districtName: "" }));
                   }}
                   options={districtsList}
                   placeholder="Select District"
                   disabled={!formData.stateName}
                 />
+                {formErrors.districtName && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.districtName}
+                  </span>
+                )}
               </div>
 
               <div className="stc-field">
-                <label className="stc-field-label">City Name</label>
+                <label className="stc-field-label">
+                  City Name <span style={{ color: T.red }}>*</span>
+                </label>
                 <SearchableSelect
                   value={formData.cityName || ""}
-                  onChange={(val) => setFormData((s) => ({ ...s, cityName: val }))}
+                  onChange={(val) => {
+                    setFormData((s) => ({ ...s, cityName: val }));
+                    if (formErrors.cityName) setFormErrors((prev) => ({ ...prev, cityName: "" }));
+                  }}
                   options={finalCities}
                   placeholder={isLoadingCities ? "Loading cities..." : "Select Area/City"}
                   disabled={!formData.districtName || isLoadingCities}
                 />
+                {formErrors.cityName && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.cityName}
+                  </span>
+                )}
               </div>
 
               {/* {modal.mode === "edit" && (

@@ -102,24 +102,26 @@ export function TripSchedule({
 
   // Fetch Drivers for selected depot via /api/driverconductoravailability/driver-conductor
   const { data: driverOptions = [] } = useQuery({
-    queryKey: ["driverConductorAvailability", "Driver", formData.depotId],
+    queryKey: ["driverConductorAvailability", "Driver", formData.depotId || ""],
     queryFn: () =>
       driverConductorService.getDriverConductor({
         roleName: "Driver",
         depotId: formData.depotId || undefined,
       }),
-    staleTime: 0,
+    enabled: modal !== null,
+    staleTime: 5 * 60 * 1000,
   });
 
   // Fetch Conductors for selected depot via /api/driverconductoravailability/driver-conductor
   const { data: conductorOptions = [] } = useQuery({
-    queryKey: ["driverConductorAvailability", "Conductor", formData.depotId],
+    queryKey: ["driverConductorAvailability", "Conductor", formData.depotId || ""],
     queryFn: () =>
       driverConductorService.getDriverConductor({
         roleName: "Conductor",
         depotId: formData.depotId || undefined,
       }),
-    staleTime: 0,
+    enabled: modal !== null,
+    staleTime: 5 * 60 * 1000,
   });
 
   const isActiveParam = statusFilter === "Both" ? undefined : statusFilter === "Active";
@@ -193,6 +195,8 @@ export function TripSchedule({
     },
   });
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   const handleOpenAdd = () => {
     setFormData({
       tripId: "",
@@ -202,35 +206,69 @@ export function TripSchedule({
       fleetId: "",
       driverId: "",
       conductorId: "",
-      scheduleTime: "15:30",
-      actualTime: "15:30",
+      scheduleTime: "",
+      actualTime: "",
       tripStatus: "",
       isActive: true,
     });
+    setFormErrors({});
     setModal({ mode: "add" });
   };
 
   const handleOpenEdit = (item: TripRecord) => {
-    setFormData({ ...item });
+    setFormData({
+      ...item,
+      routeId: item.routeId ? String(item.routeId) : "",
+      depotId: item.depotId ? String(item.depotId) : "",
+      fleetId: item.fleetId ? String(item.fleetId) : "",
+      driverId: item.driverId ? String(item.driverId) : "",
+      conductorId: item.conductorId ? String(item.conductorId) : "",
+    });
+    setFormErrors({});
     setModal({ mode: "edit", record: item });
   };
 
   const handleSave = () => {
-    if (!formData.routeId || !formData.depotId || !formData.fleetId || !formData.tripStatus) {
-      toast.error("Please fill in all required fields.");
+    const errors: Record<string, string> = {};
+    if (!formData.routeId) {
+      errors.routeId = "Please select a Route.";
+    }
+    if (!formData.depotId) {
+      errors.depotId = "Please select a Depot.";
+    }
+    if (!formData.fleetId) {
+      errors.fleetId = "Please select a Vehicle / Fleet.";
+    }
+    if (!formData.driverId) {
+      errors.driverId = "Please select a Driver.";
+    }
+    if (!formData.conductorId) {
+      errors.conductorId = "Please select a Conductor.";
+    }
+    if (!(formData.scheduleTime || "").trim()) {
+      errors.scheduleTime = "Scheduled Time is required.";
+    }
+    if (!formData.tripStatus) {
+      errors.tripStatus = "Please select a Trip Status.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      toast.error("Please fill required fields.");
       return;
     }
+    setFormErrors({});
 
     if (modal?.mode === "add") {
       const payload: CreateTripDto = {
         routeId: String(formData.routeId),
         depotId: String(formData.depotId),
         fleetId: String(formData.fleetId),
-        driverId: String(formData.driverId || "1"),
-        conductorId: String(formData.conductorId || "1"),
-        scheduleTime: formData.scheduleTime || "15:30",
-        actualTime: formData.actualTime || "15:30",
-        tripStatus: formData.tripStatus,
+        driverId: String(formData.driverId!),
+        conductorId: String(formData.conductorId!),
+        scheduleTime: formData.scheduleTime!,
+        actualTime: formData.actualTime || formData.scheduleTime!,
+        tripStatus: formData.tripStatus!,
       };
 
       if (onAdd) {
@@ -245,11 +283,11 @@ export function TripSchedule({
         routeId: String(formData.routeId),
         depotId: String(formData.depotId),
         fleetId: String(formData.fleetId),
-        driverId: String(formData.driverId || modal.record.driverId || "1"),
-        conductorId: String(formData.conductorId || modal.record.conductorId || "1"),
-        scheduleTime: formData.scheduleTime || modal.record.scheduleTime || "15:30",
-        actualTime: formData.actualTime || modal.record.actualTime || "15:30",
-        tripStatus: formData.tripStatus,
+        driverId: String(formData.driverId || modal.record.driverId),
+        conductorId: String(formData.conductorId || modal.record.conductorId),
+        scheduleTime: (formData.scheduleTime || modal.record.scheduleTime)!,
+        actualTime: (formData.actualTime || modal.record.actualTime || formData.scheduleTime || modal.record.scheduleTime)!,
+        tripStatus: formData.tripStatus!,
       };
 
       if (onUpdate) {
@@ -352,7 +390,7 @@ export function TripSchedule({
               onChange: setFleetFilter,
               options: apiFleet.map((fl) => ({
                 value: String(fl.fleetId),
-                label: `${fl.vehicleNumber} (ID: ${fl.fleetId})`,
+                label: `${fl.vehicleNumber}`,
               })),
             },
             {
@@ -567,65 +605,139 @@ export function TripSchedule({
             )}
 
             <div className="stc-field">
-              <label className="stc-field-label">Route</label>
+              <label className="stc-field-label">
+                Route <span style={{ color: T.red }}>*</span>
+              </label>
               <select
+                style={{ borderColor: formErrors.routeId ? T.red : undefined }}
                 value={formData.routeId || ""}
-                onChange={(e) =>
-                  setFormData((s) => ({ ...s, routeId: e.target.value }))
-                }
+                onChange={(e) => {
+                  setFormData((s) => ({ ...s, routeId: e.target.value }));
+                  if (formErrors.routeId) setFormErrors((prev) => ({ ...prev, routeId: "" }));
+                }}
               >
                 <option value="">Select Route</option>
+                {formData.routeId &&
+                  !apiRoutes.some(
+                    (r) => String(r.routeId) === String(formData.routeId)
+                  ) && (
+                    <option value={String(formData.routeId)}>
+                      {formData.routeName || `Route (ID: ${formData.routeId})`}
+                    </option>
+                  )}
                 {apiRoutes.map((r) => (
                   <option key={r.routeId} value={String(r.routeId)}>
                     {r.routeCode} — {r.routeName}
                   </option>
                 ))}
               </select>
+              {formErrors.routeId && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.routeId}</span>}
             </div>
 
             <div className="stc-field">
-              <label className="stc-field-label">Depot</label>
+              <label className="stc-field-label">
+                Depot <span style={{ color: T.red }}>*</span>
+              </label>
               <select
-                value={formData.depotId || ""}
-                onChange={(e) =>
-                  setFormData((s) => ({ ...s, depotId: e.target.value }))
-                }
+                style={{ borderColor: formErrors.depotId ? T.red : undefined }}
+                value={formData.depotId ? String(formData.depotId) : ""}
+                onChange={(e) => {
+                  const newDepotId = e.target.value;
+                  setFormData((s) => ({
+                    ...s,
+                    depotId: newDepotId,
+                    driverId: "",
+                    driverName: "",
+                    conductorId: "",
+                    conductorName: "",
+                  }));
+                  if (formErrors.depotId) setFormErrors((prev) => ({ ...prev, depotId: "" }));
+                }}
               >
                 <option value="">Select Depot</option>
+                {formData.depotId &&
+                  !apiDepots.some(
+                    (d) => String(d.depotId) === String(formData.depotId)
+                  ) && (
+                    <option value={String(formData.depotId)}>
+                      {formData.depotName || `Depot (ID: ${formData.depotId})`}
+                    </option>
+                  )}
                 {apiDepots.map((d) => (
                   <option key={d.depotId} value={String(d.depotId)}>
                     {d.depotName || d.depotCode}
                   </option>
                 ))}
               </select>
+              {formErrors.depotId && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.depotId}</span>}
             </div>
 
             <div className="stc-field">
-              <label className="stc-field-label">Vehicle / Fleet</label>
+              <label className="stc-field-label">
+                Vehicle / Fleet <span style={{ color: T.red }}>*</span>
+              </label>
               <select
-                value={formData.fleetId || ""}
-                onChange={(e) =>
-                  setFormData((s) => ({ ...s, fleetId: e.target.value }))
-                }
+                style={{ borderColor: formErrors.fleetId ? T.red : undefined }}
+                value={formData.fleetId ? String(formData.fleetId) : ""}
+                onChange={(e) => {
+                  setFormData((s) => ({ ...s, fleetId: e.target.value }));
+                  if (formErrors.fleetId) setFormErrors((prev) => ({ ...prev, fleetId: "" }));
+                }}
               >
                 <option value="">Select Vehicle / Fleet</option>
+                {formData.fleetId &&
+                  !apiFleet.some(
+                    (fl) => String(fl.fleetId) === String(formData.fleetId)
+                  ) && (
+                    <option value={String(formData.fleetId)}>
+                      {formData.vehicleNumber || `Vehicle (ID: ${formData.fleetId})`}
+                    </option>
+                  )}
                 {apiFleet.map((fl) => (
                   <option key={fl.fleetId} value={String(fl.fleetId)}>
-                    {fl.vehicleNumber} (ID: {fl.fleetId})
+                    {fl.vehicleNumber}
                   </option>
                 ))}
               </select>
+              {formErrors.fleetId && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.fleetId}</span>}
             </div>
 
             <div className="stc-field">
-              <label className="stc-field-label">Driver</label>
+              <label className="stc-field-label">
+                Driver <span style={{ color: T.red }}>*</span>
+              </label>
               <select
-                value={formData.driverId || ""}
-                onChange={(e) =>
-                  setFormData((s) => ({ ...s, driverId: e.target.value }))
-                }
+                style={{ borderColor: formErrors.driverId ? T.red : undefined }}
+                value={formData.driverId ? String(formData.driverId) : ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const found = driverOptions.find((u) => String(u.userId) === val);
+                  const name = found
+                    ? (found.firstName || found.lastName
+                        ? `${found.firstName} ${found.lastName}`.trim()
+                        : found.userName)
+                    : undefined;
+                  setFormData((s) => ({
+                    ...s,
+                    driverId: val,
+                    driverName: name || s.driverName,
+                  }));
+                  if (formErrors.driverId) setFormErrors((prev) => ({ ...prev, driverId: "" }));
+                }}
               >
                 <option value="">Select Driver</option>
+                {formData.driverId &&
+                  !driverOptions.some(
+                    (u) => String(u.userId) === String(formData.driverId)
+                  ) && (
+                    <option value={String(formData.driverId)}>
+                      {formData.driverName ||
+                        (modal?.record?.driverId === String(formData.driverId)
+                          ? modal.record.driverName
+                          : "") ||
+                        `Driver (ID: ${formData.driverId})`}
+                    </option>
+                  )}
                 {driverOptions.map((user) => {
                   const displayName =
                     user.firstName || user.lastName
@@ -633,22 +745,50 @@ export function TripSchedule({
                       : user.userName;
                   return (
                     <option key={user.userId} value={String(user.userId)}>
-                      {displayName} (ID: {user.userId})
+                      {displayName}
                     </option>
                   );
                 })}
               </select>
+              {formErrors.driverId && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.driverId}</span>}
             </div>
 
             <div className="stc-field">
-              <label className="stc-field-label">Conductor</label>
+              <label className="stc-field-label">
+                Conductor <span style={{ color: T.red }}>*</span>
+              </label>
               <select
-                value={formData.conductorId || ""}
-                onChange={(e) =>
-                  setFormData((s) => ({ ...s, conductorId: e.target.value }))
-                }
+                style={{ borderColor: formErrors.conductorId ? T.red : undefined }}
+                value={formData.conductorId ? String(formData.conductorId) : ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const found = conductorOptions.find((u) => String(u.userId) === val);
+                  const name = found
+                    ? (found.firstName || found.lastName
+                        ? `${found.firstName} ${found.lastName}`.trim()
+                        : found.userName)
+                    : undefined;
+                  setFormData((s) => ({
+                    ...s,
+                    conductorId: val,
+                    conductorName: name || s.conductorName,
+                  }));
+                  if (formErrors.conductorId) setFormErrors((prev) => ({ ...prev, conductorId: "" }));
+                }}
               >
                 <option value="">Select Conductor</option>
+                {formData.conductorId &&
+                  !conductorOptions.some(
+                    (u) => String(u.userId) === String(formData.conductorId)
+                  ) && (
+                    <option value={String(formData.conductorId)}>
+                      {formData.conductorName ||
+                        (modal?.record?.conductorId === String(formData.conductorId)
+                          ? modal.record.conductorName
+                          : "") ||
+                        `Conductor (ID: ${formData.conductorId})`}
+                    </option>
+                  )}
                 {conductorOptions.map((user) => {
                   const displayName =
                     user.firstName || user.lastName
@@ -656,22 +796,28 @@ export function TripSchedule({
                       : user.userName;
                   return (
                     <option key={user.userId} value={String(user.userId)}>
-                      {displayName} (ID: {user.userId})
+                      {displayName}
                     </option>
                   );
                 })}
               </select>
+              {formErrors.conductorId && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.conductorId}</span>}
             </div>
 
             <div className="stc-field">
-              <label className="stc-field-label">Scheduled Time</label>
+              <label className="stc-field-label">
+                Scheduled Time <span style={{ color: T.red }}>*</span>
+              </label>
               <input
                 type="time"
+                style={{ borderColor: formErrors.scheduleTime ? T.red : undefined }}
                 value={formatTimeForInput(formData.scheduleTime)}
-                onChange={(e) =>
-                  setFormData((s) => ({ ...s, scheduleTime: e.target.value }))
-                }
+                onChange={(e) => {
+                  setFormData((s) => ({ ...s, scheduleTime: e.target.value }));
+                  if (formErrors.scheduleTime) setFormErrors((prev) => ({ ...prev, scheduleTime: "" }));
+                }}
               />
+              {formErrors.scheduleTime && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.scheduleTime}</span>}
             </div>
 
             <div className="stc-field">
@@ -686,12 +832,16 @@ export function TripSchedule({
             </div>
 
             <div className="stc-field">
-              <label className="stc-field-label">Trip Status</label>
+              <label className="stc-field-label">
+                Trip Status <span style={{ color: T.red }}>*</span>
+              </label>
               <select
+                style={{ borderColor: formErrors.tripStatus ? T.red : undefined }}
                 value={formData.tripStatus || ""}
-                onChange={(e) =>
-                  setFormData((s) => ({ ...s, tripStatus: e.target.value }))
-                }
+                onChange={(e) => {
+                  setFormData((s) => ({ ...s, tripStatus: e.target.value }));
+                  if (formErrors.tripStatus) setFormErrors((prev) => ({ ...prev, tripStatus: "" }));
+                }}
               >
                 <option value="">Select Trip Status</option>
                 {TRIP_STATUSES.map((st) => (
@@ -700,6 +850,7 @@ export function TripSchedule({
                   </option>
                 ))}
               </select>
+              {formErrors.tripStatus && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.tripStatus}</span>}
             </div>
           </div>
         </Modal>

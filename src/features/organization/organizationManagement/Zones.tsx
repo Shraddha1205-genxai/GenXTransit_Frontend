@@ -406,24 +406,31 @@ export function Zones() {
 
   const filteredData = data;
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   const handleOpenAdd = () => {
     setFormData({
       zoneName: "",
       regionId: "",
       districts: [],
     });
+    setFormErrors({});
     setModal({ mode: "add" });
   };
 
   const handleOpenEdit = (record: Zone) => {
     setFormData(record);
+    setFormErrors({});
     setModal({ mode: "edit", record });
   };
 
   const handleSave = () => {
-    if (!formData.zoneName || !formData.regionId) {
-      toast.error("Please fill required fields.");
-      return;
+    const errors: Record<string, string> = {};
+    if (!formData.zoneName || !formData.zoneName.trim()) {
+      errors.zoneName = "Zone Name is required.";
+    }
+    if (!formData.regionId) {
+      errors.regionId = "Please select a Region.";
     }
 
     const districtsArray = Array.isArray(formData.districts)
@@ -435,18 +442,29 @@ export function Zones() {
             .filter(Boolean)
         : [];
 
+    if (districtsArray.length === 0) {
+      errors.districts = "Please select at least one District.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      toast.error("Please fill required fields.");
+      return;
+    }
+    setFormErrors({});
+
     if (modal?.mode === "add") {
       addMutation.mutate({
-        zoneName: formData.zoneName.trim(),
-        regionId: formData.regionId,
+        zoneName: formData.zoneName!.trim(),
+        regionId: formData.regionId!,
         districts: districtsArray,
         isActive: true,
       });
     } else if (modal?.mode === "edit" && modal.record) {
       updateMutation.mutate({
         zoneId: modal.record.zoneId,
-        zoneName: formData.zoneName.trim(),
-        regionId: formData.regionId,
+        zoneName: formData.zoneName!.trim(),
+        regionId: formData.regionId!,
         districts: districtsArray,
         isActive: formData.isActive ?? true,
       });
@@ -636,22 +654,35 @@ export function Zones() {
               )}
 
               <div className="stc-field">
-                <label className="stc-field-label">Zone Name</label>
+                <label className="stc-field-label">
+                  Zone Name <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
                   value={formData.zoneName || ""}
-                  onChange={(e) =>
-                    setFormData((s) => ({ ...s, zoneName: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, zoneName: e.target.value }));
+                    if (formErrors.zoneName) setFormErrors((prev) => ({ ...prev, zoneName: "" }));
+                  }}
+                  style={{ borderColor: formErrors.zoneName ? T.red : undefined }}
                 />
+                {formErrors.zoneName && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.zoneName}
+                  </span>
+                )}
               </div>
 
               <div className="stc-field">
-                <label className="stc-field-label">Region Code</label>
+                <label className="stc-field-label">
+                  Region Code <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
                   value={formData.regionId || ""}
-                  onChange={(e) =>
-                    setFormData((s) => ({ ...s, regionId: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, regionId: e.target.value }));
+                    if (formErrors.regionId) setFormErrors((prev) => ({ ...prev, regionId: "" }));
+                  }}
+                  style={{ borderColor: formErrors.regionId ? T.red : undefined }}
                 >
                   <option value="">Select Region</option>
                   {regionOptions &&
@@ -662,21 +693,34 @@ export function Zones() {
                       </option>
                     ))}
                 </select>
+                {formErrors.regionId && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.regionId}
+                  </span>
+                )}
               </div>
 
               <div className="stc-field" style={{ gridColumn: "1 / -1" }}>
-                <label className="stc-field-label">Districts</label>
+                <label className="stc-field-label">
+                  Districts <span style={{ color: T.red }}>*</span>
+                </label>
                 <SearchableMultiSelect
                   value={formData.districts || []}
-                  onChange={(val) =>
+                  onChange={(val) => {
                     setFormData((s) => ({
                       ...s,
                       districts: val,
-                    }))
-                  }
+                    }));
+                    if (formErrors.districts) setFormErrors((prev) => ({ ...prev, districts: "" }));
+                  }}
                   options={districtsList}
                   placeholder="Select Districts"
                 />
+                {formErrors.districts && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.districts}
+                  </span>
+                )}
               </div>
 
               {/* {modal.mode === "edit" && (

@@ -187,6 +187,8 @@ export function Workshops({}: WorkshopPageProps) {
   const [toDelete, setToDelete] = useState<Workshop | null>(null);
   const [formData, setFormData] = useState<Partial<Workshop>>({});
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   const handleOpenAdd = () => {
     setFormData({
       workShopCode: "",
@@ -194,27 +196,66 @@ export function Workshops({}: WorkshopPageProps) {
       regionId: "",
       divisionId: "",
       depotId: "",
-      workBays: 0,
+      workBays: "" as any,
       activeRepairJobs: 0,
       isActive: true,
     });
+    setFormErrors({});
     setModal({ mode: "add" });
   };
 
   const handleOpenEdit = (record: Workshop) => {
     setFormData(record);
+    setFormErrors({});
     setModal({ mode: "edit", record });
   };
 
   const handleSave = () => {
-    if (!formData.workShopName || !formData.regionId || !formData.divisionId || !formData.depotId) return;
+    const errors: Record<string, string> = {};
+    if (!formData.workShopName || !formData.workShopName.trim()) {
+      errors.workShopName = "Workshop Name is required.";
+    }
+    if (!formData.regionId) {
+      errors.regionId = "Please select a Region.";
+    }
+    if (!formData.divisionId) {
+      errors.divisionId = "Please select a Division.";
+    }
+    if (!formData.depotId) {
+      errors.depotId = "Please select a Depot.";
+    }
+
+    const bays = Number(formData.workBays);
+    if (
+      formData.workBays === undefined ||
+      formData.workBays === null ||
+      formData.workBays === ("" as any) ||
+      isNaN(bays) ||
+      bays <= 0
+    ) {
+      errors.workBays = "Work Bays count is required and must be greater than 0.";
+    }
+
+    const jobs = Number(formData.activeRepairJobs ?? 0);
+    if (isNaN(jobs) || jobs < 0) {
+      errors.activeRepairJobs = "Active Repair Jobs cannot be negative.";
+    } else if (!isNaN(bays) && bays > 0 && jobs >= bays) {
+      errors.activeRepairJobs = "Active Repair Jobs must be less than Work Bays.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      toast.error("Please fill required fields correctly.");
+      return;
+    }
+    setFormErrors({});
 
     if (modal?.mode === "add") {
       addMutation.mutate({
-        workShopName: formData.workShopName.trim(),
-        regionId: formData.regionId,
-        divisionId: formData.divisionId,
-        depotId: formData.depotId,
+        workShopName: formData.workShopName!.trim(),
+        regionId: formData.regionId!,
+        divisionId: formData.divisionId!,
+        depotId: formData.depotId!,
         workBays: Number(formData.workBays) || 0,
         activeRepairJobs: Number(formData.activeRepairJobs) || 0,
         isActive: true,
@@ -222,10 +263,10 @@ export function Workshops({}: WorkshopPageProps) {
     } else if (modal?.mode === "edit" && modal.record) {
       updateMutation.mutate({
         workShopId: modal.record.workShopId,
-        workShopName: formData.workShopName.trim(),
-        regionId: formData.regionId,
-        divisionId: formData.divisionId,
-        depotId: formData.depotId,
+        workShopName: formData.workShopName!.trim(),
+        regionId: formData.regionId!,
+        divisionId: formData.divisionId!,
+        depotId: formData.depotId!,
         workBays: Number(formData.workBays) || 0,
         activeRepairJobs: Number(formData.activeRepairJobs) || 0,
         isActive: formData.isActive !== undefined ? formData.isActive : true,
@@ -448,26 +489,39 @@ export function Workshops({}: WorkshopPageProps) {
                 </div>
               )}
               <div className="stc-field">
-                <label className="stc-field-label">WorkShop Name</label>
+                <label className="stc-field-label">
+                  WorkShop Name <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
                   value={formData.workShopName || ""}
-                  onChange={(e) =>
-                    setFormData((s) => ({ ...s, workShopName: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, workShopName: e.target.value }));
+                    if (formErrors.workShopName) setFormErrors((prev) => ({ ...prev, workShopName: "" }));
+                  }}
+                  style={{ borderColor: formErrors.workShopName ? T.red : undefined }}
                 />
+                {formErrors.workShopName && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.workShopName}
+                  </span>
+                )}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Region</label>
+                <label className="stc-field-label">
+                  Region <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
                   value={formData.regionId || ""}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setFormData((s) => ({
                       ...s,
                       regionId: e.target.value,
                       divisionId: "",
                       depotId: "",
-                    }))
-                  }
+                    }));
+                    if (formErrors.regionId) setFormErrors((prev) => ({ ...prev, regionId: "" }));
+                  }}
+                  style={{ borderColor: formErrors.regionId ? T.red : undefined }}
                 >
                   <option value="">Select Region</option>
                   {regionOptions.map((opt) => (
@@ -476,19 +530,28 @@ export function Workshops({}: WorkshopPageProps) {
                     </option>
                   ))}
                 </select>
+                {formErrors.regionId && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.regionId}
+                  </span>
+                )}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Divisions</label>
+                <label className="stc-field-label">
+                  Divisions <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
                   value={formData.divisionId || ""}
                   disabled={!formData.regionId}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setFormData((s) => ({
                       ...s,
                       divisionId: e.target.value,
                       depotId: "",
-                    }))
-                  }
+                    }));
+                    if (formErrors.divisionId) setFormErrors((prev) => ({ ...prev, divisionId: "" }));
+                  }}
+                  style={{ borderColor: formErrors.divisionId ? T.red : undefined }}
                 >
                   <option value="">Select Division</option>
                   {divisionOptions
@@ -499,15 +562,24 @@ export function Workshops({}: WorkshopPageProps) {
                       </option>
                     ))}
                 </select>
+                {formErrors.divisionId && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.divisionId}
+                  </span>
+                )}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Depot</label>
+                <label className="stc-field-label">
+                  Depot <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
                   value={formData.depotId || ""}
                   disabled={!formData.divisionId}
-                  onChange={(e) =>
-                    setFormData((s) => ({ ...s, depotId: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, depotId: e.target.value }));
+                    if (formErrors.depotId) setFormErrors((prev) => ({ ...prev, depotId: "" }));
+                  }}
+                  style={{ borderColor: formErrors.depotId ? T.red : undefined }}
                 >
                   <option value="">Select Depot</option>
                   {depotOptions
@@ -518,32 +590,56 @@ export function Workshops({}: WorkshopPageProps) {
                       </option>
                     ))}
                 </select>
+                {formErrors.depotId && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.depotId}
+                  </span>
+                )}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Work Bays</label>
+                <label className="stc-field-label">
+                  Work Bays <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
                   type="number"
-                  value={formData.workBays ?? 0}
-                  onChange={(e) =>
+                  placeholder="Enter work bays count"
+                  value={formData.workBays ?? ""}
+                  onChange={(e) => {
                     setFormData((s) => ({
                       ...s,
-                      workBays: Number(e.target.value),
-                    }))
-                  }
+                      workBays: e.target.value === "" ? ("" as any) : Number(e.target.value),
+                    }));
+                    if (formErrors.workBays) setFormErrors((prev) => ({ ...prev, workBays: "" }));
+                    if (formErrors.activeRepairJobs) setFormErrors((prev) => ({ ...prev, activeRepairJobs: "" }));
+                  }}
+                  style={{ borderColor: formErrors.workBays ? T.red : undefined }}
                 />
+                {formErrors.workBays && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.workBays}
+                  </span>
+                )}
               </div>
               <div className="stc-field">
                 <label className="stc-field-label">Active Repair Jobs</label>
                 <input
                   type="number"
+                  placeholder="Enter active repair jobs count"
                   value={formData.activeRepairJobs ?? 0}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setFormData((s) => ({
                       ...s,
-                      activeRepairJobs: Number(e.target.value),
-                    }))
-                  }
+                      activeRepairJobs: e.target.value === "" ? 0 : Number(e.target.value),
+                    }));
+                    if (formErrors.activeRepairJobs) setFormErrors((prev) => ({ ...prev, activeRepairJobs: "" }));
+                  }}
+                  style={{ borderColor: formErrors.activeRepairJobs ? T.red : undefined }}
                 />
+                {formErrors.activeRepairJobs && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.activeRepairJobs}
+                  </span>
+                )}
               </div>
               {/* {modal.mode === "edit" && (
                 <div className="stc-field">

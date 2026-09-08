@@ -107,6 +107,8 @@ export function Stages() {
     },
   });
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   const handleOpenAdd = () => {
     setFormData({
       stageCode: "",
@@ -114,38 +116,67 @@ export function Stages() {
       routeId: "",
       sectionFromId: "",
       sectionToId: "",
-      distance: 0,
+      distance: "" as any,
       isActive: true,
     });
+    setFormErrors({});
     setModal({ mode: "add" });
   };
 
   const handleOpenEdit = (record: Stage) => {
     setFormData(record);
+    setFormErrors({});
     setModal({ mode: "edit", record });
   };
 
   const handleSave = () => {
-    if (!formData.stageName || !formData.routeId || !formData.sectionFromId || !formData.sectionToId) {
+    const errors: Record<string, string> = {};
+    if (!(formData.stageName || "").trim()) {
+      errors.stageName = "Stage Name is required.";
+    }
+    if (!formData.routeId) {
+      errors.routeId = "Please select a Route.";
+    }
+    if (!formData.sectionFromId) {
+      errors.sectionFromId = "Please select From Section.";
+    }
+    if (!formData.sectionToId) {
+      errors.sectionToId = "Please select To Section.";
+    } else if (formData.sectionFromId && String(formData.sectionFromId) === String(formData.sectionToId)) {
+      errors.sectionToId = "From Section and To Section cannot be the same.";
+    }
+    if (
+      formData.distance === undefined ||
+      formData.distance === null ||
+      formData.distance === ("" as any) ||
+      isNaN(Number(formData.distance)) ||
+      Number(formData.distance) <= 0
+    ) {
+      errors.distance = "Distance is required and must be greater than 0.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
       toast.error("Please fill required fields.");
       return;
     }
+    setFormErrors({});
 
     if (modal?.mode === "add") {
       addMutation.mutate({
         stageName: formData.stageName || "",
-        routeId: formData.routeId,
-        sectionFromId: formData.sectionFromId,
-        sectionToId: formData.sectionToId,
+        routeId: formData.routeId!,
+        sectionFromId: formData.sectionFromId!,
+        sectionToId: formData.sectionToId!,
         distance: Number(formData.distance) || 0,
       });
     } else if (modal?.mode === "edit" && modal.record) {
       updateMutation.mutate({
         stageId: formData.stageId || "",
         stageName: formData.stageName || "",
-        routeId: formData.routeId,
-        sectionFromId: formData.sectionFromId,
-        sectionToId: formData.sectionToId,
+        routeId: formData.routeId!,
+        sectionFromId: formData.sectionFromId!,
+        sectionToId: formData.sectionToId!,
         distance: Number(formData.distance) || 0,
       });
     }
@@ -284,17 +315,30 @@ export function Stages() {
                 </div>
               )}
               <div className="stc-field">
-                <label className="stc-field-label">Stage Name</label>
+                <label className="stc-field-label">
+                  Stage Name <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
+                  style={{ borderColor: formErrors.stageName ? T.red : undefined }}
                   value={formData.stageName || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, stageName: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, stageName: e.target.value }));
+                    if (formErrors.stageName) setFormErrors((prev) => ({ ...prev, stageName: "" }));
+                  }}
                 />
+                {formErrors.stageName && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.stageName}</span>}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Route</label>
+                <label className="stc-field-label">
+                  Route <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
+                  style={{ borderColor: formErrors.routeId ? T.red : undefined }}
                   value={formData.routeId || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, routeId: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, routeId: e.target.value }));
+                    if (formErrors.routeId) setFormErrors((prev) => ({ ...prev, routeId: "" }));
+                  }}
                 >
                   <option value="">Select Route</option>
                   {routeOptions.map((opt) => (
@@ -303,42 +347,72 @@ export function Stages() {
                     </option>
                   ))}
                 </select>
+                {formErrors.routeId && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.routeId}</span>}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">From Section</label>
+                <label className="stc-field-label">
+                  From Section <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
+                  style={{ borderColor: formErrors.sectionFromId ? T.red : undefined }}
                   value={formData.sectionFromId || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, sectionFromId: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, sectionFromId: e.target.value }));
+                    if (formErrors.sectionFromId) setFormErrors((prev) => ({ ...prev, sectionFromId: "" }));
+                  }}
                 >
                   <option value="">Select From Section</option>
                   {stopOptions.map((opt) => (
-                    <option key={opt.stopId} value={opt.stopId}>
+                    <option
+                      key={opt.stopId}
+                      value={opt.stopId}
+                      disabled={Boolean(formData.sectionToId && String(opt.stopId) === String(formData.sectionToId))}
+                    >
                       {opt.stopName}
                     </option>
                   ))}
                 </select>
+                {formErrors.sectionFromId && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.sectionFromId}</span>}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">To Section</label>
+                <label className="stc-field-label">
+                  To Section <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
+                  style={{ borderColor: formErrors.sectionToId ? T.red : undefined }}
                   value={formData.sectionToId || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, sectionToId: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, sectionToId: e.target.value }));
+                    if (formErrors.sectionToId) setFormErrors((prev) => ({ ...prev, sectionToId: "" }));
+                  }}
                 >
                   <option value="">Select To Section</option>
                   {stopOptions.map((opt) => (
-                    <option key={opt.stopId} value={opt.stopId}>
+                    <option
+                      key={opt.stopId}
+                      value={opt.stopId}
+                      disabled={Boolean(formData.sectionFromId && String(opt.stopId) === String(formData.sectionFromId))}
+                    >
                       {opt.stopName}
                     </option>
                   ))}
                 </select>
+                {formErrors.sectionToId && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.sectionToId}</span>}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Distance (km)</label>
+                <label className="stc-field-label">
+                  Distance (km) <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
                   type="number"
-                  value={formData.distance ?? 0}
-                  onChange={(e) => setFormData((s) => ({ ...s, distance: Number(e.target.value) }))}
+                  style={{ borderColor: formErrors.distance ? T.red : undefined }}
+                  value={formData.distance ?? ""}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, distance: e.target.value === "" ? ("" as any) : Number(e.target.value) }));
+                    if (formErrors.distance) setFormErrors((prev) => ({ ...prev, distance: "" }));
+                  }}
                 />
+                {formErrors.distance && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.distance}</span>}
               </div>
             </div>
           </Modal>

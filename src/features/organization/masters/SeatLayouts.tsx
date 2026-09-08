@@ -93,6 +93,8 @@ export function SeatLayouts() {
     },
   });
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   const handleOpenAdd = () => {
     setFormData({
       layoutCode: "",
@@ -100,23 +102,35 @@ export function SeatLayouts() {
       description: "",
       isActive: true,
     });
+    setFormErrors({});
     setModal({ mode: "add" });
   };
 
   const handleOpenEdit = (record: SeatLayout) => {
     setFormData(record);
+    setFormErrors({});
     setModal({ mode: "edit", record });
   };
 
   const handleSave = () => {
-    if (!formData.description || !formData.categoryId) {
+    const errors: Record<string, string> = {};
+    if (!formData.categoryId) {
+      errors.categoryId = "Please select a Vehicle category.";
+    }
+    if (!(formData.description || "").trim()) {
+      errors.description = "Layout Description is required.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
       toast.error("Please fill required fields.");
       return;
     }
+    setFormErrors({});
 
     const payload = {
       description: formData.description || "",
-      categoryId: formData.categoryId,
+      categoryId: formData.categoryId!,
     };
 
     if (modal?.mode === "add") {
@@ -256,10 +270,16 @@ export function SeatLayouts() {
                 </div>
               )}
               <div className="stc-field" style={{ gridColumn: "1 / -1" }}>
-                <label className="stc-field-label">Vehicle category</label>
+                <label className="stc-field-label">
+                  Vehicle category <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
+                  style={{ borderColor: formErrors.categoryId ? T.red : undefined }}
                   value={formData.categoryId || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, categoryId: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, categoryId: e.target.value }));
+                    if (formErrors.categoryId) setFormErrors((prev) => ({ ...prev, categoryId: "" }));
+                  }}
                 >
                   <option value="">Select Category</option>
                   {categoryOptions.map((opt) => (
@@ -268,13 +288,21 @@ export function SeatLayouts() {
                     </option>
                   ))}
                 </select>
+                {formErrors.categoryId && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.categoryId}</span>}
               </div>
               <div className="stc-field" style={{ gridColumn: "1 / -1" }}>
-                <label className="stc-field-label">Layout Description</label>
+                <label className="stc-field-label">
+                  Layout Description <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
+                  style={{ borderColor: formErrors.description ? T.red : undefined }}
                   value={formData.description || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, description: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, description: e.target.value }));
+                    if (formErrors.description) setFormErrors((prev) => ({ ...prev, description: "" }));
+                  }}
                 />
+                {formErrors.description && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.description}</span>}
               </div>
             </div>
           </Modal>

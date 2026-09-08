@@ -90,6 +90,8 @@ export function Regions() {
   });
   const filteredData = data;
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   const handleOpenAdd = () => {
     setFormData({
       regionId: "",
@@ -97,22 +99,35 @@ export function Regions() {
       regionName: "",
       isActive: true,
     });
+    setFormErrors({});
     setModal({ mode: "add" });
   };
 
   const handleOpenEdit = (record: Region) => {
     setFormData(record);
+    setFormErrors({});
     setModal({ mode: "edit", record });
   };
 
   const handleSave = () => {
-    if (!formData.regionName) return;
+    const errors: Record<string, string> = {};
+    if (!formData.regionName || !formData.regionName.trim()) {
+      errors.regionName = "Region Name is required.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      toast.error("Please fill required fields.");
+      return;
+    }
+    setFormErrors({});
+
     const newRecord: RegionPayload = {
       regionId:
         modal?.mode === "edit" && modal.record ? modal.record.regionId : "",
       regionCode:
         modal?.mode === "edit" && modal.record ? modal.record.regionCode : "",
-      regionName: formData.regionName.trim(),
+      regionName: formData.regionName!.trim(),
       isActive: formData.isActive ?? true,
     };
 
@@ -310,13 +325,26 @@ export function Regions() {
               )}
 
               <div className="stc-field" style={{ gridColumn: "1 / -1" }}>
-                <label className="stc-field-label">Region Name</label>
+                <label className="stc-field-label">
+                  Region Name <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
                   value={formData.regionName || ""}
-                  onChange={(e) =>
-                    setFormData((s) => ({ ...s, regionName: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, regionName: e.target.value }));
+                    if (formErrors.regionName) {
+                      setFormErrors((prev) => ({ ...prev, regionName: "" }));
+                    }
+                  }}
+                  style={{
+                    borderColor: formErrors.regionName ? T.red : undefined,
+                  }}
                 />
+                {formErrors.regionName && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.regionName}
+                  </span>
+                )}
               </div>
 
               {/* {modal.mode === "edit" && (

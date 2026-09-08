@@ -90,6 +90,8 @@ export function ComplaintCategories() {
     },
   });
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   const handleOpenAdd = () => {
     setFormData({
       complaintCode: "",
@@ -99,24 +101,39 @@ export function ComplaintCategories() {
       description: "",
       isActive: true,
     });
+    setFormErrors({});
     setModal({ mode: "add" });
   };
 
   const handleOpenEdit = (record: ComplaintCategory) => {
     setFormData(record);
+    setFormErrors({});
     setModal({ mode: "edit", record });
   };
 
   const handleSave = () => {
-    if (!formData.complaintTitle || !formData.complaintCategory || !formData.sla) {
+    const errors: Record<string, string> = {};
+    if (!formData.complaintCategory) {
+      errors.complaintCategory = "Please select a Category.";
+    }
+    if (!formData.complaintTitle || !formData.complaintTitle.trim()) {
+      errors.complaintTitle = "Title is required.";
+    }
+    if (!formData.sla) {
+      errors.sla = "Please select an SLA.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
       toast.error("Please fill required fields.");
       return;
     }
+    setFormErrors({});
 
     const payload = {
-      complaintTitle: formData.complaintTitle || "",
-      complaintCategory: formData.complaintCategory,
-      sla: formData.sla,
+      complaintTitle: formData.complaintTitle!.trim(),
+      complaintCategory: formData.complaintCategory!,
+      sla: formData.sla!,
       description: formData.description || "",
     };
 
@@ -266,10 +283,16 @@ export function ComplaintCategories() {
                 </div>
               )}
               <div className="stc-field">
-                <label className="stc-field-label">Category</label>
+                <label className="stc-field-label">
+                  Category <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
                   value={formData.complaintCategory || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, complaintCategory: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, complaintCategory: e.target.value }));
+                    if (formErrors.complaintCategory) setFormErrors((prev) => ({ ...prev, complaintCategory: "" }));
+                  }}
+                  style={{ borderColor: formErrors.complaintCategory ? T.red : undefined }}
                 >
                   <option value="">Select Category</option>
                   {categories.map((c) => (
@@ -278,19 +301,41 @@ export function ComplaintCategories() {
                     </option>
                   ))}
                 </select>
+                {formErrors.complaintCategory && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.complaintCategory}
+                  </span>
+                )}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Title</label>
+                <label className="stc-field-label">
+                  Title <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
                   value={formData.complaintTitle || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, complaintTitle: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, complaintTitle: e.target.value }));
+                    if (formErrors.complaintTitle) setFormErrors((prev) => ({ ...prev, complaintTitle: "" }));
+                  }}
+                  style={{ borderColor: formErrors.complaintTitle ? T.red : undefined }}
                 />
+                {formErrors.complaintTitle && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.complaintTitle}
+                  </span>
+                )}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">SLA</label>
+                <label className="stc-field-label">
+                  SLA <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
                   value={formData.sla || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, sla: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, sla: e.target.value }));
+                    if (formErrors.sla) setFormErrors((prev) => ({ ...prev, sla: "" }));
+                  }}
+                  style={{ borderColor: formErrors.sla ? T.red : undefined }}
                 >
                   <option value="">Select SLA</option>
                   {slas.map((s) => (
@@ -299,6 +344,11 @@ export function ComplaintCategories() {
                     </option>
                   ))}
                 </select>
+                {formErrors.sla && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.sla}
+                  </span>
+                )}
               </div>
               <div className="stc-field" style={{ gridColumn: "1 / -1" }}>
                 <label className="stc-field-label">Description</label>

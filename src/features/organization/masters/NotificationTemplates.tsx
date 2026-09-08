@@ -86,6 +86,8 @@ export function NotificationTemplates() {
     },
   });
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   const handleOpenAdd = () => {
     setFormData({
       notificationCode: "",
@@ -94,23 +96,35 @@ export function NotificationTemplates() {
       description: "",
       isActive: true,
     });
+    setFormErrors({});
     setModal({ mode: "add" });
   };
 
   const handleOpenEdit = (record: NotificationTemplate) => {
     setFormData(record);
+    setFormErrors({});
     setModal({ mode: "edit", record });
   };
 
   const handleSave = () => {
-    if (!formData.notificationTitle || !formData.channel) {
+    const errors: Record<string, string> = {};
+    if (!(formData.notificationTitle || "").trim()) {
+      errors.notificationTitle = "Title is required.";
+    }
+    if (!formData.channel) {
+      errors.channel = "Please select a Channel.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
       toast.error("Please fill required fields.");
       return;
     }
+    setFormErrors({});
 
     const payload = {
       notificationTitle: formData.notificationTitle || "",
-      channel: formData.channel,
+      channel: formData.channel!,
       description: formData.description || "",
     };
 
@@ -251,17 +265,30 @@ export function NotificationTemplates() {
                 </div>
               )}
               <div className="stc-field">
-                <label className="stc-field-label">Title</label>
+                <label className="stc-field-label">
+                  Title <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
+                  style={{ borderColor: formErrors.notificationTitle ? T.red : undefined }}
                   value={formData.notificationTitle || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, notificationTitle: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, notificationTitle: e.target.value }));
+                    if (formErrors.notificationTitle) setFormErrors((prev) => ({ ...prev, notificationTitle: "" }));
+                  }}
                 />
+                {formErrors.notificationTitle && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.notificationTitle}</span>}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Channel</label>
+                <label className="stc-field-label">
+                  Channel <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
+                  style={{ borderColor: formErrors.channel ? T.red : undefined }}
                   value={formData.channel || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, channel: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, channel: e.target.value }));
+                    if (formErrors.channel) setFormErrors((prev) => ({ ...prev, channel: "" }));
+                  }}
                 >
                    <option key="" value="">
                       Select Channel
@@ -272,6 +299,7 @@ export function NotificationTemplates() {
                     </option>
                   ))}
                 </select>
+                {formErrors.channel && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.channel}</span>}
               </div>
               <div className="stc-field" style={{ gridColumn: "1 / -1" }}>
                 <label className="stc-field-label">Description</label>

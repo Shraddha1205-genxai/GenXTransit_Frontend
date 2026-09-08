@@ -186,6 +186,8 @@ export function BusStation({}: BusStationPageProps) {
   const [toDelete, setToDelete] = useState<BusStation | null>(null);
   const [formData, setFormData] = useState<Partial<BusStation>>({});
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   const handleOpenAdd = () => {
     setFormData({
       stationCode: "",
@@ -193,27 +195,57 @@ export function BusStation({}: BusStationPageProps) {
       regionId: "",
       divisionId: "",
       depotId: "",
-      platforms: 0,
+      platforms: "" as any,
       dailyFootfall: 0,
       isActive: true,
     });
+    setFormErrors({});
     setModal({ mode: "add" });
   };
 
   const handleOpenEdit = (record: BusStation) => {
     setFormData(record);
+    setFormErrors({});
     setModal({ mode: "edit", record });
   };
 
   const handleSave = () => {
-    if (!formData.stationName || !formData.regionId || !formData.divisionId || !formData.depotId) return;
+    const errors: Record<string, string> = {};
+    if (!formData.stationName || !formData.stationName.trim()) {
+      errors.stationName = "Station Name is required.";
+    }
+    if (!formData.regionId) {
+      errors.regionId = "Please select a Region.";
+    }
+    if (!formData.divisionId) {
+      errors.divisionId = "Please select a Division.";
+    }
+    if (!formData.depotId) {
+      errors.depotId = "Please select a Depot.";
+    }
+    if (
+      formData.platforms === undefined ||
+      formData.platforms === null ||
+      formData.platforms === ("" as any) ||
+      isNaN(Number(formData.platforms)) ||
+      Number(formData.platforms) <= 0
+    ) {
+      errors.platforms = "Platforms count is required and must be greater than 0.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      toast.error("Please fill required fields.");
+      return;
+    }
+    setFormErrors({});
 
     if (modal?.mode === "add") {
       addMutation.mutate({
-        stationName: formData.stationName.trim(),
-        regionId: formData.regionId,
-        divisionId: formData.divisionId,
-        depotId: formData.depotId,
+        stationName: formData.stationName!.trim(),
+        regionId: formData.regionId!,
+        divisionId: formData.divisionId!,
+        depotId: formData.depotId!,
         platforms: Number(formData.platforms) || 0,
         dailyFootfall: Number(formData.dailyFootfall) || 0,
         isActive: true,
@@ -221,10 +253,10 @@ export function BusStation({}: BusStationPageProps) {
     } else if (modal?.mode === "edit" && modal.record) {
       updateMutation.mutate({
         stationId: modal.record.stationId,
-        stationName: formData.stationName.trim(),
-        regionId: formData.regionId,
-        divisionId: formData.divisionId,
-        depotId: formData.depotId,
+        stationName: formData.stationName!.trim(),
+        regionId: formData.regionId!,
+        divisionId: formData.divisionId!,
+        depotId: formData.depotId!,
         platforms: Number(formData.platforms) || 0,
         dailyFootfall: Number(formData.dailyFootfall) || 0,
         isActive: formData.isActive !== undefined ? formData.isActive : true,
@@ -447,26 +479,39 @@ export function BusStation({}: BusStationPageProps) {
                 </div>
               )}
               <div className="stc-field">
-                <label className="stc-field-label">Station Name</label>
+                <label className="stc-field-label">
+                  Station Name <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
                   value={formData.stationName || ""}
-                  onChange={(e) =>
-                    setFormData((s) => ({ ...s, stationName: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, stationName: e.target.value }));
+                    if (formErrors.stationName) setFormErrors((prev) => ({ ...prev, stationName: "" }));
+                  }}
+                  style={{ borderColor: formErrors.stationName ? T.red : undefined }}
                 />
+                {formErrors.stationName && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.stationName}
+                  </span>
+                )}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Region</label>
+                <label className="stc-field-label">
+                  Region <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
                   value={formData.regionId || ""}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setFormData((s) => ({
                       ...s,
                       regionId: e.target.value,
                       divisionId: "",
                       depotId: "",
-                    }))
-                  }
+                    }));
+                    if (formErrors.regionId) setFormErrors((prev) => ({ ...prev, regionId: "" }));
+                  }}
+                  style={{ borderColor: formErrors.regionId ? T.red : undefined }}
                 >
                   <option value="">Select Region</option>
                   {regionOptions.map((c) => (
@@ -475,19 +520,28 @@ export function BusStation({}: BusStationPageProps) {
                     </option>
                   ))}
                 </select>
+                {formErrors.regionId && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.regionId}
+                  </span>
+                )}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Divisions</label>
+                <label className="stc-field-label">
+                  Divisions <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
                   value={formData.divisionId || ""}
                   disabled={!formData.regionId}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setFormData((s) => ({
                       ...s,
                       divisionId: e.target.value,
                       depotId: "",
-                    }))
-                  }
+                    }));
+                    if (formErrors.divisionId) setFormErrors((prev) => ({ ...prev, divisionId: "" }));
+                  }}
+                  style={{ borderColor: formErrors.divisionId ? T.red : undefined }}
                 >
                   <option value="">Select Division</option>
                   {divisionOptions
@@ -498,15 +552,24 @@ export function BusStation({}: BusStationPageProps) {
                       </option>
                     ))}
                 </select>
+                {formErrors.divisionId && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.divisionId}
+                  </span>
+                )}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Depot</label>
+                <label className="stc-field-label">
+                  Depot <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
                   value={formData.depotId || ""}
                   disabled={!formData.divisionId}
-                  onChange={(e) =>
-                    setFormData((s) => ({ ...s, depotId: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, depotId: e.target.value }));
+                    if (formErrors.depotId) setFormErrors((prev) => ({ ...prev, depotId: "" }));
+                  }}
+                  style={{ borderColor: formErrors.depotId ? T.red : undefined }}
                 >
                   <option value="">Select Depot</option>
                   {depotOptions
@@ -517,19 +580,34 @@ export function BusStation({}: BusStationPageProps) {
                       </option>
                     ))}
                 </select>
+                {formErrors.depotId && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.depotId}
+                  </span>
+                )}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Platforms</label>
+                <label className="stc-field-label">
+                  Platforms <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
                   type="number"
-                  value={formData.platforms ?? 0}
-                  onChange={(e) =>
+                  placeholder="Enter platforms count"
+                  value={formData.platforms ?? ""}
+                  onChange={(e) => {
                     setFormData((s) => ({
                       ...s,
-                      platforms: Number(e.target.value),
-                    }))
-                  }
+                      platforms: e.target.value === "" ? ("" as any) : Number(e.target.value),
+                    }));
+                    if (formErrors.platforms) setFormErrors((prev) => ({ ...prev, platforms: "" }));
+                  }}
+                  style={{ borderColor: formErrors.platforms ? T.red : undefined }}
                 />
+                {formErrors.platforms && (
+                  <span style={{ color: T.red, fontSize: 12, marginTop: 4, display: "block" }}>
+                    {formErrors.platforms}
+                  </span>
+                )}
               </div>
               <div className="stc-field">
                 <label className="stc-field-label">Daily Footfall</label>

@@ -117,6 +117,8 @@ export function FarePolicies() {
     },
   });
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   const handleOpenAdd = () => {
     setFormData({
       policyCode: "",
@@ -124,29 +126,53 @@ export function FarePolicies() {
       policyStatus: "",
       categoryId: "",
       routeId: "",
-      baseFare: 0,
+      baseFare: "" as any,
       rateDescription: "",
       isActive: true,
     });
+    setFormErrors({});
     setModal({ mode: "add" });
   };
 
   const handleOpenEdit = (record: FarePolicy) => {
     setFormData(record);
+    setFormErrors({});
     setModal({ mode: "edit", record });
   };
 
   const handleSave = () => {
-    if (!formData.model || !formData.categoryId || !formData.routeId) {
+    const errors: Record<string, string> = {};
+    if (!formData.model) {
+      errors.model = "Please select a Model.";
+    }
+    if (!formData.categoryId) {
+      errors.categoryId = "Please select a Category.";
+    }
+    if (!formData.routeId) {
+      errors.routeId = "Please select a Route.";
+    }
+    if (
+      formData.baseFare === undefined ||
+      formData.baseFare === null ||
+      formData.baseFare === ("" as any) ||
+      isNaN(Number(formData.baseFare)) ||
+      Number(formData.baseFare) < 0
+    ) {
+      errors.baseFare = "Base fare is required and must be non-negative.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
       toast.error("Please fill required fields.");
       return;
     }
+    setFormErrors({});
 
     const payload = {
-      model: formData.model,
+      model: formData.model!,
       policyStatus: formData.policyStatus || "Draft",
-      categoryId: formData.categoryId,
-      routeId: formData.routeId,
+      categoryId: formData.categoryId!,
+      routeId: formData.routeId!,
       baseFare: String(formData.baseFare ?? 0),
       rateDescription: formData.rateDescription || "",
     };
@@ -320,24 +346,38 @@ export function FarePolicies() {
                 </div>
               )}
               <div className="stc-field">
-                <label className="stc-field-label">Model</label>
+                <label className="stc-field-label">
+                  Model <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
+                  style={{ borderColor: formErrors.model ? T.red : undefined }}
                   value={formData.model || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, model: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, model: e.target.value }));
+                    if (formErrors.model) setFormErrors((prev) => ({ ...prev, model: "" }));
+                  }}
                 >
                   <option value="">Select Model</option>
                   {modelOptions.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
+                {formErrors.model && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.model}</span>}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Category</label>
+                <label className="stc-field-label">
+                  Category <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
+                  style={{ borderColor: formErrors.categoryId ? T.red : undefined }}
                   value={formData.categoryId || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, categoryId: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, categoryId: e.target.value }));
+                    if (formErrors.categoryId) setFormErrors((prev) => ({ ...prev, categoryId: "" }));
+                  }}
                 >
                   <option value="">Select Category</option>
                   {categoryOptions.map((opt: any) => <option key={opt.categoryId} value={opt.categoryId}>{opt.categoryName}</option>)}
                 </select>
+                {formErrors.categoryId && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.categoryId}</span>}
               </div>
               <div className="stc-field">
                 <label className="stc-field-label">Status</label>
@@ -350,22 +390,36 @@ export function FarePolicies() {
                 </select>
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Base fare (₹)</label>
+                <label className="stc-field-label">
+                  Base fare (₹) <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
                   type="number"
+                  style={{ borderColor: formErrors.baseFare ? T.red : undefined }}
                   value={formData.baseFare ?? 0}
-                  onChange={(e) => setFormData((s) => ({ ...s, baseFare: Number(e.target.value) }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, baseFare: Number(e.target.value) }));
+                    if (formErrors.baseFare) setFormErrors((prev) => ({ ...prev, baseFare: "" }));
+                  }}
                 />
+                {formErrors.baseFare && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.baseFare}</span>}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Route</label>
+                <label className="stc-field-label">
+                  Route <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
+                  style={{ borderColor: formErrors.routeId ? T.red : undefined }}
                   value={formData.routeId || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, routeId: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, routeId: e.target.value }));
+                    if (formErrors.routeId) setFormErrors((prev) => ({ ...prev, routeId: "" }));
+                  }}
                 >
                   <option value="">Select Route</option>
                   {routeOptions.map((opt: any) => <option key={opt.routeId} value={opt.routeId}>{opt.routeName}</option>)}
                 </select>
+                {formErrors.routeId && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.routeId}</span>}
               </div>
               <div className="stc-field">
                 <label className="stc-field-label">Rate description</label>

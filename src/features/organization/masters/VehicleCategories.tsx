@@ -87,18 +87,41 @@ export function VehicleCategories() {
     },
   });
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   const handleOpenAdd = () => {
     setFormData({ categoryCode: "", categoryName: "", capacity: 0, type: "Non-AC", class: "Standard" });
+    setFormErrors({});
     setModal({ mode: "add" });
   };
 
   const handleOpenEdit = (record: VehicleCategory) => {
     setFormData(record);
+    setFormErrors({});
     setModal({ mode: "edit", record });
   };
 
   const handleSave = () => {
-    if (!formData.categoryName) return;
+    const errors: Record<string, string> = {};
+    if (!(formData.categoryName || "").trim()) {
+      errors.categoryName = "Name is required.";
+    }
+    if (
+      formData.capacity === undefined ||
+      formData.capacity === null ||
+      formData.capacity === ("" as any) ||
+      isNaN(Number(formData.capacity)) ||
+      Number(formData.capacity) <= 0
+    ) {
+      errors.capacity = "Capacity is required and must be greater than 0.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      toast.error("Please fill required fields.");
+      return;
+    }
+    setFormErrors({});
 
     if (modal?.mode === "add") {
       addMutation.mutate({
@@ -267,19 +290,33 @@ export function VehicleCategories() {
                 </div>
               )}
               <div className="stc-field">
-                <label className="stc-field-label">Name</label>
+                <label className="stc-field-label">
+                  Name <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
+                  style={{ borderColor: formErrors.categoryName ? T.red : undefined }}
                   value={formData.categoryName || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, categoryName: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, categoryName: e.target.value }));
+                    if (formErrors.categoryName) setFormErrors((prev) => ({ ...prev, categoryName: "" }));
+                  }}
                 />
+                {formErrors.categoryName && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.categoryName}</span>}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Capacity</label>
+                <label className="stc-field-label">
+                  Capacity <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
                   type="number"
+                  style={{ borderColor: formErrors.capacity ? T.red : undefined }}
                   value={formData.capacity ?? 0}
-                  onChange={(e) => setFormData((s) => ({ ...s, capacity: Number(e.target.value) }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, capacity: Number(e.target.value) }));
+                    if (formErrors.capacity) setFormErrors((prev) => ({ ...prev, capacity: "" }));
+                  }}
                 />
+                {formErrors.capacity && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.capacity}</span>}
               </div>
               <div className="stc-field">
                 <label className="stc-field-label">Type</label>

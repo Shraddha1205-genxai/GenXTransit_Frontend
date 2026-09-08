@@ -107,6 +107,8 @@ export function RouteMaster() {
     },
   });
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   const handleOpenAdd = () => {
     setFormData({
       routeCode: "",
@@ -117,35 +119,68 @@ export function RouteMaster() {
       type: "",
       distance: 0,
       fareModel: "",
-      duration: "00:00:00",
+      duration: "",
     });
+    setFormErrors({});
     setModal({ mode: "add" });
   };
 
   const handleOpenEdit = (record: Route) => {
     setFormData(record);
+    setFormErrors({});
     setModal({ mode: "edit", record });
   };
 
   const handleSave = () => {
-    if (!formData.routeName || !formData.fromStationId || !formData.toStationId || !formData.service || !formData.type || !formData.fareModel) {
+    const errors: Record<string, string> = {};
+    if (!(formData.routeName || "").trim()) {
+      errors.routeName = "Route Name is required.";
+    }
+    if (!formData.service) {
+      errors.service = "Please select a Service.";
+    }
+    if (!formData.fromStationId) {
+      errors.fromStationId = "Please select From Station.";
+    }
+    if (!formData.toStationId) {
+      errors.toStationId = "Please select To Station.";
+    } else if (formData.fromStationId && String(formData.fromStationId) === String(formData.toStationId)) {
+      errors.toStationId = "From Station and To Station cannot be the same.";
+    }
+    if (!formData.type) {
+      errors.type = "Please select a Type.";
+    }
+    if (
+      formData.distance === undefined ||
+      formData.distance === null ||
+      formData.distance === ("" as any) ||
+      isNaN(Number(formData.distance)) ||
+      Number(formData.distance) <= 0
+    ) {
+      errors.distance = "Distance is required and must be greater than 0.";
+    }
+    if (!formData.fareModel) {
+      errors.fareModel = "Please select a Fare Model.";
+    }
+    if (!(formData.duration || "").trim()) {
+      errors.duration = "Duration is required.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
       toast.error("Please fill required fields.");
       return;
     }
-
-    if (String(formData.fromStationId) === String(formData.toStationId)) {
-      toast.error("From Station and To Station cannot be the same.");
-      return;
-    }
+    setFormErrors({});
 
     const payload = {
       routeName: formData.routeName || "",
-      service: formData.service,
-      fromStationId: formData.fromStationId,
-      toStationId: formData.toStationId,
-      type: formData.type,
+      service: formData.service!,
+      fromStationId: formData.fromStationId!,
+      toStationId: formData.toStationId!,
+      type: formData.type!,
       distance: Number(formData.distance) || 0,
-      fareModel: formData.fareModel,
+      fareModel: formData.fareModel!,
       duration: formData.duration || "00:00:00",
     };
 
@@ -308,29 +343,49 @@ export function RouteMaster() {
                 </div>
               )}
               <div className="stc-field">
-                <label className="stc-field-label">Name</label>
+                <label className="stc-field-label">
+                  Name <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
+                  style={{ borderColor: formErrors.routeName ? T.red : undefined }}
                   value={formData.routeName || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, routeName: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, routeName: e.target.value }));
+                    if (formErrors.routeName) setFormErrors((prev) => ({ ...prev, routeName: "" }));
+                  }}
                 />
+                {formErrors.routeName && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.routeName}</span>}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Service</label>
+                <label className="stc-field-label">
+                  Service <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
+                  style={{ borderColor: formErrors.service ? T.red : undefined }}
                   value={formData.service || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, service: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, service: e.target.value }));
+                    if (formErrors.service) setFormErrors((prev) => ({ ...prev, service: "" }));
+                  }}
                 >
                   <option value="">Select Service</option>
                   {serviceOptions.map((opt) => (
                     <option key={opt} value={opt}>{opt}</option>
                   ))}
                 </select>
+                {formErrors.service && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.service}</span>}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">From Station</label>
+                <label className="stc-field-label">
+                  From Station <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
+                  style={{ borderColor: formErrors.fromStationId ? T.red : undefined }}
                   value={formData.fromStationId || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, fromStationId: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, fromStationId: e.target.value }));
+                    if (formErrors.fromStationId) setFormErrors((prev) => ({ ...prev, fromStationId: "" }));
+                  }}
                 >
                   <option value="">Select From Station</option>
                   {stationOptions.map((opt) => (
@@ -343,12 +398,19 @@ export function RouteMaster() {
                     </option>
                   ))}
                 </select>
+                {formErrors.fromStationId && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.fromStationId}</span>}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">To Station</label>
+                <label className="stc-field-label">
+                  To Station <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
+                  style={{ borderColor: formErrors.toStationId ? T.red : undefined }}
                   value={formData.toStationId || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, toStationId: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, toStationId: e.target.value }));
+                    if (formErrors.toStationId) setFormErrors((prev) => ({ ...prev, toStationId: "" }));
+                  }}
                 >
                   <option value="">Select To Station</option>
                   {stationOptions.map((opt) => (
@@ -361,46 +423,75 @@ export function RouteMaster() {
                     </option>
                   ))}
                 </select>
+                {formErrors.toStationId && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.toStationId}</span>}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Type</label>
+                <label className="stc-field-label">
+                  Type <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
+                  style={{ borderColor: formErrors.type ? T.red : undefined }}
                   value={formData.type || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, type: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, type: e.target.value }));
+                    if (formErrors.type) setFormErrors((prev) => ({ ...prev, type: "" }));
+                  }}
                 >
                   <option value="">Select Type</option>
                   {typeOptions.map((opt) => (
                     <option key={opt} value={opt}>{opt}</option>
                   ))}
                 </select>
+                {formErrors.type && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.type}</span>}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Distance (km)</label>
+                <label className="stc-field-label">
+                  Distance (km) <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
                   type="number"
+                  style={{ borderColor: formErrors.distance ? T.red : undefined }}
                   value={formData.distance ?? 0}
-                  onChange={(e) => setFormData((s) => ({ ...s, distance: Number(e.target.value) }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, distance: Number(e.target.value) }));
+                    if (formErrors.distance) setFormErrors((prev) => ({ ...prev, distance: "" }));
+                  }}
                 />
+                {formErrors.distance && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.distance}</span>}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Fare model</label>
+                <label className="stc-field-label">
+                  Fare model <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
+                  style={{ borderColor: formErrors.fareModel ? T.red : undefined }}
                   value={formData.fareModel || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, fareModel: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, fareModel: e.target.value }));
+                    if (formErrors.fareModel) setFormErrors((prev) => ({ ...prev, fareModel: "" }));
+                  }}
                 >
                   <option value="">Select Fare Model</option>
                   {fareModelOptions.map((opt) => (
                     <option key={opt} value={opt}>{opt}</option>
                   ))}
                 </select>
+                {formErrors.fareModel && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.fareModel}</span>}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Duration</label>
+                <label className="stc-field-label">
+                  Duration <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
+                  style={{ borderColor: formErrors.duration ? T.red : undefined }}
                   value={formData.duration || ""}
                   placeholder="e.g. 03:10:00"
-                  onChange={(e) => setFormData((s) => ({ ...s, duration: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, duration: e.target.value }));
+                    if (formErrors.duration) setFormErrors((prev) => ({ ...prev, duration: "" }));
+                  }}
                 />
+                {formErrors.duration && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.duration}</span>}
               </div>
             </div>
           </Modal>

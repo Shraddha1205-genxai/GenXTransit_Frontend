@@ -81,6 +81,8 @@ export function TicketTypes() {
     },
   });
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   const handleOpenAdd = () => {
     setFormData({
       ticketCode: "",
@@ -88,16 +90,28 @@ export function TicketTypes() {
       description: "",
       isActive: true,
     });
+    setFormErrors({});
     setModal({ mode: "add" });
   };
 
   const handleOpenEdit = (record: TicketType) => {
     setFormData(record);
+    setFormErrors({});
     setModal({ mode: "edit", record });
   };
 
   const handleSave = () => {
-    if (!formData.ticketName) return;
+    const errors: Record<string, string> = {};
+    if (!(formData.ticketName || "").trim()) {
+      errors.ticketName = "Name is required.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      toast.error("Please fill required fields.");
+      return;
+    }
+    setFormErrors({});
 
     const payload = {
       ticketName: formData.ticketName || "",
@@ -234,11 +248,18 @@ export function TicketTypes() {
                 </div>
               )}
               <div className="stc-field">
-                <label className="stc-field-label">Name</label>
+                <label className="stc-field-label">
+                  Name <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
+                  style={{ borderColor: formErrors.ticketName ? T.red : undefined }}
                   value={formData.ticketName || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, ticketName: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, ticketName: e.target.value }));
+                    if (formErrors.ticketName) setFormErrors((prev) => ({ ...prev, ticketName: "" }));
+                  }}
                 />
+                {formErrors.ticketName && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.ticketName}</span>}
               </div>
               <div className="stc-field" style={{ gridColumn: "1 / -1" }}>
                 <label className="stc-field-label">Description</label>

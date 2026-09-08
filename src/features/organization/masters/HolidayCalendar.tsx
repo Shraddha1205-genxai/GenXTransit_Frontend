@@ -70,21 +70,41 @@ export function HolidayCalendar() {
     }
   });
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   const handleOpenAdd = () => {
     setFormData({ holidayName: "", occasion: "", date: "", description: "", type: "" });
+    setFormErrors({});
     setModal({ mode: "add" });
   };
 
   const handleOpenEdit = (record: Holiday) => {
     setFormData(record);
+    setFormErrors({});
     setModal({ mode: "edit", record });
   };
 
   const handleSave = () => {
-    if (!formData.holidayName || !formData.date || !formData.description || !formData.type) {
+    const errors: Record<string, string> = {};
+    if (!(formData.holidayName || "").trim()) {
+      errors.holidayName = "Holiday Name is required.";
+    }
+    if (!(formData.date || "").trim()) {
+      errors.date = "Date is required.";
+    }
+    if (!(formData.description || "").trim()) {
+      errors.description = "Description is required.";
+    }
+    if (!formData.type) {
+      errors.type = "Please select a Type.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
       toast.error("Please fill required fields.");
       return;
     }
+    setFormErrors({});
 
     if (modal?.mode === "add") {
       addMutation.mutate({
@@ -243,11 +263,18 @@ export function HolidayCalendar() {
                 </div>
               )}
               <div className="stc-field">
-                <label className="stc-field-label">Holiday Name</label>
+                <label className="stc-field-label">
+                  Holiday Name <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
+                  style={{ borderColor: formErrors.holidayName ? T.red : undefined }}
                   value={formData.holidayName || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, holidayName: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, holidayName: e.target.value }));
+                    if (formErrors.holidayName) setFormErrors((prev) => ({ ...prev, holidayName: "" }));
+                  }}
                 />
+                {formErrors.holidayName && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.holidayName}</span>}
               </div>
               <div className="stc-field">
                 <label className="stc-field-label">Occasion</label>
@@ -257,29 +284,50 @@ export function HolidayCalendar() {
                 />
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Date (YYYY-MM-DD)</label>
+                <label className="stc-field-label">
+                  Date (YYYY-MM-DD) <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
                   type="date"
+                  style={{ borderColor: formErrors.date ? T.red : undefined }}
                   value={formData.date || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, date: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, date: e.target.value }));
+                    if (formErrors.date) setFormErrors((prev) => ({ ...prev, date: "" }));
+                  }}
                 />
+                {formErrors.date && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.date}</span>}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Description</label>
+                <label className="stc-field-label">
+                  Description <span style={{ color: T.red }}>*</span>
+                </label>
                 <input
+                  style={{ borderColor: formErrors.description ? T.red : undefined }}
                   value={formData.description || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, description: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, description: e.target.value }));
+                    if (formErrors.description) setFormErrors((prev) => ({ ...prev, description: "" }));
+                  }}
                 />
+                {formErrors.description && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.description}</span>}
               </div>
               <div className="stc-field">
-                <label className="stc-field-label">Type</label>
+                <label className="stc-field-label">
+                  Type <span style={{ color: T.red }}>*</span>
+                </label>
                 <select
+                  style={{ borderColor: formErrors.type ? T.red : undefined }}
                   value={formData.type || ""}
-                  onChange={(e) => setFormData((s) => ({ ...s, type: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData((s) => ({ ...s, type: e.target.value }));
+                    if (formErrors.type) setFormErrors((prev) => ({ ...prev, type: "" }));
+                  }}
                 >
                   <option value="">Select Type</option>
                   {typeOptions.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
+                {formErrors.type && <span style={{ color: T.red, fontSize: 11 }}>{formErrors.type}</span>}
               </div>
             </div>
           </Modal>
