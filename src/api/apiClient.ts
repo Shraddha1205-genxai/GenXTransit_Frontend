@@ -8,19 +8,42 @@ export interface ApiResponse<T> {
   totalCount: number | null;
 }
 
+const AUTH_EXCLUDED_ENDPOINTS = [
+  "/auth/login",
+  "/auth/forgot-password",
+  "/auth/reset-password",
+  "/auth/refresh-token",
+  "/login",
+  "/forgot-password",
+  "/reset-password",
+  "/refresh-token",
+];
+
 async function request<T>(
   path: string,
   options: RequestInit = {},
+  isRetry = false,
 ): Promise<ApiResponse<T>> {
   const url = `${BASE_URL}${path}`;
+
+  const cleanPath = path.split("?")[0].toLowerCase();
+  const isAuthExcluded = AUTH_EXCLUDED_ENDPOINTS.some((endpoint) =>
+    cleanPath.endsWith(endpoint.toLowerCase())
+  );
+
   let accessToken: string | null = null;
-  try {
-    const storedSession = sessionStorage.getItem("genxtransit.auth.session");
-    accessToken = storedSession
-      ? JSON.parse(storedSession).accessToken || null
-      : null;
-  } catch {
-    accessToken = null;
+  if (!isAuthExcluded) {
+    try {
+      accessToken = localStorage.getItem("accessToken");
+      if (!accessToken) {
+        const storedSession = localStorage.getItem("genxtransit.auth.session");
+        accessToken = storedSession
+          ? JSON.parse(storedSession).accessToken || null
+          : null;
+      }
+    } catch {
+      accessToken = null;
+    }
   }
 
   const headers = {
@@ -33,6 +56,50 @@ async function request<T>(
     ...options,
     headers,
   });
+
+  if (response.status === 401 && !isAuthExcluded && !isRetry) {
+    try {
+      const storedRefreshToken = localStorage.getItem("refreshToken");
+      if (storedRefreshToken) {
+        const refreshResponse = await fetch(`${BASE_URL}/auth/refresh-token`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refreshToken: storedRefreshToken }),
+        });
+        if (refreshResponse.ok) {
+          const refreshResult = await refreshResponse.json();
+          if (
+            refreshResult &&
+            refreshResult.success &&
+            refreshResult.data?.accessToken
+          ) {
+            const newAccessToken = refreshResult.data.accessToken;
+            const newRefreshToken = refreshResult.data.refreshToken;
+            localStorage.setItem("accessToken", newAccessToken);
+            if (newRefreshToken) {
+              localStorage.setItem("refreshToken", newRefreshToken);
+            }
+            if (refreshResult.data.userId !== undefined && refreshResult.data.userId !== null) {
+              localStorage.setItem("userId", String(refreshResult.data.userId));
+            }
+            try {
+              const storedSession = localStorage.getItem("genxtransit.auth.session");
+              if (storedSession) {
+                const session = JSON.parse(storedSession);
+                session.accessToken = newAccessToken;
+                if (newRefreshToken) session.refreshToken = newRefreshToken;
+                localStorage.setItem("genxtransit.auth.session", JSON.stringify(session));
+              }
+            } catch {}
+
+            return request<T>(path, options, true);
+          }
+        }
+      }
+    } catch (e) {
+      // Token refresh failed
+    }
+  }
 
   if (!response.ok) {
     let errorMessage = `HTTP error! status: ${response.status}`;

@@ -339,17 +339,6 @@ export default function UserMaster() {
         searchPlaceholder="Search users..."
         filters={[
           {
-            key: "status",
-            label: "",
-            value: statusFilter,
-            options: [
-              { value: "Active", label: "Active" },
-              { value: "Inactive", label: "Inactive" },
-              { value: "Both", label: "Both" },
-            ],
-            onChange: setStatusFilter,
-          },
-          {
             key: "role",
             label: "Role",
             value: roleFilter,
@@ -414,6 +403,17 @@ export default function UserMaster() {
             disabled: !divisionFilter,
             onChange: setDepotFilter,
           },
+          {
+            key: "status",
+            label: "",
+            value: statusFilter,
+            options: [
+              { value: "Active", label: "Active" },
+              { value: "Inactive", label: "Inactive" },
+              { value: "Both", label: "Both" },
+            ],
+            onChange: setStatusFilter,
+          }
         ]}
       />
       {error && (
