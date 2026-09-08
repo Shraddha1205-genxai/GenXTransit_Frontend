@@ -170,6 +170,7 @@ const UsersRoles = lazy(
 const Help = lazy(() => import("./features/support/help/Help"));
 
 const AdminAuthScreen = lazy(() => import("./features/auth/AdminAuthScreen"));
+const ResetPasswordPage = lazy(() => import("./features/auth/AdminAuthScreen/ResetPasswordPage"));
 
 const CHART_COLORS = {
   green: "#2F8F5B",
@@ -2402,6 +2403,7 @@ function AuthGate() {
   return (
     <Suspense fallback={<PageFallback />}>
       <Routes>
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route
           path="/login"
           element={
