@@ -9,18 +9,6 @@ import {
   roleService,
   type RoleRecord,
 } from "../../../api/organization/userManagement/roleService";
-import {
-  sectionService,
-  type SectionRecordApi,
-} from "../../../api/organization/userManagement/screenMaster/sectionService";
-import {
-  menuService,
-  type MenuRecordApi,
-} from "../../../api/organization/userManagement/screenMaster/menuService";
-import {
-  tabService,
-  type TabRecordApi,
-} from "../../../api/organization/userManagement/screenMaster/tabService";
  
 export interface AuthorizationRecord {
   authId?: number | null;
@@ -88,24 +76,6 @@ export default function Authorization() {
     staleTime: 0,
   });
  
-  const { data: sections = [] } = useQuery({
-    queryKey: ["section"],
-    queryFn: () => sectionService.getAll(),
-    staleTime: 0,
-  });
- 
-  const { data: menus = [] } = useQuery({
-    queryKey: ["menu"],
-    queryFn: () => menuService.getAll(),
-    staleTime: 0,
-  });
- 
-  const { data: tabs = [] } = useQuery({
-    queryKey: ["tab"],
-    queryFn: () => tabService.getAll(),
-    staleTime: 0,
-  });
- 
   const roleOptions = roles.filter((role: RoleRecord) => role.isActive);
  
   React.useEffect(() => {
@@ -159,25 +129,11 @@ export default function Authorization() {
   const mergedData = useMemo<AuthorizationRecord[]>(() => {
     return authorizationData.map((record) => ({
       ...record,
-      sectionName:
-        record.sectionName ||
-        sections.find(
-          (section: SectionRecordApi) =>
-            Number(section.sectionId) === record.sectionId,
-        )?.sectionName ||
-        `Section ${record.sectionId}`,
-      menuName:
-        record.menuName ||
-        menus.find((menu: MenuRecordApi) => Number(menu.menuId) === record.menuId)
-          ?.menuName ||
-        `Menu ${record.menuId}`,
-      tabName:
-        record.tabName ||
-        tabs.find((tab: TabRecordApi) => Number(tab.tabId) === record.tabId)
-          ?.tabName ||
-        `Tab ${record.tabId}`,
+      sectionName: record.sectionName || `Section ${record.sectionId}`,
+      menuName: record.menuName || `Menu ${record.menuId}`,
+      tabName: record.tabName || `Tab ${record.tabId}`,
     }));
-  }, [authorizationData, sections, menus, tabs]);
+  }, [authorizationData]);
  
   const filteredData = mergedData.filter((record) => {
     const matchesSearch =
