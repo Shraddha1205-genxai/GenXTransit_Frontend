@@ -142,10 +142,13 @@ export default function RoleMaster() {
   };
 
   const handleSave = () => {
-    if (!formData.roleName?.trim()) return;
+    const roleName = formData.roleName?.trim() ?? "";
+    if (!roleName) { toast.error("Role name is required."); return; }
+    if (roleName.length < 2) { toast.error("Role name must be at least 2 characters."); return; }
+    if (!/^[a-zA-Z0-9\s'-]+$/.test(roleName)) { toast.error("Role name contains invalid characters."); return; }
 
     const basePayload = {
-      roleName: formData.roleName.trim(),
+      roleName,
       description: formData.description?.trim() || "",
     };
 

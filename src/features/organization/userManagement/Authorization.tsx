@@ -21,7 +21,7 @@ import {
   tabService,
   type TabRecordApi,
 } from "../../../api/organization/userManagement/screenMaster/tabService";
-
+ 
 export interface AuthorizationRecord {
   authId?: number | null;
   roleId: number;
@@ -42,14 +42,14 @@ export interface AuthorizationRecord {
   menuName?: string;
   tabName?: string;
 }
-
+ 
 type PermissionKey =
   | "canView"
   | "canAdd"
   | "canEdit"
   | "canDelete"
   | "isDefault";
-
+ 
 function PermissionCheckbox({
   checked,
   label,
@@ -75,47 +75,47 @@ function PermissionCheckbox({
     />
   );
 }
-
+ 
 export default function Authorization() {
   const queryClient = useQueryClient();
   const [roleId, setRoleId] = useState<string>("");
   const [search, setSearch] = useState("");
   const [saved, setSaved] = useState(false);
-
+ 
   const { data: roles = [] } = useQuery({
     queryKey: ["roles"],
     queryFn: () => roleService.getAll(),
     staleTime: 0,
   });
-
+ 
   const { data: sections = [] } = useQuery({
     queryKey: ["section"],
     queryFn: () => sectionService.getAll(),
     staleTime: 0,
   });
-
+ 
   const { data: menus = [] } = useQuery({
     queryKey: ["menu"],
     queryFn: () => menuService.getAll(),
     staleTime: 0,
   });
-
+ 
   const { data: tabs = [] } = useQuery({
     queryKey: ["tab"],
     queryFn: () => tabService.getAll(),
     staleTime: 0,
   });
-
+ 
   const roleOptions = roles.filter((role: RoleRecord) => role.isActive);
-
+ 
   React.useEffect(() => {
     if (!roleId && roleOptions.length) {
       setRoleId(String(roleOptions[0].roleId));
     }
   }, [roleId, roleOptions]);
-
+ 
   const selectedRoleId = Number(roleId || roleOptions[0]?.roleId || 0);
-
+ 
   const {
     data: authorizationData = [],
     isLoading,
@@ -127,11 +127,11 @@ export default function Authorization() {
       const params = new URLSearchParams();
       if (selectedRoleId) params.set("roleId", String(selectedRoleId));
       if (search.trim()) params.set("searchText", search.trim());
-
+ 
       const queryString = params.toString();
       const url = `/authorization${queryString ? `?${queryString}` : ""}`;
       const response = await apiClient.get<any[]>(url);
-
+ 
       return (response.data || []).map((record: any) => ({
         authId: record.authId ?? null,
         roleId: Number(record.roleId ?? selectedRoleId),
@@ -155,7 +155,7 @@ export default function Authorization() {
     },
     staleTime: 0,
   });
-
+ 
   const mergedData = useMemo<AuthorizationRecord[]>(() => {
     return authorizationData.map((record) => ({
       ...record,
@@ -168,7 +168,7 @@ export default function Authorization() {
         `Section ${record.sectionId}`,
       menuName:
         record.menuName ||
-        menus.find((menu: MenuRecordApi) => Number(menu.id) === record.menuId)
+        menus.find((menu: MenuRecordApi) => Number(menu.menuId) === record.menuId)
           ?.menuName ||
         `Menu ${record.menuId}`,
       tabName:
@@ -178,7 +178,7 @@ export default function Authorization() {
         `Tab ${record.tabId}`,
     }));
   }, [authorizationData, sections, menus, tabs]);
-
+ 
   const filteredData = mergedData.filter((record) => {
     const matchesSearch =
       `${record.sectionName || ""} ${record.menuName || ""} ${record.tabName || ""}`
@@ -186,30 +186,46 @@ export default function Authorization() {
         .includes(search.toLowerCase());
     return matchesSearch;
   });
-
+ 
   const updatePermission = (
-    authId: number | null | undefined,
+    targetRecord: AuthorizationRecord,
     field: PermissionKey,
   ) => {
     setSaved(false);
-    const current = mergedData.find((item) => item.authId === authId);
-    if (!current) return;
-
-    const updated = {
-      ...current,
-      [field]: !current[field],
-    };
-
-    const index = mergedData.findIndex((item) => item.authId === authId);
-    const nextData = [...mergedData];
-    nextData[index] = updated;
-
+ 
+    const isSettingDefaultToTrue = field === "isDefault" && !targetRecord.isDefault;
+ 
+    const nextData = mergedData.map((item) => {
+      const isTarget =
+        targetRecord.authId != null && item.authId != null
+          ? item.authId === targetRecord.authId
+          : item.sectionId === targetRecord.sectionId &&
+            item.menuId === targetRecord.menuId &&
+            item.tabId === targetRecord.tabId;
+ 
+      if (isTarget) {
+        return {
+          ...item,
+          [field]: !item[field],
+        };
+      }
+ 
+      if (isSettingDefaultToTrue && field === "isDefault") {
+        return {
+          ...item,
+          isDefault: false,
+        };
+      }
+ 
+      return item;
+    });
+ 
     queryClient.setQueryData<AuthorizationRecord[]>(
       ["authorization", selectedRoleId, search],
       nextData,
     );
   };
-
+ 
   const saveAllPermissions = useMutation({
     mutationFn: async (items: AuthorizationRecord[]) => {
       const payload = items.map((item) => ({
@@ -224,7 +240,7 @@ export default function Authorization() {
         canDelete: item.canDelete,
         isDefault: Boolean(item.isDefault ?? false),
       }));
-
+ 
       await apiClient.post<boolean>("/authorization/saveall", payload);
       return payload;
     },
@@ -240,14 +256,46 @@ export default function Authorization() {
       toast.error(err.message || "Failed to save permissions");
     },
   });
-
+ 
   return (
     <Card
       title="Authorization"
       action={
         <button
           className="stc-btn stc-btn-primary"
-          onClick={() => saveAllPermissions.mutate(mergedData)}
+          onClick={() => {
+            if (!selectedRoleId) {
+              toast.error("Please select a role before saving.");
+              return;
+            }
+            if (!mergedData.length) {
+              toast.error("No permissions to save.");
+              return;
+            }
+            const defaultScreens = mergedData.filter((item) => item.isDefault);
+            if (defaultScreens.length === 0) {
+              toast.error("Please mark exactly one tab as the default screen.");
+              return;
+            }
+            if (defaultScreens.length > 1) {
+              toast.error("Only one tab can be marked as the default screen.");
+              return;
+            }
+            const invalidRows = mergedData.filter(
+              (item) =>
+                !item.isDisableAction &&
+                !item.isDisableView &&
+                (item.canAdd || item.canEdit || item.canDelete) &&
+                !item.canView,
+            );
+            if (invalidRows.length > 0) {
+              toast.error(
+                `"View" permission must be enabled when Add/Edit/Delete is granted (${invalidRows[0].tabName || "a tab"}).`,
+              );
+              return;
+            }
+            saveAllPermissions.mutate(mergedData);
+          }}
           disabled={saveAllPermissions.isPending || !mergedData.length}
         >
           <Save size={14} />{" "}
@@ -276,7 +324,7 @@ export default function Authorization() {
           },
         ]}
       />
-
+ 
       <div className="authorization-table-shell">
         <Table>
           <thead>
@@ -325,15 +373,28 @@ export default function Authorization() {
                       "canDelete",
                       "isDefault",
                     ] as PermissionKey[]
-                  ).map((field) => (
-                    <Td align="center" key={field}>
-                      <PermissionCheckbox
-                        label={`${record.tabName || record.tabId} ${field}`}
-                        checked={Boolean(record[field])}
-                        onChange={() => updatePermission(record.authId, field)}
-                      />
-                    </Td>
-                  ))}
+                  ).map((field) => {
+                    const isDisabled =
+                      record.isDisableAction ||
+                      (field === "canView" && record.isDisableView) ||
+                      (field === "canAdd" && record.isDisableAdd) ||
+                      (field === "canEdit" && record.isDisableEdit) ||
+                      (field === "canDelete" && record.isDisableDelete);
+ 
+                    return (
+                      <Td align="center" key={field}>
+                        {isDisabled ? (
+                          <span style={{ color: T.textDisabled }}> </span>
+                        ) : (
+                          <PermissionCheckbox
+                            label={`${record.tabName || record.tabId} ${field}`}
+                            checked={Boolean(record[field])}
+                            onChange={() => updatePermission(record, field)}
+                          />
+                        )}
+                      </Td>
+                    );
+                  })}
                 </tr>
               ))
             )}
@@ -352,3 +413,5 @@ export default function Authorization() {
     </Card>
   );
 }
+ 
+ 

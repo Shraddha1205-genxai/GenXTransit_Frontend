@@ -644,10 +644,8 @@ export default function ScreenMaster() {
   const saveForm = () => {
     if (formType === "section") {
       const name = sectionName.trim();
-      if (!name) {
-        toast.error("Section name is required");
-        return;
-      }
+      if (!name) { toast.error("Section name is required."); return; }
+      if (name.length < 2) { toast.error("Section name must be at least 2 characters."); return; }
 
       if (editingId) {
         sectionUpdateMutation.mutate({
@@ -666,10 +664,11 @@ export default function ScreenMaster() {
     }
 
     if (formType === "menu") {
-      if (!menuForm.menuName.trim() || !menuForm.sectionId) {
-        toast.error("Please select a section and enter a menu name");
-        return;
-      }
+      if (!menuForm.menuName.trim()) { toast.error("Menu name is required."); return; }
+      if (menuForm.menuName.trim().length < 2) { toast.error("Menu name must be at least 2 characters."); return; }
+      if (!menuForm.sectionId) { toast.error("Please select a section."); return; }
+      const sortOrder = Number(menuForm.sortOrder);
+      if (!sortOrder || sortOrder < 1) { toast.error("Sort order must be a positive number."); return; }
 
       const payload = {
         iconName: menuForm.iconName.trim(),
@@ -692,10 +691,14 @@ export default function ScreenMaster() {
     }
 
     if (formType === "tab") {
-      if (!tabForm.tabName.trim() || !tabForm.sectionId || !tabForm.menuId || !tabForm.frontendUrl.trim()) {
-        toast.error("Please fill in all required tab fields");
-        return;
-      }
+      if (!tabForm.sectionId) { toast.error("Please select a section."); return; }
+      if (!tabForm.menuId) { toast.error("Please select a menu."); return; }
+      if (!tabForm.tabName.trim()) { toast.error("Tab name is required."); return; }
+      if (tabForm.tabName.trim().length < 2) { toast.error("Tab name must be at least 2 characters."); return; }
+      const tabSortOrder = Number(tabForm.sortOrder);
+      if (!tabSortOrder || tabSortOrder < 1) { toast.error("Sort order must be a positive number."); return; }
+      if (!tabForm.frontendUrl.trim()) { toast.error("URL is required."); return; }
+      if (!tabForm.frontendUrl.trim().startsWith("/")) { toast.error("URL must start with /."); return; }
 
       const payload = {
         sectionId: Number(tabForm.sectionId),
