@@ -42,6 +42,7 @@ export default function LoginPanel({
           value={userName}
           onChange={(event) => onUserNameChange(event.target.value)}
           autoComplete="username"
+          onKeyDown={(e) => e.key === "Enter" && onSubmit()}
         />
         <AuthInput
           icon={KeyRound}
@@ -50,6 +51,7 @@ export default function LoginPanel({
           value={password}
           onChange={(event) => onPasswordChange(event.target.value)}
           autoComplete="current-password"
+          onKeyDown={(e) => e.key === "Enter" && onSubmit()}
           right={
             <button
               type="button"
