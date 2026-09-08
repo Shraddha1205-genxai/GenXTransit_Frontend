@@ -23,6 +23,9 @@ import {
   roleService,
   type RoleRecord,
 } from "../../../api/organization/userManagement/roleService";
+import { regionService } from "../../../api/organization/organizationManagement/regionService";
+import { divisionService } from "../../../api/organization/organizationManagement/divisionService";
+import { depotService } from "../../../api/organization/organizationManagement/depotService";
 
 const PAGE_SIZE = 10;
 
@@ -34,6 +37,10 @@ interface UserFormData {
   firstName?: string;
   lastName?: string;
   roleId?: string;
+  address?: string;
+  regionId?: string;
+  divisionId?: string;
+  depotId?: string;
 }
 
 interface UserRow {
@@ -48,12 +55,22 @@ interface UserRow {
   isActive: boolean;
   isFirstLogin: boolean;
   createdDate: string;
+  address?: string | null;
+  regionId?: number;
+  regionName?: string | null;
+  divisionId?: number;
+  divisionName?: string | null;
+  depotId?: number;
+  depotName?: string | null;
 }
 
 export default function UserMaster() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("Active");
+  const [regionFilter, setRegionFilter] = useState("");
+  const [divisionFilter, setDivisionFilter] = useState("");
+  const [depotFilter, setDepotFilter] = useState("");
   const [modal, setModal] = useState<{
     mode: "add" | "edit";
     record?: UserRow;
@@ -71,6 +88,30 @@ export default function UserMaster() {
 
   const roleOptions = roles.filter((role) => role.isActive);
   const defaultRoleId = String(roleOptions[0]?.roleId ?? 1);
+
+  const { data: regions = [] } = useQuery({
+    queryKey: ["regions", "user-master"],
+    queryFn: () => regionService.getAll(undefined, true),
+    staleTime: 0,
+  });
+  const { data: divisions = [] } = useQuery({
+    queryKey: ["divisions", "user-master"],
+    queryFn: () => divisionService.getAll(undefined, undefined, true),
+    staleTime: 0,
+  });
+  const { data: depots = [] } = useQuery({
+    queryKey: ["depots", "user-master"],
+    queryFn: () =>
+      depotService.getAll(
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        true,
+      ),
+    staleTime: 0,
+  });
 
   const isActiveParam =
     statusFilter === "Active"
@@ -93,7 +134,17 @@ export default function UserMaster() {
     staleTime: 0,
   });
 
-  const filteredUsers = users;
+  const filteredUsers = users.filter((user) => {
+    const matchesRegion =
+      !regionFilter || Number(user.regionId ?? 0) === Number(regionFilter);
+    const matchesDivision =
+      !divisionFilter ||
+      Number(user.divisionId ?? 0) === Number(divisionFilter);
+    const matchesDepot =
+      !depotFilter || Number(user.depotId ?? 0) === Number(depotFilter);
+
+    return matchesRegion && matchesDivision && matchesDepot;
+  });
   const showActionsColumn =
     statusFilter === "Active" || statusFilter === "Both";
 
@@ -158,6 +209,10 @@ export default function UserMaster() {
       firstName: "",
       lastName: "",
       roleId: "",
+      address: "",
+      regionId: "",
+      divisionId: "",
+      depotId: "",
     });
     setModal({ mode: "add" });
   };
@@ -171,6 +226,10 @@ export default function UserMaster() {
       firstName: record.firstName,
       lastName: record.lastName,
       roleId: String(record.roleId || ""),
+      address: record.address || "",
+      regionId: String(record.regionId || ""),
+      divisionId: String(record.divisionId || ""),
+      depotId: String(record.depotId || ""),
     });
     setModal({ mode: "edit", record });
   };
@@ -182,12 +241,18 @@ export default function UserMaster() {
       !formData.mobileNo?.trim() ||
       !formData.firstName?.trim() ||
       !formData.lastName?.trim() ||
-      !formData.roleId
+      !formData.roleId ||
+      !formData.regionId ||
+      !formData.divisionId ||
+      !formData.depotId
     ) {
       toast.error("Please fill required fields.");
       return;
     }
-    const roleId = String(formData.roleId ?? defaultRoleId);
+    const roleId = Number(formData.roleId ?? defaultRoleId);
+    const regionId = Number(formData.regionId);
+    const divisionId = Number(formData.divisionId);
+    const depotId = Number(formData.depotId);
 
     if (modal?.mode === "edit" && formData.userId) {
       updateMutation.mutate({
@@ -198,6 +263,10 @@ export default function UserMaster() {
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         roleId,
+        address: formData.address?.trim() || "",
+        regionId,
+        divisionId,
+        depotId,
       });
     } else {
       addMutation.mutate({
@@ -207,6 +276,10 @@ export default function UserMaster() {
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         roleId,
+        address: formData.address?.trim() || "",
+        regionId,
+        divisionId,
+        depotId,
       });
     }
   };
@@ -261,6 +334,60 @@ export default function UserMaster() {
             ],
             onChange: setStatusFilter,
           },
+          {
+            key: "region",
+            label: "Region",
+            value: regionFilter,
+            options: regions.map((region) => ({
+              value: String(region.regionId),
+              label: region.regionName,
+            })),
+            clearable: false,
+            onChange: (value) => {
+              setRegionFilter(value);
+              setDivisionFilter("");
+              setDepotFilter("");
+            },
+          },
+          {
+            key: "division",
+            label: "Division",
+            value: divisionFilter,
+            options: divisions
+              .filter(
+                (division) =>
+                  !regionFilter ||
+                  Number(division.regionId) === Number(regionFilter),
+              )
+              .map((division) => ({
+                value: String(division.divisionId),
+                label: division.divisionName,
+              })),
+            clearable: false,
+            disabled: !regionFilter,
+            onChange: (value) => {
+              setDivisionFilter(value);
+              setDepotFilter("");
+            },
+          },
+          {
+            key: "depot",
+            label: "Depot",
+            value: depotFilter,
+            options: depots
+              .filter(
+                (depot) =>
+                  !divisionFilter ||
+                  Number(depot.divisionId) === Number(divisionFilter),
+              )
+              .map((depot) => ({
+                value: String(depot.depotId),
+                label: depot.depotName,
+              })),
+            clearable: false,
+            disabled: !divisionFilter,
+            onChange: setDepotFilter,
+          },
         ]}
       />
       {error && (
@@ -277,6 +404,9 @@ export default function UserMaster() {
             <Th>First Name</Th>
             <Th>Last Name</Th>
             <Th>Mobile No</Th>
+            <Th>Region</Th>
+            <Th>Division</Th>
+            <Th>Depot</Th>
             <Th>Status</Th>
             {showActionsColumn && <Th align="right">Actions</Th>}
           </tr>
@@ -285,7 +415,7 @@ export default function UserMaster() {
           {isLoading ? (
             <tr>
               <Td
-                colSpan={showActionsColumn ? 8 : 7}
+                colSpan={showActionsColumn ? 11 : 10}
                 style={{ textAlign: "center", color: T.textSoft }}
               >
                 Loading users...
@@ -293,7 +423,7 @@ export default function UserMaster() {
             </tr>
           ) : items.length === 0 ? (
             <tr>
-              <Td colSpan={showActionsColumn ? 8 : 7}>No users found.</Td>
+              <Td colSpan={showActionsColumn ? 11 : 10}>No users found.</Td>
             </tr>
           ) : (
             items.map((user) => (
@@ -304,6 +434,9 @@ export default function UserMaster() {
                 <Td>{user.firstName}</Td>
                 <Td>{user.lastName}</Td>
                 <Td mono>{user.mobileNo}</Td>
+                <Td>{user.regionName || "-"}</Td>
+                <Td>{user.divisionName || "-"}</Td>
+                <Td>{user.depotName || "-"}</Td>
                 <Td>
                   <StatusBadge status={user.isActive ? "Active" : "Inactive"} />
                 </Td>
@@ -437,7 +570,9 @@ export default function UserMaster() {
               >
                 <option value="">Select Role</option>
                 {roleOptions.length === 0 ? (
-                  <option value="" disabled>No roles available</option>
+                  <option value="" disabled>
+                    No roles available
+                  </option>
                 ) : (
                   roleOptions.map((role: RoleRecord) => (
                     <option key={role.roleId} value={String(role.roleId)}>
@@ -445,6 +580,77 @@ export default function UserMaster() {
                     </option>
                   ))
                 )}
+              </select>
+            </div>
+            <div className="stc-field">
+              <label className="stc-field-label">Address</label>
+              <input
+                value={formData.address || ""}
+                onChange={(event) => updateField("address", event.target.value)}
+              />
+            </div>
+            <div className="stc-field">
+              <label className="stc-field-label">Region</label>
+              <select
+                value={String(formData.regionId || "")}
+                onChange={(event) => {
+                  updateField("regionId", event.target.value);
+                  updateField("divisionId", "");
+                  updateField("depotId", "");
+                }}
+              >
+                <option value="">Select Region</option>
+                {regions.map((region) => (
+                  <option key={region.regionId} value={String(region.regionId)}>
+                    {region.regionName}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="stc-field">
+              <label className="stc-field-label">Division</label>
+              <select
+                value={String(formData.divisionId || "")}
+                onChange={(event) => {
+                  updateField("divisionId", event.target.value);
+                  updateField("depotId", "");
+                }}
+              >
+                <option value="">Select Division</option>
+                {divisions
+                  .filter(
+                    (division) =>
+                      !formData.regionId ||
+                      Number(division.regionId) === Number(formData.regionId),
+                  )
+                  .map((division) => (
+                    <option
+                      key={division.divisionId}
+                      value={String(division.divisionId)}
+                    >
+                      {division.divisionName}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <div className="stc-field">
+              <label className="stc-field-label">Depot</label>
+              <select
+                value={String(formData.depotId || "")}
+                onChange={(event) => updateField("depotId", event.target.value)}
+              >
+                <option value="">Select Depot</option>
+                {depots
+                  .filter(
+                    (depot) =>
+                      !formData.divisionId ||
+                      Number(depot.divisionId) === Number(formData.divisionId),
+                  )
+                  .map((depot) => (
+                    <option key={depot.depotId} value={String(depot.depotId)}>
+                      {depot.depotName}
+                    </option>
+                  ))}
               </select>
             </div>
           </div>

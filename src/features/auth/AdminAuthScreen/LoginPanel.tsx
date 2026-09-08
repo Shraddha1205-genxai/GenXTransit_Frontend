@@ -13,6 +13,7 @@ interface LoginPanelProps {
   onPasswordChange: (value: string) => void;
   onTogglePassword: () => void;
   onSubmit: () => void;
+  onForgotPassword: () => void;
 }
 
 export default function LoginPanel({
@@ -25,6 +26,7 @@ export default function LoginPanel({
   onPasswordChange,
   onTogglePassword,
   onSubmit,
+  onForgotPassword,
 }: LoginPanelProps) {
   return (
     <div className="login-panel-content">
@@ -69,7 +71,13 @@ export default function LoginPanel({
           </div>
         )}
         <div className="login-form-meta">
-          <a href="#forgot-password">Forgot password?</a>
+          <button
+            type="button"
+            onClick={onForgotPassword}
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 0, fontSize: "inherit", color: "inherit" }}
+          >
+            Forgot password?
+          </button>
         </div>
         <PrimaryButtonInline
           onClick={onSubmit}

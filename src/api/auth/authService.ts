@@ -81,6 +81,11 @@ export const authService = {
   clearSession: () => {
     sessionStorage.removeItem(SESSION_KEY);
   },
+
+  forgotPassword: async (email: string): Promise<string> => {
+    const response = await apiClient.post<string>("/auth/forgot-password", { email });
+    return response.data;
+  },
 };
 
 export default authService;
