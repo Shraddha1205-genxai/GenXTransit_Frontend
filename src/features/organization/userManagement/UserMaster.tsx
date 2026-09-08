@@ -68,6 +68,7 @@ export default function UserMaster() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("Active");
+  const [roleFilter, setRoleFilter] = useState("");
   const [regionFilter, setRegionFilter] = useState("");
   const [divisionFilter, setDivisionFilter] = useState("");
   const [depotFilter, setDepotFilter] = useState("");
@@ -135,6 +136,7 @@ export default function UserMaster() {
   });
 
   const filteredUsers = users.filter((user) => {
+    const matchesRole = !roleFilter || Number(user.roleId) === Number(roleFilter);
     const matchesRegion =
       !regionFilter || Number(user.regionId ?? 0) === Number(regionFilter);
     const matchesDivision =
@@ -143,7 +145,7 @@ export default function UserMaster() {
     const matchesDepot =
       !depotFilter || Number(user.depotId ?? 0) === Number(depotFilter);
 
-    return matchesRegion && matchesDivision && matchesDepot;
+    return matchesRole && matchesRegion && matchesDivision && matchesDepot;
   });
   const showActionsColumn =
     statusFilter === "Active" || statusFilter === "Both";
@@ -235,20 +237,33 @@ export default function UserMaster() {
   };
 
   const handleSave = () => {
-    if (
-      !formData.userName?.trim() ||
-      !formData.email?.trim() ||
-      !formData.mobileNo?.trim() ||
-      !formData.firstName?.trim() ||
-      !formData.lastName?.trim() ||
-      !formData.roleId ||
-      !formData.regionId ||
-      !formData.divisionId ||
-      !formData.depotId
-    ) {
-      toast.error("Please fill required fields.");
-      return;
-    }
+    const userName = formData.userName?.trim() ?? "";
+    const email = formData.email?.trim() ?? "";
+    const mobileNo = formData.mobileNo?.trim() ?? "";
+    const firstName = formData.firstName?.trim() ?? "";
+    const lastName = formData.lastName?.trim() ?? "";
+
+    if (!userName) { toast.error("Username is required."); return; }
+    if (/\s/.test(userName)) { toast.error("Username must not contain spaces."); return; }
+    if (userName.length < 3) { toast.error("Username must be at least 3 characters."); return; }
+
+    if (!email) { toast.error("Email is required."); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast.error("Enter a valid email address."); return; }
+
+    if (!mobileNo) { toast.error("Mobile number is required."); return; }
+    if (!/^\d{10}$/.test(mobileNo)) { toast.error("Mobile number must be exactly 10 digits."); return; }
+
+    if (!firstName) { toast.error("First name is required."); return; }
+    if (!/^[a-zA-Z\s'-]+$/.test(firstName)) { toast.error("First name must contain only letters."); return; }
+
+    if (!lastName) { toast.error("Last name is required."); return; }
+    if (!/^[a-zA-Z\s'-]+$/.test(lastName)) { toast.error("Last name must contain only letters."); return; }
+
+    if (!formData.roleId) { toast.error("Please select a role."); return; }
+    if (!formData.regionId) { toast.error("Please select a region."); return; }
+    if (!formData.divisionId) { toast.error("Please select a division."); return; }
+    if (!formData.depotId) { toast.error("Please select a depot."); return; }
+
     const roleId = Number(formData.roleId ?? defaultRoleId);
     const regionId = Number(formData.regionId);
     const divisionId = Number(formData.divisionId);
@@ -257,11 +272,11 @@ export default function UserMaster() {
     if (modal?.mode === "edit" && formData.userId) {
       updateMutation.mutate({
         userId: formData.userId,
-        userName: formData.userName.trim(),
-        email: formData.email.trim(),
-        mobileNo: formData.mobileNo?.trim() || "",
-        firstName: formData.firstName.trim(),
-        lastName: formData.lastName.trim(),
+        userName,
+        email,
+        mobileNo,
+        firstName,
+        lastName,
         roleId,
         address: formData.address?.trim() || "",
         regionId,
@@ -270,11 +285,11 @@ export default function UserMaster() {
       });
     } else {
       addMutation.mutate({
-        userName: formData.userName.trim(),
-        email: formData.email.trim(),
-        mobileNo: formData.mobileNo?.trim() || "",
-        firstName: formData.firstName.trim(),
-        lastName: formData.lastName.trim(),
+        userName,
+        email,
+        mobileNo,
+        firstName,
+        lastName,
         roleId,
         address: formData.address?.trim() || "",
         regionId,
@@ -333,6 +348,17 @@ export default function UserMaster() {
               { value: "Both", label: "Both" },
             ],
             onChange: setStatusFilter,
+          },
+          {
+            key: "role",
+            label: "Role",
+            value: roleFilter,
+            options: roleOptions.map((role) => ({
+              value: String(role.roleId),
+              label: role.roleName,
+            })),
+            clearable: false,
+            onChange: setRoleFilter,
           },
           {
             key: "region",

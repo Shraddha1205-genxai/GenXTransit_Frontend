@@ -247,7 +247,10 @@ export default function Authorization() {
       action={
         <button
           className="stc-btn stc-btn-primary"
-          onClick={() => saveAllPermissions.mutate(mergedData)}
+          onClick={() => {
+            if (!selectedRoleId) { toast.error("Please select a role before saving."); return; }
+            saveAllPermissions.mutate(mergedData);
+          }}
           disabled={saveAllPermissions.isPending || !mergedData.length}
         >
           <Save size={14} />{" "}
