@@ -10,6 +10,7 @@ import { regionService } from "../../../api/organization/organizationManagement/
 import { divisionService } from "../../../api/organization/organizationManagement/divisionService";
 import { zoneService } from "../../../api/organization/organizationManagement/zoneService";
 import { useDebounce } from "../../../hooks/useDebounce";
+import { usePermissions } from "../../../hooks/usePermissions";
 
 export interface Depot {
   depotId: string;
@@ -80,6 +81,7 @@ export function Depots({
   vehiclesData = initialDefaultVehicles,
 }: DepotPageProps) {
   const queryClient = useQueryClient();
+  const { canAdd, canEdit, canDelete } = usePermissions("Depots");
 
   // Search & Filter States
   const [search, setSearch] = useState("");
@@ -341,10 +343,12 @@ export function Depots({
         <Card
           title="Depots"
           action={
-          <button onClick={handleOpenAdd} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: T.amberDeep, background: "none", border: "none", cursor: "pointer" }}>
+            canAdd ? (
+              <button onClick={handleOpenAdd} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: T.amberDeep, background: "none", border: "none", cursor: "pointer" }}>
                 <Plus size={13} /> Add depot
               </button>
-        }
+            ) : undefined
+          }
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             {isLoading ? (
@@ -378,12 +382,16 @@ export function Depots({
                     </div>
                     {filterStatus !== "Inactive" && (
                       <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                        <button onClick={(e) => { e.stopPropagation(); handleOpenEdit(d); }} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                          <Pencil size={13} color={T.textSoft} />
-                        </button>
-                        <button onClick={(e) => { e.stopPropagation(); setToDelete(d); }} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
-                          <Trash2 size={13} color={T.red} />
-                        </button>
+                        {canEdit && (
+                          <button onClick={(e) => { e.stopPropagation(); handleOpenEdit(d); }} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                            <Pencil size={13} color={T.textSoft} />
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button onClick={(e) => { e.stopPropagation(); setToDelete(d); }} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+                            <Trash2 size={13} color={T.red} />
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>

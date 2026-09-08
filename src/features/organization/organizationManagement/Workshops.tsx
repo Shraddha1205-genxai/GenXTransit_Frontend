@@ -18,6 +18,7 @@ import { regionService } from "../../../api/organization/organizationManagement/
 import { divisionService } from "../../../api/organization/organizationManagement/divisionService";
 import { depotService } from "../../../api/organization/organizationManagement/depotService";
 import { useDebounce } from "../../../hooks/useDebounce";
+import { usePermissions } from "../../../hooks/usePermissions";
 
 export interface Workshop {
   workShopId: string;
@@ -105,6 +106,7 @@ const initialDefaultWorkshops: Workshop[] = [
 
 export function Workshops({}: WorkshopPageProps) {
   const queryClient = useQueryClient();
+  const { canAdd, canEdit, canDelete } = usePermissions("Workshop");
 
   // Search & Filter States
   const [search, setSearch] = useState("");
@@ -288,7 +290,8 @@ export function Workshops({}: WorkshopPageProps) {
       <Card
         title="Workshops"
         action={
-          <button
+          canAdd ? (
+            <button
               onClick={handleOpenAdd}
               style={{
                 display: "flex",
@@ -304,6 +307,7 @@ export function Workshops({}: WorkshopPageProps) {
             >
               <Plus size={13} /> Add workshop
             </button>
+          ) : undefined
         }
       >
         <TableToolbar
@@ -411,32 +415,36 @@ export function Workshops({}: WorkshopPageProps) {
                             justifyContent: "flex-end",
                           }}
                         >
-                          <button
-                            onClick={() => handleOpenEdit(w)}
-                            title="Edit"
-                            style={{
-                              background: "none",
-                              border: "none",
-                              cursor: "pointer",
-                              padding: 2,
-                              display: "flex",
-                            }}
-                          >
-                            <Pencil size={14} color={T.textSoft} />
-                          </button>
-                          <button
-                            onClick={() => setToDelete(w)}
-                            title="Delete"
-                            style={{
-                              background: "none",
-                              border: "none",
-                              cursor: "pointer",
-                              padding: 2,
-                              display: "flex",
-                            }}
-                          >
-                            <Trash2 size={14} color={T.red} />
-                          </button>
+                          {canEdit && (
+                            <button
+                              onClick={() => handleOpenEdit(w)}
+                              title="Edit"
+                              style={{
+                                background: "none",
+                                border: "none",
+                                cursor: "pointer",
+                                padding: 2,
+                                display: "flex",
+                              }}
+                            >
+                              <Pencil size={14} color={T.textSoft} />
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button
+                              onClick={() => setToDelete(w)}
+                              title="Delete"
+                              style={{
+                                background: "none",
+                                border: "none",
+                                cursor: "pointer",
+                                padding: 2,
+                                display: "flex",
+                              }}
+                            >
+                              <Trash2 size={14} color={T.red} />
+                            </button>
+                          )}
                         </div>
                       </Td>
                     )}

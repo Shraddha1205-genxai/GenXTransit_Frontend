@@ -18,6 +18,7 @@ import { regionService } from "../../../api/organization/organizationManagement/
 import { divisionService } from "../../../api/organization/organizationManagement/divisionService";
 import { depotService } from "../../../api/organization/organizationManagement/depotService";
 import { useDebounce } from "../../../hooks/useDebounce";
+import { usePermissions } from "../../../hooks/usePermissions";
 
 export interface BusStation {
   stationId: string;
@@ -104,6 +105,7 @@ const initialDefaultBusStations: BusStation[] = [
 
 export function BusStation({}: BusStationPageProps) {
   const queryClient = useQueryClient();
+  const { canAdd, canEdit, canDelete } = usePermissions("Stations");
 
   // Search & Filter States
   const [search, setSearch] = useState("");
@@ -278,7 +280,8 @@ export function BusStation({}: BusStationPageProps) {
       <Card
         title="Bus Stations"
         action={
-          <button
+          canAdd ? (
+            <button
               onClick={handleOpenAdd}
               style={{
                 display: "flex",
@@ -294,6 +297,7 @@ export function BusStation({}: BusStationPageProps) {
             >
               <Plus size={13} /> Add bus station
             </button>
+          ) : undefined
         }
       >
         <TableToolbar
@@ -401,32 +405,36 @@ export function BusStation({}: BusStationPageProps) {
                             justifyContent: "flex-end",
                           }}
                         >
-                          <button
-                            onClick={() => handleOpenEdit(b)}
-                            title="Edit"
-                            style={{
-                              background: "none",
-                              border: "none",
-                              cursor: "pointer",
-                              padding: 2,
-                              display: "flex",
-                            }}
-                          >
-                            <Pencil size={14} color={T.textSoft} />
-                          </button>
-                          <button
-                            onClick={() => setToDelete(b)}
-                            title="Delete"
-                            style={{
-                              background: "none",
-                              border: "none",
-                              cursor: "pointer",
-                              padding: 2,
-                              display: "flex",
-                            }}
-                          >
-                            <Trash2 size={14} color={T.red} />
-                          </button>
+                          {canEdit && (
+                            <button
+                              onClick={() => handleOpenEdit(b)}
+                              title="Edit"
+                              style={{
+                                background: "none",
+                                border: "none",
+                                cursor: "pointer",
+                                padding: 2,
+                                display: "flex",
+                              }}
+                            >
+                              <Pencil size={14} color={T.textSoft} />
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button
+                              onClick={() => setToDelete(b)}
+                              title="Delete"
+                              style={{
+                                background: "none",
+                                border: "none",
+                                cursor: "pointer",
+                                padding: 2,
+                                display: "flex",
+                              }}
+                            >
+                              <Trash2 size={14} color={T.red} />
+                            </button>
+                          )}
                         </div>
                       </Td>
                     )}
